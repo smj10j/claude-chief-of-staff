@@ -1,0 +1,14 @@
+# Recurring tasks — things that repeat indefinitely and are never marked done.
+# Always included when answering "what's on my list today?" alongside tasks.yaml.
+# Cadences: daily, weekly, biweekly, monthly
+
+recurring:
+
+  # Example (delete after /init):
+  # - id: review-team-dashboard
+  #   title: Review team health dashboard
+  #   cadence: daily
+  #   priority: medium
+  #   links:
+  #     - https://example.com/dashboard
+  #   notes: Check for anomalies before standup.

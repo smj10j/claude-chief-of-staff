@@ -1,0 +1,18 @@
+# Task database — finite tasks with a finish line.
+# Statuses: todo, in-progress, done
+# Tags: context (personal/work), type (admin/incident/comms/prep), team (team:<name>), relationship (career/xfn)
+# Link to projects via the `project:` field (value = project folder ID in projects/)
+
+tasks:
+
+  # Example task (delete after /init):
+  # - id: example-task
+  #   title: Review Q2 roadmap with team
+  #   status: todo
+  #   priority: high
+  #   due: 2026-04-01
+  #   project: q2-planning
+  #   tags: [work, team:payments]
+  #   links:
+  #     - https://docs.google.com/document/d/example
+  #   notes: Check capacity against committed projects. Flag anything that needs to shift.
