@@ -34,7 +34,7 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 
 1. Clone this repo:
    ```bash
-   git clone [<repo-url>](https://github.com/smj10j/claude-chief-of-staff) claude-chief-of-staff
+   git clone https://github.com/smj10j/claude-chief-of-staff claude-chief-of-staff
    cd claude-chief-of-staff
    ```
 
