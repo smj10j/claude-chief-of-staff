@@ -34,8 +34,8 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 
 1. Clone this repo:
    ```bash
-   git clone <repo-url> ~/code/work-agent
-   cd ~/code/work-agent
+   git clone [<repo-url>](https://github.com/smj10j/claude-chief-of-staff) claude-chief-of-staff
+   cd claude-chief-of-staff
    ```
 
 2. Start Claude Code in the directory:
