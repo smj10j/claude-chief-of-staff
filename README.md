@@ -57,6 +57,21 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
    - "Add a task: review Q2 roadmap by Friday"
    - "Draft a Slack message to my team about [topic]"
 
+## Commands
+
+Custom slash commands live in `.claude/commands/`. These are the built-in ones:
+
+| Command | Description |
+|---------|-------------|
+| `/init` | Interactive onboarding - populates CLAUDE.md with your role, people, teams, and creates folder structure |
+| `/morning-briefing` | Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones |
+| `/weekly-review` | Friday GTD review: archive done tasks, triage overdue, check project health, preview next week |
+| `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last session, gathers context, generates session file |
+| `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
+| `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
+
+You can add your own commands by creating `.md` files in `.claude/commands/`.
+
 ## Optional integrations
 
 The system works standalone with just Claude Code, but it's designed to plug in data sources via MCP servers for richer context:
@@ -71,16 +86,17 @@ These are configured in the `## Integrations` section of CLAUDE.md during or aft
 ## File structure
 
 ```
-work-agent/
+claude-chief-of-staff/
   CLAUDE.md              # System instructions + your personal context
   style-guide.md         # Your writing style (built over time)
   tasks.yaml             # Structured task database (active tasks only)
   tasks-archive.yaml     # Completed tasks organized by week
   recurring.yaml         # Tasks that repeat indefinitely
-  inbox.md               # Raw capture — process into other lists
+  inbox.md               # Raw capture - process into other lists
   waiting-for.md         # Delegated items you're tracking
   someday-maybe.md       # Ideas for later
   reading-list.md        # Articles, videos, resources to consume
+  .claude/commands/      # Custom slash commands
   projects/
     INDEX.md             # Project registry (active, on hold, archived)
     <project-id>/        # One folder per active project
@@ -101,3 +117,9 @@ The system gets better as you use it:
 - **Tasks** build up a record of what you've shipped
 
 Commit periodically so you have a timeline of when things changed.
+
+## Contributing back
+
+If you've forked this repo and built improvements that would benefit others, use the `/upstream-review` command. It diffs your instance against the template repo, identifies generalizable changes (new commands, workflow improvements, structural changes), strips out personal content, and offers to open a PR back to the template.
+
+The rule: personal content (names, tasks, session notes, career details) never goes upstream. System structure, workflow improvements, and new commands do.
