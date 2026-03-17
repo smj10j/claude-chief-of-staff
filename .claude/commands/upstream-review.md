@@ -19,14 +19,27 @@ If found, use it. If not found:
 
 Store the resolved path as `$UPSTREAM` for the rest of the workflow.
 
-### 1. Diff the Repos
+### 1. Internal Consistency Check
+
+Before comparing to upstream, audit the local repo for internal inconsistencies. Check:
+
+- **CLAUDE.md people list vs. 1:1 folder structure** — does the people listing in CLAUDE.md match the actual folders in `areas/one-on-ones/`? Are relationship categories correct (direct-reports, skip-level-reports, peers, etc.)?
+- **CLAUDE.md commands list vs. actual commands** — does every file in `.claude/commands/` appear in the Custom Commands section?
+- **CLAUDE.md meetings list vs. meetings folders** — does the meetings listing match `areas/meetings/`?
+- **README.md vs. actual file structure** — does the file structure section reflect what actually exists?
+- **Stale GTD files** — are `someday-maybe.md`, `waiting-for.md` current? Are there completed items that should be cleared or files that should be deleted?
+- **Projects INDEX.md vs. project folders** — do all active projects in the index have folders? Are there orphaned project folders?
+
+Present any inconsistencies found and fix them (with confirmation) before proceeding to the upstream diff. This keeps the repo clean before sharing changes externally.
+
+### 2. Diff the Repos
 
 Compare key files between this repo and `$UPSTREAM`. Focus on structural and workflow files, not personal content. Check these categories:
 
 **System files** (likely generalizable):
 - `CLAUDE.md` — compare the "System Conventions" section (below the `---` separator). Ignore the personal context section above it.
 - `.claude/commands/` — any commands here that don't exist upstream
-- `init.md` — onboarding flow changes
+- `README.md` — structural/documentation changes
 - `areas/one-on-ones/README.md` — 1:1 workflow docs
 - `areas/meetings/README.md` — meeting workflow docs
 - `areas/career/README.md` — career tracking scaffold
@@ -43,7 +56,7 @@ Compare key files between this repo and `$UPSTREAM`. Focus on structural and wor
 - `areas/comms/` drafts
 - The personal context section of CLAUDE.md (Role, Teams, Key People, Comms Style, Preferences, Integrations)
 
-### 2. Categorize Changes
+### 3. Categorize Changes
 
 For each difference found, classify it:
 
@@ -51,7 +64,7 @@ For each difference found, classify it:
 - **Personal** — Content specific to this user (names, teams, Slack channels, etc.). Skip these.
 - **Needs Templatizing** — A generalizable change that contains personal details. These need the personal bits replaced with template placeholders (HTML comments, generic examples) before porting.
 
-### 3. Present Findings
+### 4. Present Findings
 
 Show a summary table:
 
@@ -63,7 +76,7 @@ Show a summary table:
 
 For each "Needs Templatizing" item, show what specifically needs to change (e.g., "Replace user's name with generic reference, remove specific Slack channel names").
 
-### 4. Execute (with confirmation)
+### 5. Execute (with confirmation)
 
 After confirming which changes to port:
 
@@ -78,7 +91,7 @@ After confirming which changes to port:
 5. **Commit** the changes to the branch
 6. **Offer to open a PR** against the upstream repo using `gh pr create` (if gh CLI is available and authenticated). If not available, provide the URL to create one manually.
 
-### 5. Summary
+### 6. Summary
 
 Show what was ported, what was skipped, and any remaining items for next time.
 

@@ -61,6 +61,7 @@ Examples:
 
 ## Custom Commands
 Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
+- `/init` — Interactive onboarding: populates CLAUDE.md, creates 1:1 and meeting folders, seeds style guide
 - `/morning-briefing` — Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones
 - `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week
 - `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
