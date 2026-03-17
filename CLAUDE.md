@@ -65,6 +65,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week
 - `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
 - `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
+- `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
 
 ## Git Workflow
 - Commit periodically and after significant changes (new 1:1 READMEs, session notes, major task updates, new project docs)
