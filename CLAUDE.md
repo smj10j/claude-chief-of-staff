@@ -66,12 +66,13 @@ Examples:
 
 ## System
 - GTD-style tracking via markdown in this repo
-- `tasks.yaml` - structured task database (id, title, status, priority, due, project, tags, links, notes). For finite tasks with a finish line only.
+- `tasks.yaml` - structured task database (id, title, status, priority, due, project, tags, links, notes). **Active tasks only** (todo, in-progress). For finite tasks with a finish line only.
   - `tags` field is a list. Conventions:
     - **Context**: `personal`, `work` (every task should have one)
     - **Type**: `admin`, `incident`, `comms`, `prep` (optional, use when useful for filtering)
     - **Team**: `team:<team-name>` (for team-specific work)
     - **Relationship**: `career`, `xfn` (for cross-functional or career-building tasks)
+- `tasks-archive.yaml` - completed tasks, same schema as tasks.yaml plus a `completed:` date. Organized by week completed. When marking a task done, move it from `tasks.yaml` to `tasks-archive.yaml` under the appropriate week header. Check this file when answering historical questions ("when did I finish X?").
 - `recurring.yaml` - tasks that repeat indefinitely (daily, weekly, etc). Never marked done. Always include when answering "what's on my list today?" alongside tasks.yaml.
 - `style-guide.md` - writing style guide built from your actual messages over time
 
@@ -95,6 +96,17 @@ Examples:
 1. **Start**: create `projects/<id>/` folder, add row to `projects/INDEX.md`
 2. **Complete**: mark done in INDEX.md with completion date, move folder to `archive/`
 3. **Areas** never complete — they persist in `areas/` indefinitely
+
+## Daily Briefing
+
+When asked "what's on my list today?", "what should I prioritize?", or similar:
+
+1. **Tasks**: Pull from `tasks.yaml` (active), `recurring.yaml`, and note overdue items
+2. **Calendar** (if integration available): Pull today's meetings. Cross-reference attendees and topics with active tasks, projects, and 1:1 context to identify:
+   - Which meetings are highest-value (e.g., a key stakeholder for your initiative is in a meeting today)
+   - Where there's overlap or conflicts
+   - What can be skipped vs. must-attend
+3. **Synthesis**: Recommend a prioritized plan for the day — what to tackle in free blocks, what to prep for, what to defer
 
 ## 1:1 Prep Process
 
@@ -122,6 +134,7 @@ If no integrations are configured, skip external searches and work from local fi
 - Start with `## Shared Agenda` (copy/paste-ready for shared doc)
 - Include: suggested agenda (prioritized), context to have ready, what they'll likely raise, questions, things to skip/save
 - Keep historical session files untouched — never modify past session notes
+- **If a shared Google Doc link is in the person's README** and a Google Docs integration is available (e.g., google-workspace MCP), insert the shared agenda directly into the doc at the top so the other person can see it before the meeting
 
 ### Step 5: Surface Potential Tasks
 - Identify any new tasks implied by the research (follow-ups, action items, decisions needed)

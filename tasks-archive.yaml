@@ -1,0 +1,18 @@
+# Archive of completed tasks, organized by week.
+# When marking a task done in tasks.yaml, move it here under the appropriate week header.
+# Same schema as tasks.yaml, plus a `completed:` date field.
+# Check this file when answering historical questions ("when did I finish X?").
+
+archived:
+
+  # Week of YYYY-MM-DD
+  #
+  # - id: example-task
+  #   title: Review Q2 roadmap with team
+  #   status: done
+  #   priority: high
+  #   due: 2026-04-01
+  #   completed: 2026-03-28
+  #   project: q2-planning
+  #   tags: [work, team:payments]
+  #   notes: Reviewed with team, agreed to defer streaming project to Q3.
