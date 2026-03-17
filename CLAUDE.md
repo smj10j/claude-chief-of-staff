@@ -59,6 +59,13 @@ Examples:
      SYSTEM CONVENTIONS — these apply to everyone
      ============================================================ -->
 
+## Custom Commands
+Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
+- `/morning-briefing` — Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones
+- `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week
+- `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
+- `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
+
 ## Git Workflow
 - Commit periodically and after significant changes (new 1:1 READMEs, session notes, major task updates, new project docs)
 - Keep commit messages useful but concise — easy to scan for when/where a big change occurred
