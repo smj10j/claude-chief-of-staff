@@ -15,6 +15,7 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 - **Meeting prep** — same pattern for recurring team meetings and forums
 - **Project lifecycle** — tracks active projects from start to archive
 - **Comms drafting** — learns your writing style and drafts messages in your voice
+- **Daily briefings** — cross-references your tasks, calendar, and projects to recommend what to prioritize and which meetings matter most
 - **GTD workflow** — inbox capture, processing, next actions, waiting-for, someday/maybe
 
 ## Philosophy
@@ -62,7 +63,7 @@ The system works standalone with just Claude Code, but it's designed to plug in 
 
 - **Slack search** (e.g., Glean MCP) — lets Claude research recent conversations during 1:1 and meeting prep
 - **Notion** — for shared/collaborative docs and databases
-- **Calendar** — for awareness of upcoming meetings and scheduling context
+- **Calendar** (e.g., google-workspace MCP) — enables calendar-aware daily briefings, meeting prioritization, and inserting 1:1 agendas directly into shared Google Docs
 - **Jira/Linear** — for cross-referencing engineering work items
 
 These are configured in the `## Integrations` section of CLAUDE.md during or after initialization. The 1:1 prep process gracefully degrades without them — it just works from your local notes instead of also pulling recent Slack threads.
@@ -73,7 +74,8 @@ These are configured in the `## Integrations` section of CLAUDE.md during or aft
 work-agent/
   CLAUDE.md              # System instructions + your personal context
   style-guide.md         # Your writing style (built over time)
-  tasks.yaml             # Structured task database
+  tasks.yaml             # Structured task database (active tasks only)
+  tasks-archive.yaml     # Completed tasks organized by week
   recurring.yaml         # Tasks that repeat indefinitely
   inbox.md               # Raw capture — process into other lists
   waiting-for.md         # Delegated items you're tracking
