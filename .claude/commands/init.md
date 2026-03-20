@@ -1,131 +1,65 @@
-# Initialization Prompt
+# Initialize Work Agent
 
-When the user runs `/init`, read this file and execute the onboarding flow below. Guide them through each phase interactively — ask questions, wait for answers, then build the system.
+Interactive onboarding to personalize this system for a new user. Walk through each section conversationally — ask questions, confirm before writing.
 
-Do NOT rush through this. Each phase should feel like a conversation, not a form. Ask follow-up questions when answers are ambiguous. Confirm before creating files.
+## Steps
 
----
+### 1. Personal Context
 
-## Phase 1: Identity & Org
+Ask the user about their role and populate the personal context section of CLAUDE.md (everything below the `---` separator). Gather:
 
-Ask:
-- What's your name and title?
-- What company/org are you at?
-- What teams do you manage or lead? (name, focus area, size if known)
-- What's your timezone?
+- **Role**: title, company, org
+- **Teams**: what teams they manage or are part of
+- **Key People**: manager, direct reports, peers, skip-levels, key XFN partners. For each, capture name, role, and relationship context
+- **Comms Style**: how they like to communicate (ask for a few example Slack messages if possible, or ask about tone/voice preferences)
+- **Preferences**: GTD familiarity, what they want to offload, any strong opinions about how Claude should behave
 
-**Actions:**
-- Update CLAUDE.md `## Role` section
-- Update CLAUDE.md `## Teams` section
-- Store timezone in auto-memory MEMORY.md
+### 2. 1:1 System
 
----
+For each person identified in Key People who has regular 1:1s:
+1. Determine the relationship category (direct-report, manager, peer, skip-level, skip-level-report, xfn)
+2. Create the folder: `areas/one-on-ones/<category>/<name>/`
+3. Create a starter `README.md` with role, team, and any context the user shared
+4. Create an empty `sessions/` directory (add a `.gitkeep`)
 
-## Phase 2: People Map
+Update `areas/one-on-ones/README.md` with the folder structure listing.
 
-Walk through each relationship type. For each person, capture: name, role/title, team, meeting cadence, and anything top-of-mind.
+### 3. Meetings
 
-Ask:
-- "Who's your manager?" → create `areas/one-on-ones/manager/<name>/README.md`
-- "Who are your direct reports?" → create folders under `areas/one-on-ones/direct-reports/<name>/`
-- "Any peers you meet with regularly?" → create under `areas/one-on-ones/peers/<name>/`
-- "Any skip-level relationships — people above your manager you meet with?" → create under `areas/one-on-ones/skip-level/<name>/`
-- "Do you do skip-level 1:1s with your reports' reports?" → create under `areas/one-on-ones/skip-level-reports/<name>/`
-- "Any cross-functional partners you meet with regularly?" → create under `areas/one-on-ones/xfn/<name>/`
+Ask about recurring meetings (not 1:1s) — team syncs, leadership forums, reviews. For each:
+1. Create `areas/meetings/<meeting-id>/README.md` with cadence, attendees, shared doc link if any
+2. Create an empty `sessions/` directory
 
-For each person, create a README.md with:
-```markdown
-# [Name] — 1:1 Notes
+Update `areas/meetings/README.md` with the meeting listing.
 
-## Context
-- **Role:** [their role]
-- **Team:** [their team]
-- **Reports to:** [if known]
-- **Cadence:** [weekly, biweekly, etc.]
+### 4. Projects
 
-## What's Top of Mind
-<!-- What are they currently focused on? Any known concerns or goals? -->
+Ask about any active projects or initiatives. For each:
+1. Create `projects/<id>/README.md` with a brief description
+2. Add a row to `projects/INDEX.md`
 
-## Working Style
-<!-- How do they prefer to communicate? What motivates them? -->
+### 5. Integrations
 
-## Standing Questions
-<!-- Questions to keep in rotation across sessions -->
-```
+Ask what tools they use and configure the integrations section of CLAUDE.md:
+- Slack (via Glean MCP, or direct)
+- Calendar (google-workspace MCP)
+- Jira/Linear
+- Notion
+- Other MCP servers
 
-Also create an empty `sessions/` directory for each person.
+### 6. Style Guide
 
-**Actions:**
-- Update CLAUDE.md `## Key People` section with the full map
-- Update `areas/one-on-ones/README.md` with the folder structure listing
-- Create all person folders with README.md + sessions/
+If the user provided example messages in step 1, use them to seed `style-guide.md`. Otherwise, explain that the style guide will build up over time as they edit Claude's drafts.
 
----
+### 7. Git Setup
 
-## Phase 3: Recurring Meetings
+- Run `git add -A && git status` to show what was created
+- Offer to make an initial commit
 
-Ask:
-- "What recurring meetings do you attend that aren't 1:1s? Think team syncs, leadership meetings, reviews, standups."
-- For each: name, cadence, who attends, shared doc link (if any), what you typically bring
+## Rules
 
-**Actions:**
-- Create folders under `areas/meetings/<meeting-id>/` with README.md
-- Update `areas/meetings/README.md` with the meeting table
-
----
-
-## Phase 4: Current State
-
-Ask:
-- "Any active projects right now — things with a finish line that you're tracking?"
-  - For each: name, short description, status, target date
-- "Any tasks top of mind — things you need to do this week or soon?"
-- "Anything you're waiting on from someone else?"
-- "Any recurring tasks — things you do daily or weekly that never finish?"
-
-**Actions:**
-- Create `projects/<id>/README.md` for each project
-- Update `projects/INDEX.md` with project entries
-- Seed `tasks.yaml` with captured tasks
-- Seed `recurring.yaml` with recurring items
-- Seed `waiting-for.md` with delegated items
-
----
-
-## Phase 5: Style Calibration
-
-Ask:
-- "I'd like to learn your writing style so I can draft messages in your voice. Can you paste 3-5 recent Slack messages or emails you've written? Pick ones that feel like 'you' — could be announcements, replies, shout-outs, whatever."
-
-**Actions:**
-- Analyze the messages for patterns: tone, greeting style, structure, vocabulary, what they avoid
-- Populate `style-guide.md` with observed patterns organized into sections (Voice, Tone Patterns, Structure, What to Avoid, etc.)
-- This is a starting point — the guide evolves as the user gives feedback on future drafts
-
-If they'd rather skip this step:
-- That's fine. Leave style-guide.md with just the section headers. It'll fill in naturally over time as they edit drafts.
-
----
-
-## Phase 6: Integrations (Optional)
-
-Ask:
-- "Do you have any MCP servers configured in Claude Code? For example: Slack search (Glean), Notion, Jira, Datadog, etc."
-- "Would you like to configure any? I can help you set them up, or we can skip this and add them later."
-
-**Actions:**
-- Update CLAUDE.md `## Integrations` section with what's available
-- Note which features benefit from each integration (e.g., "Slack search enables richer 1:1 prep")
-
----
-
-## Wrap-up
-
-After all phases:
-1. Commit the initial state: `git add -A && git commit -m "Initial setup via /init"`
-2. Print a summary of what was created (people, meetings, projects, tasks)
-3. Suggest next steps:
-   - "Try 'what's on my list today?' to see your tasks"
-   - "Try 'prep for my 1:1 with [name]' before your next meeting"
-   - "Try 'add a task: [description]' to capture something new"
-   - "Try 'draft a message to my team about [topic]' to test the comms workflow"
+- Be conversational, not interrogative. This should feel like onboarding with a smart colleague, not filling out a form.
+- Confirm the CLAUDE.md content before writing it — show a preview.
+- Don't overwhelm. If the user doesn't have answers for everything, skip it and note it can be filled in later.
+- Keep the system section of CLAUDE.md (above the `---`) intact — only populate the personal section below it.
+- Use the existing file templates and conventions already in the repo.
