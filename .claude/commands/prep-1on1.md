@@ -15,7 +15,7 @@ If no name is provided, check today's calendar for upcoming 1:1s and ask which o
 ### 2. Gather Context
 Run in parallel:
 - **Tasks**: Search `tasks.yaml` for any tasks tagged with their team or mentioning their name
-- **Calendar**: Check today's calendar for the meeting time and any adjacent meetings
+- **Calendar**: Check today's calendar for the meeting time and any adjacent meetings. **Check the other person's RSVP status** — if they haven't accepted, have declined, or are marked as tentative, flag it prominently at the top of the prep (e.g., "[Name] has not accepted this invite — confirm they're available before prepping further"). Also check for any OOO signals from Slack/comms.
 - **Signals**: If a Slack/comms integration is available, search for recent messages from or mentioning this person (past week). Look for threads they started, decisions made, issues raised
 - **Shared Doc**: If the README has a shared Google Doc link, note it for reference (don't read unless specifically asked — it may be long)
 - **Projects**: Check if any active projects in `projects/INDEX.md` involve this person

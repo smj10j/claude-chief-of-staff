@@ -103,6 +103,7 @@ claude-chief-of-staff/
   areas/
     one-on-ones/         # 1:1 system (per-person folders with README + sessions)
     meetings/            # Recurring meetings (same pattern)
+    daily-briefings/     # Morning briefing history (sessions/YYYY-MM-DD.md)
     career/              # Promotion tracking, growth plans
     comms/               # Drafted messages
   archive/               # Completed projects (moved from projects/)
