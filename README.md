@@ -27,11 +27,24 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 
 ## Getting started
 
-### Prerequisites
+### Quick install
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
+Make sure you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, then run:
 
-### Setup
+```bash
+curl -fsSL https://raw.githubusercontent.com/smj10j/claude-chief-of-staff/main/install.sh | bash
+```
+
+Then follow the instructions it prints — open the directory in Claude Code and type `/init`. Claude will walk you through an interactive onboarding (~5 minutes): your role, your people, your meetings, and writing style.
+
+Once you're set up, try:
+- "What's on my list today?"
+- "Prep for my 1:1 with [name] tomorrow"
+- "Add a task: review Q2 roadmap by Friday"
+- "Draft a Slack message to my team about [topic]"
+
+<details>
+<summary>Manual setup</summary>
 
 1. Clone this repo:
    ```bash
@@ -49,13 +62,7 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
    /init
    ```
 
-   Claude will walk you through an interactive onboarding: your role, your people, your meetings, active projects, and writing style. This populates the CLAUDE.md and creates all the folder structure.
-
-4. Start working. Some things to try:
-   - "What's on my list today?"
-   - "Prep for my 1:1 with [name] tomorrow"
-   - "Add a task: review Q2 roadmap by Friday"
-   - "Draft a Slack message to my team about [topic]"
+</details>
 
 ## Commands
 
