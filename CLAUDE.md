@@ -66,6 +66,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week
 - `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
 - `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
+- `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches
 - `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
 
 ## Git Workflow
@@ -84,6 +85,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `tasks-archive.yaml` - completed tasks, same schema as tasks.yaml plus a `completed:` date. Organized by week completed. When marking a task done, move it from `tasks.yaml` to `tasks-archive.yaml` under the appropriate week header. Check this file when answering historical questions ("when did I finish X?").
 - `recurring.yaml` - tasks that repeat indefinitely (daily, weekly, etc). Never marked done. Always include when answering "what's on my list today?" alongside tasks.yaml.
 - `style-guide.md` - writing style guide built from your actual messages over time
+- `google-docs-style-guide.md` - formatting conventions for Google Docs edited via Apps Script (bold patterns, spacing, lists, code blocks)
 
 ### Folder Structure
 - `projects/` - time-bound initiatives with a clear finish line
