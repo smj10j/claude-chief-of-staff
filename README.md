@@ -75,6 +75,7 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/weekly-review` | Friday GTD review: archive done tasks, triage overdue, check project health, preview next week |
 | `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last session, gathers context, generates session file |
 | `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
+| `/review-launch-tracker` | Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches |
 | `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
 
 You can add your own commands by creating `.md` files in `.claude/commands/`.
@@ -96,6 +97,7 @@ These are configured in the `## Integrations` section of CLAUDE.md during or aft
 claude-chief-of-staff/
   CLAUDE.md              # System instructions + your personal context
   style-guide.md         # Your writing style (built over time)
+  google-docs-style-guide.md  # Google Docs formatting via Apps Script
   tasks.yaml             # Structured task database (active tasks only)
   tasks-archive.yaml     # Completed tasks organized by week
   recurring.yaml         # Tasks that repeat indefinitely
