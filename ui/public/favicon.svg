@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- Clipboard body -->
+  <rect x="10" y="12" width="44" height="48" rx="5" fill="url(#g)"/>
+  <!-- Clipboard clip -->
+  <rect x="22" y="6" width="20" height="12" rx="4" fill="#4f46e5"/>
+  <rect x="26" y="4" width="12" height="8" rx="3" fill="#818cf8"/>
+  <!-- Check lines -->
+  <g stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none">
+    <!-- Check 1 -->
+    <polyline points="18,28 22,32 28,24"/>
+    <line x1="33" y1="28" x2="48" y2="28"/>
+    <!-- Check 2 -->
+    <polyline points="18,40 22,44 28,36"/>
+    <line x1="33" y1="40" x2="48" y2="40"/>
+    <!-- Line 3 (pending) -->
+    <rect x="18" y="49" width="10" height="3" rx="1.5" fill="#c7d2fe" stroke="none"/>
+    <line x1="33" y1="51" x2="44" y2="51" stroke="#c7d2fe" stroke-width="2.5"/>
+  </g>
+</svg>
