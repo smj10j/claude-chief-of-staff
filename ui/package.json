@@ -1,0 +1,32 @@
+{
+  "name": "chief-of-staff-ui",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Chief of Staff - local web UI for browsing and editing work-agent content",
+  "scripts": {
+    "build": "node build.js",
+    "start": "node build.js && node server.js",
+    "dev": "node build.js --watch & node server.js"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.12.0",
+    "@tiptap/extension-bubble-menu": "^2.12.0",
+    "@tiptap/extension-code-block-lowlight": "^2.12.0",
+    "@tiptap/extension-link": "^2.12.0",
+    "@tiptap/extension-table": "^2.12.0",
+    "@tiptap/extension-table-cell": "^2.12.0",
+    "@tiptap/extension-table-header": "^2.12.0",
+    "@tiptap/extension-table-row": "^2.12.0",
+    "@tiptap/extension-task-item": "^2.12.0",
+    "@tiptap/extension-task-list": "^2.12.0",
+    "@tiptap/pm": "^2.12.0",
+    "@tiptap/starter-kit": "^2.12.0",
+    "chokidar": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "express": "^5.1.0",
+    "highlight.js": "^11.11.0",
+    "js-yaml": "^4.1.0",
+    "lowlight": "^3.3.0",
+    "tiptap-markdown": "^0.8.10"
+  }
+}
