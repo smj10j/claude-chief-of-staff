@@ -119,14 +119,21 @@ If Slack messages were found via Glean, analyze them and seed `style-guide.md` w
 - Run `git add -A && git status` to show what was created
 - Offer to make an initial commit
 
-### 8. Next Steps
+### 8. Web UI Setup
 
-After the commit, briefly mention:
-- `/ui` — Visual editor for browsing and editing files (like Google Docs). Requires Node.js 18+.
-- `/morning-briefing` — Prioritized daily briefing
+After the commit, offer to set up the visual editor:
+> "Everything's committed. There's also a web UI that gives you a Google Docs-like editor for all these files — makes browsing and editing much nicer than raw markdown. Want me to get that running? It just takes a minute. (Requires Node.js 18+)"
+
+If they say yes, run `/ui`. If they decline or don't have Node.js, no problem — move on.
+
+### 9. Next Steps
+
+Briefly mention what they can do next:
+- `/morning-briefing` — Get a prioritized daily briefing
 - "Add a task: [something]" — Start capturing work
+- `/prep-1on1 [name]` — Prep for an upcoming 1:1
 
-Keep this to 2-3 lines. Don't run `/ui` automatically.
+Keep this to 2-3 lines.
 
 ## Rules
 
