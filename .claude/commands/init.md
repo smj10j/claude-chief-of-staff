@@ -56,6 +56,15 @@ If the user provided example messages in step 1, use them to seed `style-guide.m
 - Run `git add -A && git status` to show what was created
 - Offer to make an initial commit
 
+### 8. Next Steps
+
+After the commit, mention these as things they can try right away:
+- `/ui` — Opens a web-based editor for browsing and editing files visually (like Google Docs). Requires Node.js 18+. First run installs automatically.
+- `/morning-briefing` — Get a prioritized daily briefing
+- "Add a task: [something]" — Start capturing work
+
+Don't run `/ui` automatically — just let them know it exists. Keep this brief (2-3 lines).
+
 ## Rules
 
 - Be conversational, not interrogative. This should feel like onboarding with a smart colleague, not filling out a form.

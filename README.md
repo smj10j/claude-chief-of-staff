@@ -76,9 +76,25 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last session, gathers context, generates session file |
 | `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
 | `/review-launch-tracker` | Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches |
+| `/ui` | Start the Chief of Staff web UI — a WYSIWYG markdown editor at localhost:3737 |
 | `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
 
 You can add your own commands by creating `.md` files in `.claude/commands/`.
+
+## Web UI
+
+The system includes a local web UI for browsing and editing your files in a Google Docs-like experience. Instead of reading markdown in VS Code, you get a WYSIWYG rich text editor with:
+
+- Floating toolbar (select text for formatting)
+- Auto-save (changes write back to your markdown files)
+- Sidebar navigation for all people, meetings, projects, and reference files
+- Task dashboard
+- Dark mode (follows system preference)
+- Cmd+click internal links to navigate between files
+
+To start it, just type `/ui` in Claude Code. First run installs dependencies automatically (requires Node.js 18+). The UI runs at `http://localhost:3737`.
+
+Edits you make in the browser save to disk, and changes Claude makes to your files show up in the browser automatically.
 
 ## Optional integrations
 
@@ -106,6 +122,7 @@ claude-chief-of-staff/
   someday-maybe.md       # Ideas for later
   reading-list.md        # Articles, videos, resources to consume
   .claude/commands/      # Custom slash commands
+  ui/                    # Chief of Staff web UI (WYSIWYG editor, start with /ui)
   projects/
     INDEX.md             # Project registry (active, on hold, archived)
     <project-id>/        # One folder per active project

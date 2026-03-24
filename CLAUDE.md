@@ -67,6 +67,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
 - `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
 - `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches
+- `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
 - `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
 
 ## Git Workflow
@@ -109,6 +110,12 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 1. **Start**: create `projects/<id>/` folder, add row to `projects/INDEX.md`
 2. **Complete**: mark done in INDEX.md with completion date, move folder to `archive/`
 3. **Areas** never complete — they persist in `areas/` indefinitely
+
+### Chief of Staff UI
+- Local web UI at `http://localhost:3737` — WYSIWYG markdown editor powered by Tiptap
+- Start with `/ui` command. First run installs Node dependencies and builds automatically (requires Node.js 18+)
+- Source lives in `ui/` directory: `src/` (ES modules), `build.js` (esbuild bundler), `server.js` (Express), `start.sh` (launcher)
+- Edits in the UI auto-save back to the markdown files on disk. Changes from Claude or the filesystem trigger a live reload in the browser via SSE.
 
 ## Daily Briefing
 

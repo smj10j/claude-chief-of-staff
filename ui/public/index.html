@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chief of Staff</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <nav id="sidebar">
+      <div id="sidebar-header">
+        <h1>Chief of Staff</h1>
+      </div>
+      <div id="sidebar-nav"></div>
+    </nav>
+    <main id="content">
+      <div id="content-header">
+        <div id="breadcrumb"></div>
+        <div id="save-status" class="save-status saved">Saved</div>
+      </div>
+      <div id="content-body">
+        <!-- Tiptap editor -->
+        <div id="editor-view">
+          <div id="bubble-menu"></div>
+          <div id="editor-container"></div>
+        </div>
+        <!-- Tasks dashboard -->
+        <div id="tasks-view" class="hidden"></div>
+        <!-- Welcome screen -->
+        <div id="welcome">
+          <h2>Chief of Staff</h2>
+          <p>Select a file from the sidebar to start editing.</p>
+          <p class="welcome-hint">Cmd+click links to navigate. Changes auto-save.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/bundle.js"></script>
+</body>
+</html>
