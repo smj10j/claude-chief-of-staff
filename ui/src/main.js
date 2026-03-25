@@ -1,6 +1,7 @@
 import { initEditor, loadFile, getCurrentPath } from './editor.js';
 import { initToolbar } from './toolbar.js';
 import { renderTasks, setupTaskInteractions } from './tasks.js';
+import { initSearch, updateSearchTree } from './search.js';
 
 let tree = null;
 let isProcessing = false;
@@ -23,6 +24,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load sidebar
   tree = await fetchJSON('/api/tree');
   renderSidebar(tree);
+
+  // Search (Cmd+K)
+  initSearch(tree, (path) => {
+    if (path === '__tasks__') showTasks();
+    else navigate(path);
+  });
 
   // SSE for live reload
   setupSSE();
@@ -304,10 +311,19 @@ function renderNavSection(label, contentFn) {
 
 function updateActiveNav(activePath) {
   document.querySelectorAll('.nav-item.active').forEach(el => el.classList.remove('active'));
+  let activeEl = null;
   if (activePath === '__tasks__') {
-    document.querySelector('.nav-item[data-view="tasks"]')?.classList.add('active');
+    activeEl = document.querySelector('.nav-item[data-view="tasks"]');
   } else {
-    document.querySelector(`.nav-item[data-path="${activePath}"]`)?.classList.add('active');
+    activeEl = document.querySelector(`.nav-item[data-path="${activePath}"]`);
+  }
+  if (activeEl) {
+    activeEl.classList.add('active');
+    // Ensure the parent section is expanded
+    const section = activeEl.closest('.nav-section');
+    if (section) section.classList.remove('collapsed');
+    // Scroll into view within the sidebar
+    activeEl.scrollIntoView({ block: 'center', behavior: 'instant' });
   }
 }
 
@@ -333,6 +349,7 @@ function setupSSE() {
       // Refresh sidebar tree
       tree = await fetchJSON('/api/tree');
       renderSidebar(tree);
+      updateSearchTree(tree);
       const cp = getCurrentPath();
       if (cp) updateActiveNav(cp);
 
