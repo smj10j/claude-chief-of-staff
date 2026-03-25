@@ -2,8 +2,9 @@ import {
   toggleBold, toggleItalic, toggleStrike, toggleCode,
   toggleHeading, toggleBulletList, toggleOrderedList,
   toggleTaskList, toggleBlockquote, toggleCodeBlock,
-  setLink, unsetLink, isActive, getEditor,
+  setLink, unsetLink, isActive, getEditor, addAnnotation,
 } from './editor.js';
+import { showAnnotationInput } from './annotations-panel.js';
 
 // Floating toolbar (Notion-style bubble menu)
 // The BubbleMenu extension handles showing/hiding.
@@ -29,6 +30,8 @@ export function initToolbar(bubbleMenuEl) {
       <span class="toolbar-sep"></span>
       <button data-action="blockquote" title="Quote">&#8220;</button>
       <button data-action="codeBlock" title="Code block">{ }</button>
+      <span class="toolbar-sep"></span>
+      <button data-action="annotate" title="Add annotation" class="toolbar-annotate">&#9998;</button>
     </div>
   `;
 
@@ -52,6 +55,24 @@ export function initToolbar(bubbleMenuEl) {
         if (isActive('link')) unsetLink();
         else setLink();
         break;
+      case 'annotate': {
+        const editor = getEditor();
+        if (!editor) break;
+        const { from, to } = editor.state.selection;
+        if (from === to) break; // no selection
+        // Position near the start of the selection (not end, which could be far below)
+        const coords = editor.view.coordsAtPos(from);
+        const rect = {
+          top: coords.top,
+          bottom: coords.bottom,
+          left: coords.left,
+          right: coords.right,
+        };
+        showAnnotationInput(rect, (comment) => {
+          addAnnotation(comment);
+        });
+        break;
+      }
     }
 
     updateActiveStates(bubbleMenuEl);
@@ -82,6 +103,7 @@ function updateActiveStates(menuEl) {
       case 'blockquote': active = isActive('blockquote'); break;
       case 'codeBlock': active = isActive('codeBlock'); break;
       case 'link': active = isActive('link'); break;
+      case 'annotate': active = isActive('annotation'); break;
     }
     btn.classList.toggle('active', active);
   });

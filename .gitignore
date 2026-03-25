@@ -9,3 +9,4 @@ __pycache__/
 node_modules/
 ui/public/bundle.js
 ui/public/bundle.js.map
+ui/.annotations/

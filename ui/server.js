@@ -3,9 +3,27 @@ const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const chokidar = require('chokidar');
+const { spawn } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3737;
+
+// Find an executable on PATH (including common locations)
+function findExecutable(name) {
+  const extraPaths = [
+    path.join(process.env.HOME || '', '.local', 'bin'),
+    '/usr/local/bin',
+  ];
+  const pathDirs = (process.env.PATH || '').split(':').concat(extraPaths);
+  for (const dir of pathDirs) {
+    const full = path.join(dir, name);
+    try {
+      fs.accessSync(full, fs.constants.X_OK);
+      return full;
+    } catch (e) { /* not found here */ }
+  }
+  return null;
+}
 
 // --- File tree helpers ---
 
@@ -152,6 +170,56 @@ function formatName(slug) {
     .replace(/\bAi\b/, 'AI');
 }
 
+// --- Annotation storage ---
+// Abstracted for future SQLite swap. Currently filesystem-backed.
+// Annotations stored in ui/.annotations/ with one JSON file per document.
+
+const ANNOTATIONS_DIR = path.join(__dirname, '.annotations');
+
+function encodePath(docPath) {
+  return docPath.replace(/\//g, '--') + '.json';
+}
+
+function decodePath(fileName) {
+  return fileName.replace(/\.json$/, '').replace(/--/g, '/');
+}
+
+function getAnnotationsFile(docPath) {
+  return path.join(ANNOTATIONS_DIR, encodePath(docPath));
+}
+
+function readAnnotations(docPath) {
+  const file = getAnnotationsFile(docPath);
+  if (!fs.existsSync(file)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeAnnotations(docPath, annotations) {
+  fs.mkdirSync(ANNOTATIONS_DIR, { recursive: true });
+  const file = getAnnotationsFile(docPath);
+  if (annotations.length === 0) {
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+    return;
+  }
+  fs.writeFileSync(file, JSON.stringify(annotations, null, 2), 'utf8');
+}
+
+function listAnnotatedFiles() {
+  if (!fs.existsSync(ANNOTATIONS_DIR)) return [];
+  return fs.readdirSync(ANNOTATIONS_DIR)
+    .filter(f => f.endsWith('.json'))
+    .map(f => {
+      const docPath = decodePath(f);
+      const annotations = readAnnotations(docPath);
+      return { path: docPath, count: annotations.length, annotations };
+    })
+    .filter(f => f.count > 0);
+}
+
 // --- Task helpers ---
 
 function loadTasks() {
@@ -239,6 +307,143 @@ app.put('/api/file', (req, res) => {
   res.json({ ok: true });
 });
 
+// --- Annotation API ---
+
+// Get annotations for a file
+app.get('/api/annotations', (req, res) => {
+  const docPath = req.query.path;
+  if (!docPath) return res.status(400).json({ error: 'path required' });
+  res.json({ annotations: readAnnotations(docPath) });
+});
+
+// Save annotations for a file (full replace)
+app.put('/api/annotations', (req, res) => {
+  const { path: docPath, annotations } = req.body;
+  if (!docPath) return res.status(400).json({ error: 'path required' });
+  writeAnnotations(docPath, annotations || []);
+  res.json({ ok: true, annotations: readAnnotations(docPath) });
+});
+
+// Delete a single annotation by id
+app.delete('/api/annotations', (req, res) => {
+  const { path: docPath, id } = req.body;
+  if (!docPath || !id) return res.status(400).json({ error: 'path and id required' });
+  const annotations = readAnnotations(docPath).filter(a => a.id !== id);
+  writeAnnotations(docPath, annotations);
+  res.json({ ok: true, annotations });
+});
+
+// List all files that have annotations
+app.get('/api/annotations/list', (req, res) => {
+  res.json({ files: listAnnotatedFiles() });
+});
+
+// --- Process endpoint (streams claude output via SSE) ---
+
+app.post('/api/process', (req, res) => {
+  const { path: docPath } = req.body;
+  if (!docPath) return res.status(400).json({ error: 'path required' });
+
+  const annotations = readAnnotations(docPath);
+  if (annotations.length === 0) {
+    return res.status(400).json({ error: 'No annotations to process' });
+  }
+
+  // SSE headers for streaming
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  // Resolve claude binary - may be in ~/.local/bin which isn't in PATH for child processes
+  const claudeBin = process.env.CLAUDE_BIN || findExecutable('claude');
+  if (!claudeBin) {
+    res.write(`data: ${JSON.stringify({ type: 'error', content: 'claude CLI not found on PATH. Set CLAUDE_BIN env var or ensure claude is in PATH.' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'done', code: 1 })}\n\n`);
+    res.end();
+    return;
+  }
+
+  const args = [
+    '-p',
+    `/process-ui-annotations ${docPath}`,
+    '--output-format', 'stream-json',
+    '--verbose',
+    '--allowedTools', 'Read,Edit,Write,Glob,Grep,Bash',
+  ];
+  console.log('[process] spawning:', claudeBin, args.join(' '));
+  res.write(`data: ${JSON.stringify({ type: 'text', content: 'Starting Claude...\n' })}\n\n`);
+
+  const child = spawn(claudeBin, args, {
+    cwd: ROOT,
+    env: { ...process.env, PATH: process.env.PATH + ':' + path.join(process.env.HOME || '', '.local', 'bin') },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  child.on('spawn', () => console.log('[process] child spawned, pid:', child.pid));
+
+  let buffer = '';
+
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk.toString();
+    // stream-json outputs one JSON object per line
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // keep incomplete line in buffer
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const parsed = JSON.parse(line);
+
+        if (parsed.type === 'assistant' && parsed.message?.content) {
+          // Extract text from the assistant message content array
+          for (const block of parsed.message.content) {
+            if (block.type === 'text' && block.text) {
+              res.write(`data: ${JSON.stringify({ type: 'text', content: block.text })}\n\n`);
+            } else if (block.type === 'tool_use') {
+              res.write(`data: ${JSON.stringify({ type: 'text', content: `\n[${block.name}] ` })}\n\n`);
+            }
+          }
+        } else if (parsed.type === 'result') {
+          res.write(`data: ${JSON.stringify({ type: 'result', content: parsed.result })}\n\n`);
+        }
+        // Skip system, user, rate_limit events silently
+      } catch (e) {
+        // Forward raw text as fallback
+        res.write(`data: ${JSON.stringify({ type: 'text', content: line })}\n\n`);
+      }
+    }
+  });
+
+  child.stderr.on('data', (chunk) => {
+    const text = chunk.toString();
+    console.log('[process] stderr:', text);
+    res.write(`data: ${JSON.stringify({ type: 'error', content: text })}\n\n`);
+  });
+
+  child.on('close', (code, signal) => {
+    console.log('[process] close: code=%s signal=%s', code, signal);
+    res.write(`data: ${JSON.stringify({ type: 'done', code: code ?? 0 })}\n\n`);
+    res.end();
+  });
+
+  child.on('error', (err) => {
+    res.write(`data: ${JSON.stringify({ type: 'error', content: 'Failed to start claude: ' + err.message })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'done', code: 1 })}\n\n`);
+    res.end();
+  });
+
+  // Kill child only if the client drops the SSE connection
+  let processDone = false;
+  child.on('close', () => { processDone = true; });
+  res.on('close', () => {
+    if (!processDone && !child.killed) {
+      console.log('[process] client disconnected, killing child');
+      child.kill();
+    }
+  });
+});
+
 // Main page - serve the shell HTML for any non-API route
 app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -251,6 +456,7 @@ const watcher = chokidar.watch(ROOT, {
     /(^|[\/\\])\./,       // dotfiles
     /node_modules/,
     /ui\//,                // don't watch ourselves
+    /\.annotations\//,     // annotation storage
   ],
   persistent: true,
   ignoreInitial: true,

@@ -3,6 +3,7 @@ import { initToolbar } from './toolbar.js';
 import { renderTasks, setupTaskInteractions } from './tasks.js';
 
 let tree = null;
+let isProcessing = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize editor
@@ -11,9 +12,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const editor = initEditor(editorContainer, bubbleMenu, {
     onNavigate: (path) => navigate(path),
+    onAnnotationsChanged: (count) => updateProcessButton(count),
   });
 
   initToolbar(bubbleMenu);
+
+  // Wire up Process button
+  document.getElementById('process-btn').addEventListener('click', startProcessing);
 
   // Load sidebar
   tree = await fetchJSON('/api/tree');
@@ -34,11 +39,127 @@ document.addEventListener('DOMContentLoaded', async () => {
   else if (hash) navigate(hash, false);
 });
 
+// --- Process with Claude ---
+
+function updateProcessButton(annotationCount) {
+  const btn = document.getElementById('process-btn');
+  const badge = document.getElementById('process-badge');
+  if (annotationCount > 0) {
+    btn.classList.remove('hidden');
+    badge.textContent = annotationCount;
+    badge.classList.remove('hidden');
+  } else {
+    btn.classList.add('hidden');
+    badge.classList.add('hidden');
+  }
+}
+
+async function startProcessing() {
+  const filePath = getCurrentPath();
+  if (!filePath || isProcessing) return;
+
+  isProcessing = true;
+  const btn = document.getElementById('process-btn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  // Show the progress modal
+  showProcessModal();
+
+  try {
+    const res = await fetch('/api/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath }),
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          appendToProcessModal(data);
+
+          if (data.type === 'done') {
+            // Reload the file to see changes
+            const raw = await fetchText(`/api/file?path=${encodeURIComponent(filePath)}`);
+            await loadFile(filePath, raw);
+          }
+        } catch (e) {
+          // skip unparseable lines
+        }
+      }
+    }
+  } catch (e) {
+    appendToProcessModal({ type: 'error', content: `Connection error: ${e.message}` });
+  } finally {
+    isProcessing = false;
+    btn.disabled = false;
+    btn.textContent = 'Process with Claude';
+  }
+}
+
+function showProcessModal() {
+  let modal = document.getElementById('process-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'process-modal';
+    modal.innerHTML = `
+      <div class="process-modal-header">
+        <span>Processing with Claude</span>
+        <button class="process-modal-close" title="Close">&times;</button>
+      </div>
+      <div class="process-modal-body"></div>
+    `;
+    document.getElementById('content-body').appendChild(modal);
+    modal.querySelector('.process-modal-close').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+  }
+  modal.querySelector('.process-modal-body').innerHTML = '';
+  modal.classList.remove('hidden');
+}
+
+function appendToProcessModal(data) {
+  const modal = document.getElementById('process-modal');
+  if (!modal) return;
+  const body = modal.querySelector('.process-modal-body');
+
+  if (data.type === 'text') {
+    const span = document.createElement('span');
+    span.textContent = data.content;
+    body.appendChild(span);
+  } else if (data.type === 'error') {
+    const div = document.createElement('div');
+    div.className = 'process-error';
+    div.textContent = data.content;
+    body.appendChild(div);
+  } else if (data.type === 'done') {
+    const div = document.createElement('div');
+    div.className = 'process-done';
+    div.textContent = data.code === 0 ? 'Done.' : `Finished with code ${data.code}`;
+    body.appendChild(div);
+  }
+
+  body.scrollTop = body.scrollHeight;
+}
+
 // --- Navigation ---
 
 async function navigate(filePath, pushState = true) {
   const raw = await fetchText(`/api/file?path=${encodeURIComponent(filePath)}`);
-  loadFile(filePath, raw);
+  await loadFile(filePath, raw);
 
   // Show editor, hide tasks
   document.getElementById('editor-view').classList.remove('hidden');
@@ -64,6 +185,7 @@ async function showTasks(pushState = true) {
 
   updateBreadcrumb('Tasks');
   updateActiveNav('__tasks__');
+  updateProcessButton(0); // hide process button on tasks view
 
   if (pushState) {
     history.pushState({ view: 'tasks' }, '', '#tasks');

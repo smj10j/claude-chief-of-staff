@@ -1,8 +1,16 @@
 # Chief of Staff UI
 
-Start the local web UI — a WYSIWYG markdown editor for browsing and editing work-agent content. Feels like Google Docs but saves as markdown.
+Manage the local web UI — a WYSIWYG markdown editor for browsing and editing work-agent content.
 
-## Steps
+## Arguments
+
+The argument string is: $ARGUMENTS
+
+Parse as a single token. Valid values: `start` (default if empty/omitted), `stop`.
+
+## Actions
+
+### start (default)
 
 1. Check if port 3737 is already in use:
    - If a server is already running there, just open the browser and report it's running
@@ -11,6 +19,12 @@ Start the local web UI — a WYSIWYG markdown editor for browsing and editing wo
 3. Wait for the server to be ready (check with `curl -s http://localhost:3737/ > /dev/null`)
 4. Open `http://localhost:3737` in the browser
 5. Report back to the user that the UI is running
+
+### stop
+
+1. Find any process listening on port 3737 (`lsof -ti:3737`)
+2. If found, kill it and confirm to the user
+3. If nothing is running, tell the user the server wasn't running
 
 ## What it is
 
