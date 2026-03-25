@@ -77,6 +77,8 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
 | `/review-launch-tracker` | Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches |
 | `/ui` | Start the Chief of Staff web UI — a WYSIWYG markdown editor at localhost:3737 |
+| `/publish-to-gdoc` | Render a markdown file into a formatted Google Doc (requires google-workspace MCP) |
+| `/process-ui-annotations [file]` | Process annotations left in the web UI — Claude reads your instructions and applies changes |
 | `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
 
 You can add your own commands by creating `.md` files in `.claude/commands/`.
@@ -88,11 +90,25 @@ The system includes a local web UI for browsing and editing your files in a Goog
 - Floating toolbar (select text for formatting)
 - Auto-save (changes write back to your markdown files)
 - Sidebar navigation for all people, meetings, projects, and reference files
+- Collapsible sidebar groups — major sections expanded, nested items (sessions, project files) collapsed by default
+- **Cmd+K quick search** — command palette for fuzzy file search with keyboard navigation
 - Task dashboard
 - Dark mode (follows system preference)
 - Cmd+click internal links to navigate between files
+- Live reload — changes from Claude or the filesystem appear automatically
 
-To start it, just type `/ui` in Claude Code. First run installs dependencies automatically (requires Node.js 18+). The UI runs at `http://localhost:3737`.
+### Annotations
+
+The UI supports inline annotations for collaborating with Claude asynchronously:
+
+1. **Select text** in the editor and click the pencil icon in the floating toolbar
+2. **Type an instruction** — what you want Claude to do with that section (rewrite, expand, research, restructure, etc.)
+3. The text highlights in amber. Annotations **persist immediately** — navigate away and they'll still be there when you come back.
+4. Click **"Process with Claude"** in the header to have Claude read your annotations and apply the changes, streaming progress in a modal overlay.
+
+This turns the UI into a two-way collaboration surface: you mark up documents with instructions, Claude carries them out. You can also trigger processing from the terminal with `/process-ui-annotations [file]`.
+
+To start the UI, type `/ui` in Claude Code. First run installs dependencies automatically (requires Node.js 18+). The UI runs at `http://localhost:3737`. Stop it with `/ui stop`.
 
 Edits you make in the browser save to disk, and changes Claude makes to your files show up in the browser automatically.
 
