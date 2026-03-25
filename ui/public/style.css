@@ -138,6 +138,17 @@ body {
   font-weight: 600;
   color: var(--text-secondary);
   margin-top: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.nav-group-header:hover {
+  color: var(--text);
+}
+
+/* Collapsible nested groups */
+.nav-group.collapsed .nav-group-children {
+  display: none;
 }
 
 .nav-item {
