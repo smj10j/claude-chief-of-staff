@@ -1,6 +1,7 @@
 import { initEditor, loadFile, getCurrentPath } from './editor.js';
 import { initToolbar } from './toolbar.js';
 import { renderTasks, setupTaskInteractions } from './tasks.js';
+import { initSearch, updateSearchTree } from './search.js';
 
 let tree = null;
 let isProcessing = false;
@@ -23,6 +24,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load sidebar
   tree = await fetchJSON('/api/tree');
   renderSidebar(tree);
+
+  // Search (Cmd+K)
+  initSearch(tree, (path) => {
+    if (path === '__tasks__') showTasks();
+    else navigate(path);
+  });
 
   // SSE for live reload
   setupSSE();
@@ -166,7 +173,7 @@ async function navigate(filePath, pushState = true) {
   document.getElementById('tasks-view').classList.add('hidden');
 
   updateBreadcrumb(filePath);
-  updateActiveNav(filePath);
+  updateActiveNav(filePath, { scroll: true });
 
   if (pushState) {
     history.pushState({ path: filePath }, '', `#${filePath}`);
@@ -184,7 +191,7 @@ async function showTasks(pushState = true) {
   document.getElementById('editor-view').classList.add('hidden');
 
   updateBreadcrumb('Tasks');
-  updateActiveNav('__tasks__');
+  updateActiveNav('__tasks__', { scroll: true });
   updateProcessButton(0); // hide process button on tasks view
 
   if (pushState) {
@@ -211,13 +218,19 @@ function renderSidebar(tree) {
       inner += `<div class="nav-group-header">${group.label}</div>`;
       for (const person of group.people) {
         const count = person.sessions.length;
-        inner += `<div class="nav-item" data-path="${person.readmePath}">
-          ${person.label}
+        inner += `<div class="nav-group collapsed">`;
+        inner += `<div class="nav-item nav-group-toggle" data-path="${person.readmePath}">
+          <span class="nav-item-label">${person.label}</span>
           ${count ? `<span class="badge">${count}</span>` : ''}
         </div>`;
-        for (const session of person.sessions) {
-          inner += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
+        if (count) {
+          inner += `<div class="nav-group-children">`;
+          for (const session of person.sessions) {
+            inner += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
+          }
+          inner += `</div>`;
         }
+        inner += `</div>`;
       }
     }
     return inner;
@@ -228,13 +241,19 @@ function renderSidebar(tree) {
     let inner = '';
     for (const meeting of tree.meetings) {
       const count = meeting.sessions.length;
-      inner += `<div class="nav-item" data-path="${meeting.readmePath}">
-        ${meeting.label}
+      inner += `<div class="nav-group collapsed">`;
+      inner += `<div class="nav-item nav-group-toggle" data-path="${meeting.readmePath}">
+        <span class="nav-item-label">${meeting.label}</span>
         ${count ? `<span class="badge">${count}</span>` : ''}
       </div>`;
-      for (const session of meeting.sessions) {
-        inner += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
+      if (count) {
+        inner += `<div class="nav-group-children">`;
+        for (const session of meeting.sessions) {
+          inner += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
+        }
+        inner += `</div>`;
       }
+      inner += `</div>`;
     }
     return inner;
   });
@@ -244,13 +263,22 @@ function renderSidebar(tree) {
     let inner = '';
     for (const project of tree.projects) {
       const mainFile = project.files.find(f => f.name === 'README') || project.files[0];
+      const subFiles = project.files.filter(f => f.name !== 'README');
+      inner += `<div class="nav-group collapsed">`;
       if (mainFile) {
-        inner += `<div class="nav-item" data-path="${mainFile.path}">${project.label}</div>`;
+        inner += `<div class="nav-item nav-group-toggle" data-path="${mainFile.path}">
+          <span class="nav-item-label">${project.label}</span>
+          ${subFiles.length ? `<span class="badge">${subFiles.length}</span>` : ''}
+        </div>`;
       }
-      for (const file of project.files) {
-        if (file.name === 'README') continue;
-        inner += `<div class="nav-item nav-sub-item" data-path="${file.path}">${file.name}</div>`;
+      if (subFiles.length) {
+        inner += `<div class="nav-group-children">`;
+        for (const file of subFiles) {
+          inner += `<div class="nav-item nav-sub-item" data-path="${file.path}">${file.name}</div>`;
+        }
+        inner += `</div>`;
       }
+      inner += `</div>`;
     }
     return inner;
   });
@@ -259,10 +287,13 @@ function renderSidebar(tree) {
   html += renderNavSection('Areas', () => {
     let inner = '';
     for (const area of tree.areas) {
-      inner += `<div class="nav-group-header">${area.label}</div>`;
+      inner += `<div class="nav-group collapsed">`;
+      inner += `<div class="nav-group-header nav-group-toggle">${area.label}</div>`;
+      inner += `<div class="nav-group-children">`;
       for (const file of area.files) {
         inner += `<div class="nav-item nav-sub-item" data-path="${file.path}">${file.name}</div>`;
       }
+      inner += `</div></div>`;
     }
     return inner;
   });
@@ -276,23 +307,65 @@ function renderSidebar(tree) {
     return inner;
   });
 
+  // Save collapse state before re-render
+  const collapsedSections = new Set();
+  nav.querySelectorAll('.nav-section.collapsed .nav-section-header').forEach(el => {
+    collapsedSections.add(el.textContent.trim());
+  });
+  const expandedGroups = new Set();
+  nav.querySelectorAll('.nav-group:not(.collapsed) .nav-group-toggle').forEach(el => {
+    expandedGroups.add(el.textContent.trim());
+  });
+
   nav.innerHTML = html;
 
-  // Event delegation
-  nav.addEventListener('click', (e) => {
-    const item = e.target.closest('.nav-item');
-    if (item) {
-      const view = item.dataset.view;
-      const path = item.dataset.path;
-      if (view === 'tasks') showTasks();
-      else if (path) navigate(path);
-      return;
-    }
-    const header = e.target.closest('.nav-section-header');
-    if (header) {
-      header.parentElement.classList.toggle('collapsed');
+  // Restore collapse state
+  nav.querySelectorAll('.nav-section-header').forEach(el => {
+    if (collapsedSections.has(el.textContent.trim())) {
+      el.parentElement.classList.add('collapsed');
     }
   });
+  nav.querySelectorAll('.nav-group-toggle').forEach(el => {
+    if (expandedGroups.has(el.textContent.trim())) {
+      el.closest('.nav-group')?.classList.remove('collapsed');
+    }
+  });
+
+  // Event delegation (only attach once)
+  if (!nav._hasClickHandler) {
+    nav._hasClickHandler = true;
+    nav.addEventListener('click', (e) => {
+      // Toggle nested groups
+      const groupToggle = e.target.closest('.nav-group-toggle');
+      if (groupToggle) {
+        const group = groupToggle.closest('.nav-group');
+        const clickedBadge = e.target.closest('.badge');
+        const clickedLabel = e.target.closest('.nav-item-label');
+        if (clickedBadge || (!clickedLabel && !groupToggle.dataset.path)) {
+          if (group) group.classList.toggle('collapsed');
+          return;
+        }
+        // Clicked the label — navigate AND expand
+        if (group) group.classList.remove('collapsed');
+        const path = groupToggle.dataset.path;
+        if (path) navigate(path);
+        return;
+      }
+
+      const item = e.target.closest('.nav-item');
+      if (item) {
+        const view = item.dataset.view;
+        const path = item.dataset.path;
+        if (view === 'tasks') showTasks();
+        else if (path) navigate(path);
+        return;
+      }
+      const header = e.target.closest('.nav-section-header');
+      if (header) {
+        header.parentElement.classList.toggle('collapsed');
+      }
+    });
+  }
 }
 
 function renderNavSection(label, contentFn) {
@@ -302,12 +375,25 @@ function renderNavSection(label, contentFn) {
   </div>`;
 }
 
-function updateActiveNav(activePath) {
+function updateActiveNav(activePath, { scroll = false } = {}) {
   document.querySelectorAll('.nav-item.active').forEach(el => el.classList.remove('active'));
+  let activeEl = null;
   if (activePath === '__tasks__') {
-    document.querySelector('.nav-item[data-view="tasks"]')?.classList.add('active');
+    activeEl = document.querySelector('.nav-item[data-view="tasks"]');
   } else {
-    document.querySelector(`.nav-item[data-path="${activePath}"]`)?.classList.add('active');
+    activeEl = document.querySelector(`.nav-item[data-path="${activePath}"]`);
+  }
+  if (activeEl) {
+    activeEl.classList.add('active');
+    if (scroll) {
+      // Ensure all parent sections and groups are expanded
+      const section = activeEl.closest('.nav-section');
+      if (section) section.classList.remove('collapsed');
+      const group = activeEl.closest('.nav-group');
+      if (group) group.classList.remove('collapsed');
+      // Scroll into view within the sidebar
+      activeEl.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
   }
 }
 
@@ -333,6 +419,7 @@ function setupSSE() {
       // Refresh sidebar tree
       tree = await fetchJSON('/api/tree');
       renderSidebar(tree);
+      updateSearchTree(tree);
       const cp = getCurrentPath();
       if (cp) updateActiveNav(cp);
 
