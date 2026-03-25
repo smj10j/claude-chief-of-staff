@@ -21,16 +21,7 @@ Store the resolved path as `$UPSTREAM` for the rest of the workflow.
 
 ### 1. Internal Consistency Check
 
-Before comparing to upstream, audit the local repo for internal inconsistencies. Check:
-
-- **CLAUDE.md people list vs. 1:1 folder structure** — does the people listing in CLAUDE.md match the actual folders in `areas/one-on-ones/`? Are relationship categories correct (direct-reports, skip-level-reports, peers, etc.)?
-- **CLAUDE.md commands list vs. actual commands** — does every file in `.claude/commands/` appear in the Custom Commands section?
-- **CLAUDE.md meetings list vs. meetings folders** — does the meetings listing match `areas/meetings/`?
-- **README.md vs. actual file structure** — does the file structure section reflect what actually exists?
-- **Stale GTD files** — are `someday-maybe.md`, `waiting-for.md` current? Are there completed items that should be cleared or files that should be deleted?
-- **Projects INDEX.md vs. project folders** — do all active projects in the index have folders? Are there orphaned project folders?
-
-Present any inconsistencies found and fix them (with confirmation) before proceeding to the upstream diff. This keeps the repo clean before sharing changes externally.
+Run `/internal-consistency-check` to audit the local repo for internal inconsistencies. Fix any findings before proceeding to the upstream diff — this keeps the repo clean before sharing changes externally.
 
 ### 2. Diff the Repos
 

@@ -70,6 +70,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc for mobile reading. Optionally pass a doc URL to update in-place.
 - `/process-ui-annotations [file]` — Process annotations left in the Chief of Staff UI. Reads highlighted text + instructions, applies changes, clears annotations. Triggered by the "Process with Claude" button in the UI, or run manually from terminal.
+- `/internal-consistency-check` — Audit repo for internal inconsistencies: missing READMEs, mismatched listings, orphaned folders, stale sessions
 - `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
 
 ## Git Workflow
@@ -87,6 +88,10 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
     - **Relationship**: `career`, `xfn` (for cross-functional or career-building tasks)
 - `tasks-archive.yaml` - completed tasks, same schema as tasks.yaml plus a `completed:` date. Organized by week completed. When marking a task done, move it from `tasks.yaml` to `tasks-archive.yaml` under the appropriate week header. Check this file when answering historical questions ("when did I finish X?").
 - `recurring.yaml` - tasks that repeat indefinitely (daily, weekly, etc). Never marked done. Always include when answering "what's on my list today?" alongside tasks.yaml.
+- `inbox.md` - GTD inbox for quick capture. Items here haven't been processed yet — triage them into tasks.yaml, someday-maybe.md, or delete.
+- `someday-maybe.md` - ideas and projects to revisit later. Not committed to, but worth keeping visible.
+- `waiting-for.md` - items delegated or blocked on someone else. Track who and when.
+- `reading-list.md` - articles, docs, and resources to read. Can include links and brief notes on why.
 - `style-guide.md` - writing style guide built from your actual messages over time
 - `google-docs-style-guide.md` - formatting conventions for Google Docs edited via Apps Script (bold patterns, spacing, lists, code blocks)
 
