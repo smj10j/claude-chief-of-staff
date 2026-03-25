@@ -18,7 +18,12 @@
     <main id="content">
       <div id="content-header">
         <div id="breadcrumb"></div>
-        <div id="save-status" class="save-status saved">Saved</div>
+        <div class="header-actions">
+          <button id="process-btn" class="btn btn-primary hidden" title="Process annotations with Claude">
+            Process with Claude <span id="process-badge" class="process-badge hidden">0</span>
+          </button>
+          <div id="save-status" class="save-status saved">Saved</div>
+        </div>
       </div>
       <div id="content-body">
         <!-- Tiptap editor -->

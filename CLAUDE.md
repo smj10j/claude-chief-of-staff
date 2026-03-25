@@ -68,6 +68,8 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
 - `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches
 - `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
+- `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc for mobile reading. Optionally pass a doc URL to update in-place.
+- `/process-ui-annotations [file]` — Process annotations left in the Chief of Staff UI. Reads highlighted text + instructions, applies changes, clears annotations. Triggered by the "Process with Claude" button in the UI, or run manually from terminal.
 - `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
 
 ## Git Workflow
