@@ -14,24 +14,6 @@ one-on-ones/
   xfn/               -- cross-functional partners
 ```
 
-## Per-Person Notes
-
-### Structure
-Each person's folder has two layers:
-
-**README.md** — Persistent context (updated over time, not overwritten per session)
-- Role, team, org context
-- Working style and interaction patterns
-- Key relationships they navigate
-- What's generally top of mind for them
-- Growth/career context (for direct reports)
-- Standing questions to keep in rotation
-- Link to shared Google Doc (used in post-session digest)
-
-**sessions/** — Temporal check-in notes (one file per 1:1)
-- Named by date: `2026-03-10.md`, `2026-03-17.md`, etc.
-- What we discussed, action items, follow-ups, observations
-
 ## How I Run 1:1s
 
 ### General Principles
@@ -77,6 +59,24 @@ Each person's folder has two layers:
 - Ask: "What could my team do better for you?"
 - Proactively help unblock things before they escalate
 - Build trust by following through
+
+## Per-Person Notes
+
+### Structure
+Each person's folder has two layers:
+
+**README.md** — Persistent context (updated over time, not overwritten per session)
+- Role, team, org context
+- Working style and interaction patterns
+- Key relationships they navigate
+- What's generally top of mind for them
+- Growth/career context (for direct reports)
+- Standing questions to keep in rotation
+- Link to shared Google Doc (used in post-session digest)
+
+**sessions/** — Temporal check-in notes (one file per 1:1)
+- Named by date: `2026-03-10.md`, `2026-03-17.md`, etc.
+- What we discussed, action items, follow-ups, observations
 
 ---
 
@@ -157,3 +157,6 @@ Each person's folder has two layers:
 | Topic didn't come up | Omit it entirely |
 | New topic not in prep | Add freely under any header |
 | Feedback on someone's manager (skip-levels) | Use `### On [Manager Name]` header |
+
+### Formatting Rules
+- **No em-dashes in copy/paste sections.** Use regular dashes/hyphens (`-`) in the Shared Agenda and any other section that will be copied into Google Docs or Slack. Em-dashes (`—`) don't copy/paste cleanly. Em-dashes are fine in Prep, Context, and other internal sections.
