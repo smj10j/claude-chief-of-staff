@@ -28,6 +28,7 @@ This is a personal work management system, not a software project. There are no 
 
 ## Comms Style
 <!-- Built automatically as you use the style guide. Leave blank initially. -->
+- When drafting messages, always offer to copy to clipboard via `pbcopy`. Terminal rendering adds leading spaces on wrapped lines, making inline drafts hard to copy/paste. Use `echo -n "message" | pbcopy` to put clean text directly on the clipboard.
 
 ## Preferences
 <!-- Personal workflow preferences. Some defaults to keep or customize: -->

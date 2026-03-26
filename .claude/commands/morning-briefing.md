@@ -89,3 +89,8 @@ This creates a running history of daily briefings, following the same date-based
 - If overdue tasks are piling up, proactively suggest a triage pass.
 - Prep FIRST, then write the briefing — so the briefing is the final, complete picture of the day.
 - **Always include file links** when referencing repo items. Prepped 1:1s and meetings should link to their session files. Tasks should link to `tasks.yaml`. Projects should link to their folder or `projects/INDEX.md`. The briefing should be a clickable hub.
+- **Relative link paths**: The briefing file lives at `areas/daily-briefings/sessions/YYYY-MM-DD.md` (3 levels deep from repo root). All relative links must account for this depth:
+  - To sibling `areas/` folders (one-on-ones, meetings): `../../one-on-ones/...`, `../../meetings/...`
+  - To repo root files (tasks.yaml, recurring.yaml): `../../../tasks.yaml`
+  - To projects: `../../../projects/...`
+  - **Do NOT use `../` — that only goes up to `daily-briefings/`, not to `areas/`.** Count from `areas/daily-briefings/sessions/` every time.
