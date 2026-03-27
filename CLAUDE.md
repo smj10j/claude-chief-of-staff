@@ -71,6 +71,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc for mobile reading. Optionally pass a doc URL to update in-place.
 - `/process-ui-annotations [file]` — Process annotations left in the Chief of Staff UI. Reads highlighted text + instructions, applies changes, clears annotations. Triggered by the "Process with Claude" button in the UI, or run manually from terminal.
+- `/task-export` — Export the task database to YAML files for backup or debugging
 - `/internal-consistency-check` — Audit repo for internal inconsistencies: missing READMEs, mismatched listings, orphaned folders, stale sessions
 - `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
 
@@ -80,16 +81,32 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - Local repo only, no remote push (unless you configure one)
 
 ## System
-- GTD-style tracking via markdown in this repo
-- `tasks.yaml` - structured task database (id, title, status, priority, due, project, tags, links, notes). **Active tasks only** (todo, in-progress). For finite tasks with a finish line only.
-  - `tags` field is a list. Conventions:
+- GTD-style tracking via SQLite database (`data/cos.db`) managed through a CLI
+- **Task CLI** (`bash data/task-cli.sh`) - primary interface for reading and writing tasks. Use this instead of editing files directly. Always use the `.sh` wrapper (not `node data/task-cli.js` directly) — it sources nvm to ensure Node 22+.
+  ```
+  bash data/task-cli.sh list                    # Active tasks (compact format)
+  bash data/task-cli.sh list --due-by today     # Tasks due today or earlier
+  bash data/task-cli.sh list --tag team:payments # Filter by tag
+  bash data/task-cli.sh list --archived         # Archived/completed tasks
+  bash data/task-cli.sh list --archived --since 2026-03-20  # Recent archive
+  bash data/task-cli.sh get <id>                # Single task details
+  bash data/task-cli.sh add "Task title" --due 2026-04-01 --priority high --tags work,admin
+  bash data/task-cli.sh update <id> --due 2026-04-15 --priority medium
+  bash data/task-cli.sh done <id>               # Mark done (auto-archives)
+  bash data/task-cli.sh archive <id>            # Drop without completing
+  bash data/task-cli.sh unarchive <id>          # Return to active list
+  bash data/task-cli.sh recurring               # List recurring tasks
+  bash data/task-cli.sh --help                  # Full reference
+  ```
+  - Use `--format json` for full task data (includes notes, links)
+  - Use `--format table` for human-readable terminal output
+  - Default `compact` format is tab-separated, optimized for token efficiency
+  - Tag conventions:
     - **Context**: `personal`, `work` (every task should have one)
     - **Type**: `admin`, `incident`, `comms`, `prep` (optional, use when useful for filtering)
     - **Team**: `team:<team-name>` (for team-specific work)
     - **Relationship**: `career`, `xfn` (for cross-functional or career-building tasks)
-- `tasks-archive.yaml` - completed tasks, same schema as tasks.yaml plus a `completed:` date. Organized by week completed. When marking a task done, move it from `tasks.yaml` to `tasks-archive.yaml` under the appropriate week header. Check this file when answering historical questions ("when did I finish X?").
-- `recurring.yaml` - tasks that repeat indefinitely (daily, weekly, etc). Never marked done. Always include when answering "what's on my list today?" alongside tasks.yaml.
-- `inbox.md` - GTD inbox for quick capture. Items here haven't been processed yet — triage them into tasks.yaml, someday-maybe.md, or delete.
+- `inbox.md` - GTD inbox for quick capture. Items here haven't been processed yet — triage them into the task database, someday-maybe.md, or delete.
 - `someday-maybe.md` - ideas and projects to revisit later. Not committed to, but worth keeping visible.
 - `waiting-for.md` - items delegated or blocked on someone else. Track who and when.
 - `reading-list.md` - articles, docs, and resources to read. Can include links and brief notes on why.
@@ -99,7 +116,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 ### Folder Structure
 - `projects/` - time-bound initiatives with a clear finish line
   - `projects/INDEX.md` - authoritative project registry (status, start/end dates, notes). Always update this when creating or completing a project.
-  - Tasks link to projects via the `project:` tag in `tasks.yaml` (tag value = project folder ID)
+  - Tasks link to projects via the `project` field in the task database (value = project folder ID)
 - `areas/` - ongoing responsibilities with no finish line (never archived)
   - `areas/one-on-ones/` - 1:1 system with per-person folders
     - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
@@ -121,7 +138,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 
 ### Chief of Staff UI
 - Local web UI at `http://localhost:3737` — WYSIWYG markdown editor powered by Tiptap
-- Start with `/ui` command. First run installs Node dependencies and builds automatically (requires Node.js 18+)
+- Start with `/ui` command. First run installs Node dependencies and builds automatically (requires Node.js 22+)
 - Source lives in `ui/` directory: `src/` (ES modules), `build.js` (esbuild bundler), `server.js` (Express), `start.sh` (launcher)
 - Edits in the UI auto-save back to the markdown files on disk. Changes from Claude or the filesystem trigger a live reload in the browser via SSE.
 
