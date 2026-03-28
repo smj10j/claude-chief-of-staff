@@ -5,6 +5,7 @@ import { initSearch, updateSearchTree } from './search.js';
 
 let tree = null;
 let isProcessing = false;
+let annotatedFiles = new Set(); // paths with unprocessed annotations
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize editor
@@ -13,7 +14,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const editor = initEditor(editorContainer, bubbleMenu, {
     onNavigate: (path) => navigate(path),
-    onAnnotationsChanged: (count) => updateProcessButton(count),
+    onAnnotationsChanged: (count) => {
+      updateProcessButton(count);
+      refreshAnnotationIndicators();
+    },
   });
 
   initToolbar(bubbleMenu);
@@ -24,12 +28,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load sidebar
   tree = await fetchJSON('/api/tree');
   renderSidebar(tree);
+  await refreshAnnotationIndicators();
 
   // Search (Cmd+K)
   initSearch(tree, (path) => {
     if (path === '__tasks__') showTasks();
     else navigate(path);
   });
+
+  // Breadcrumb navigation
+  setupBreadcrumbNav();
 
   // SSE for live reload
   setupSSE();
@@ -162,6 +170,53 @@ function appendToProcessModal(data) {
   body.scrollTop = body.scrollHeight;
 }
 
+// --- Annotation indicators in sidebar ---
+
+async function refreshAnnotationIndicators() {
+  try {
+    const data = await fetchJSON('/api/annotations/list');
+    const list = data.files || data;
+    annotatedFiles = new Set(list.map(f => f.path));
+  } catch (e) {
+    annotatedFiles = new Set();
+  }
+  applyAnnotationIndicators();
+}
+
+function applyAnnotationIndicators() {
+  // Clear all existing indicators
+  document.querySelectorAll('.annotation-dot').forEach(el => el.remove());
+
+  // Add dots to nav items whose data-path is in annotatedFiles
+  for (const path of annotatedFiles) {
+    const item = document.querySelector(`.nav-item[data-path="${path}"]`);
+    if (!item) continue;
+    item.appendChild(createDot());
+
+    // Bubble up: mark parent nav-group toggle and nav-section-header
+    const group = item.closest('.nav-group');
+    if (group) {
+      const toggle = group.querySelector(':scope > .nav-group-toggle');
+      if (toggle && !toggle.querySelector('.annotation-dot')) {
+        toggle.appendChild(createDot());
+      }
+    }
+    const section = item.closest('.nav-section');
+    if (section) {
+      const header = section.querySelector(':scope > .nav-section-header');
+      if (header && !header.querySelector('.annotation-dot')) {
+        header.appendChild(createDot());
+      }
+    }
+  }
+}
+
+function createDot() {
+  const dot = document.createElement('span');
+  dot.className = 'annotation-dot';
+  return dot;
+}
+
 // --- Navigation ---
 
 async function navigate(filePath, pushState = true) {
@@ -288,7 +343,7 @@ function renderSidebar(tree) {
     let inner = '';
     for (const area of tree.areas) {
       inner += `<div class="nav-group collapsed">`;
-      inner += `<div class="nav-group-header nav-group-toggle">${area.label}</div>`;
+      inner += `<div class="nav-group-header nav-group-toggle">${area.label}${area.files.length ? ` <span class="badge">${area.files.length}</span>` : ''}</div>`;
       inner += `<div class="nav-group-children">`;
       for (const file of area.files) {
         inner += `<div class="nav-item nav-sub-item" data-path="${file.path}">${file.name}</div>`;
@@ -406,7 +461,41 @@ function updateBreadcrumb(filePath) {
     return;
   }
   const parts = filePath.split('/');
-  bc.innerHTML = parts.map(p => `<span>${p}</span>`).join('<span class="sep">/</span>');
+  bc.innerHTML = parts.map((p, i) => {
+    const isLast = i === parts.length - 1;
+    if (isLast) return `<span class="current">${p}</span>`;
+    const partialPath = parts.slice(0, i + 1).join('/');
+    return `<span data-breadcrumb-path="${partialPath}">${p}</span>`;
+  }).join('<span class="sep">/</span>');
+}
+
+function setupBreadcrumbNav() {
+  const bc = document.getElementById('breadcrumb');
+  bc.addEventListener('click', (e) => {
+    const span = e.target.closest('[data-breadcrumb-path]');
+    if (!span) return;
+    const prefix = span.dataset.breadcrumbPath;
+    // Find the best matching nav item in the sidebar
+    const nav = document.getElementById('sidebar-nav');
+    const allItems = nav.querySelectorAll('[data-path]');
+    let bestMatch = null;
+    let bestLen = 0;
+    for (const item of allItems) {
+      const path = item.dataset.path;
+      // Exact prefix match or the path starts with prefix/
+      if (path === prefix || path.startsWith(prefix + '/')) {
+        // Prefer shortest matching path (closest to the directory level)
+        if (!bestMatch || path.length < bestLen) {
+          bestMatch = item;
+          bestLen = path.length;
+        }
+      }
+    }
+    if (bestMatch) {
+      const path = bestMatch.dataset.path;
+      navigate(path);
+    }
+  });
 }
 
 // --- SSE ---
@@ -420,6 +509,7 @@ function setupSSE() {
       tree = await fetchJSON('/api/tree');
       renderSidebar(tree);
       updateSearchTree(tree);
+      await refreshAnnotationIndicators();
       const cp = getCurrentPath();
       if (cp) updateActiveNav(cp);
 

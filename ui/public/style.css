@@ -133,6 +133,9 @@ body {
 }
 
 .nav-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 4px 20px 4px 28px;
   font-size: 11px;
   font-weight: 600;
@@ -173,7 +176,8 @@ body {
   font-weight: 500;
 }
 
-.nav-item .badge {
+.nav-item .badge,
+.nav-group-header .badge {
   font-size: 11px;
   color: var(--text-secondary);
   background: var(--bg-code);
@@ -194,6 +198,23 @@ body {
 .nav-special {
   padding-left: 28px;
   font-weight: 500;
+}
+
+/* Annotation indicator dot — subtle signal for unprocessed annotations */
+.annotation-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(250, 204, 21, 0.7);
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .annotation-dot {
+    background: rgba(250, 204, 21, 0.5);
+  }
 }
 
 /* --- Content --- */
@@ -235,6 +256,15 @@ main {
 
 #breadcrumb .sep:hover {
   color: var(--border);
+}
+
+#breadcrumb .current {
+  cursor: default;
+  color: var(--text-primary);
+}
+
+#breadcrumb .current:hover {
+  color: var(--text-primary);
 }
 
 #content-body {
@@ -482,6 +512,17 @@ main {
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* Table cell selection (ProseMirror CellSelection) */
+.editor-content .selectedCell {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .editor-content .selectedCell {
+    background: rgba(91, 141, 239, 0.18);
+  }
 }
 
 /* --- Bubble Menu / Floating Toolbar --- */

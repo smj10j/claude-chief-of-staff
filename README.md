@@ -2,7 +2,7 @@
 
 A personal work management system powered by [Claude Code](https://claude.ai/code), inspired by Getting Things Done (GTD).
 
-Claude acts as your chief of staff — managing tasks, preparing for meetings, drafting comms, and maintaining context across sessions. Everything lives in plain markdown and YAML files in a local git repo. No databases, no SaaS, no vendor lock-in.
+Claude acts as your chief of staff — managing tasks, preparing for meetings, drafting comms, and maintaining context across sessions. Everything lives locally — markdown files and a SQLite database in a git repo on your machine. No SaaS, no vendor lock-in.
 
 ## Who it's for
 
@@ -10,7 +10,7 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 
 ## What it does
 
-- **Task tracking** via structured YAML with priorities, due dates, projects, and tags
+- **Task tracking** via SQLite database with a CLI — priorities, due dates, projects, and tags
 - **1:1 prep** — reads persistent context about each person, researches recent activity, generates session agendas
 - **Meeting prep** — same pattern for recurring team meetings and forums
 - **Project lifecycle** — tracks active projects from start to archive
@@ -20,7 +20,7 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 
 ## Philosophy
 
-- **Local-first**: everything is markdown/YAML in a git repo on your machine
+- **Local-first**: everything is markdown + SQLite in a git repo on your machine
 - **Areas vs. projects**: ongoing responsibilities (areas) never complete; time-bound work (projects) has a finish line and gets archived
 - **Context over memory**: Claude reads your files each session rather than relying on chat history
 - **Progressive personalization**: starts generic, learns your style and preferences over time
@@ -29,7 +29,7 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 
 ### Quick install
 
-Make sure you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, then run:
+Make sure you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Node.js 22+ installed (for the built-in SQLite module), then run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/smj10j/claude-chief-of-staff/main/install.sh | bash
@@ -79,6 +79,8 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/ui` | Start the Chief of Staff web UI — a WYSIWYG markdown editor at localhost:3737 |
 | `/publish-to-gdoc` | Render a markdown file into a formatted Google Doc (requires google-workspace MCP) |
 | `/process-ui-annotations [file]` | Process annotations left in the web UI — Claude reads your instructions and applies changes |
+| `/task-export` | Export the task database to YAML files for backup or debugging |
+| `/internal-consistency-check` | Audit repo for internal inconsistencies: missing READMEs, mismatched listings, stale sessions |
 | `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
 
 You can add your own commands by creating `.md` files in `.claude/commands/`.
@@ -108,7 +110,7 @@ The UI supports inline annotations for collaborating with Claude asynchronously:
 
 This turns the UI into a two-way collaboration surface: you mark up documents with instructions, Claude carries them out. You can also trigger processing from the terminal with `/process-ui-annotations [file]`.
 
-To start the UI, type `/ui` in Claude Code. First run installs dependencies automatically (requires Node.js 18+). The UI runs at `http://localhost:3737`. Stop it with `/ui stop`.
+To start the UI, type `/ui` in Claude Code. First run installs dependencies automatically (requires Node.js 22+). The UI runs at `http://localhost:3737`. Stop it with `/ui stop`.
 
 Edits you make in the browser save to disk, and changes Claude makes to your files show up in the browser automatically.
 
@@ -130,14 +132,19 @@ claude-chief-of-staff/
   CLAUDE.md              # System instructions + your personal context
   style-guide.md         # Your writing style (built over time)
   google-docs-style-guide.md  # Google Docs formatting via Apps Script
-  tasks.yaml             # Structured task database (active tasks only)
-  tasks-archive.yaml     # Completed tasks organized by week
-  recurring.yaml         # Tasks that repeat indefinitely
   inbox.md               # Raw capture - process into other lists
   waiting-for.md         # Delegated items you're tracking
   someday-maybe.md       # Ideas for later
   reading-list.md        # Articles, videos, resources to consume
   .claude/commands/      # Custom slash commands
+  .nvmrc                 # Node.js version (22+ required for built-in SQLite)
+  data/
+    cos.db               # SQLite task database (auto-created on first run)
+    task-cli.js           # Task CLI (list, add, done, archive, etc.)
+    task-cli.sh           # nvm-aware wrapper — always use this, not node directly
+    task-db.js            # Shared data access module (used by CLI and UI)
+    migrations/           # SQL schema migrations (applied automatically)
+    tests/                # Unit and integration tests (node --test)
   ui/                    # Chief of Staff web UI (WYSIWYG editor, start with /ui)
   projects/
     INDEX.md             # Project registry (active, on hold, archived)
