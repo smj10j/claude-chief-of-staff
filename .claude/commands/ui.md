@@ -8,23 +8,14 @@ The argument string is: $ARGUMENTS
 
 Parse as a single token. Valid values: `start` (default if empty/omitted), `stop`.
 
-## Actions
+## How to run
 
-### start (default)
+The start script (`ui/start.sh`) handles everything: port checks, dependency installation, building, starting the server, waiting for readiness, and opening the browser. Do NOT reimplement any of this logic manually.
 
-1. Check if port 3737 is already in use:
-   - If a server is already running there, just open the browser and report it's running
-   - If something else is using the port, tell the user
-2. Run `ui/start.sh` in the background (installs dependencies and builds on first run — may take 10-15 seconds the first time)
-3. Wait for the server to be ready (check with `curl -s http://localhost:3737/ > /dev/null`)
-4. Open `http://localhost:3737` in the browser
-5. Report back to the user that the UI is running
+- **start** (default): Run `bash ui/start.sh` and report the output to the user.
+- **stop**: Run `bash ui/start.sh stop` and report the output to the user.
 
-### stop
-
-1. Find any process listening on port 3737 (`lsof -ti:3737`)
-2. If found, kill it and confirm to the user
-3. If nothing is running, tell the user the server wasn't running
+That's it. Just run the script and relay what it says.
 
 ## What it is
 

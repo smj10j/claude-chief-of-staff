@@ -10,7 +10,15 @@ Each meeting gets a folder with:
 
 ## Active Meetings
 
-| Meeting | Cadence | Attendees | Shared Doc |
+| Meeting | Cadence | Attendees | Folder |
 |---|---|---|---|
+| MyPay - Eng Leadership Weekly | Weekly | ~9 | `mypay-eng-leadership-weekly/` |
+| MyPay - Eng Managers Weekly | Weekly | ~5 | `mypay-eng-managers-weekly/` |
+| Lending Eng Leadership Weekly | Weekly | ~10 | `lending-eng-leadership-weekly/` |
+| Expansion Weekly Eng Discussion | Weekly | ~4 | `expansion-weekly-eng-discussion/` |
+| MyPay Arch Guild | Weekly | ~4 | `mypay-arch-guild/` |
+| FrAIday Finds | Weekly (Fri) | ~7 | `fraiday-finds/` |
+| DTE Progress Review | Monthly | ~32 | `dte-progress-review/` |
+| Lending XFN Insights Hour | Semi-monthly | ~14 | `lending-xfn-insights-hour/` |
 
-<!-- Populated during /init -->
+**Not tracked** (attend but don't prep): standups, all-hands, large XFN syncs (50+ people), sprint ceremonies, collateral reviews.

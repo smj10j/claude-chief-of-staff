@@ -14,6 +14,44 @@ one-on-ones/
   xfn/               -- cross-functional partners
 ```
 
+## Active 1:1s
+
+### Manager
+| Person | Cadence | Folder |
+|--------|---------|--------|
+| Vinodh Sundararajan | Weekly | `manager/vinodh-sundararajan/` |
+
+### Direct Reports
+| Person | Role | Cadence | Folder |
+|--------|------|---------|--------|
+| Prashant Tiwari | EM | Weekly/biweekly | `direct-reports/prashant-tiwari/` |
+| Aashna Agarwal | EM | 2x/week | `direct-reports/aashna-agarwal/` |
+| Justin Sookikian | EM | Weekly/biweekly | `direct-reports/justin-sookikian/` |
+| Daniel Cash | Staff SWE | Weekly | `direct-reports/daniel-cash/` |
+| Bhargava Chinthirla | Staff SWE | Weekly/biweekly | `direct-reports/bhargava-chinthirla/` |
+
+### Peers
+| Person | Role | Cadence | Folder |
+|--------|------|---------|--------|
+| John Kelly | Staff Engineer | Weekly | `peers/john-kelly/` |
+
+### Skip-Level Reports
+| Person | Reports To | Cadence | Folder |
+|--------|-----------|---------|--------|
+| Jacen Li | Aashna | Weekly/biweekly | `skip-level-reports/jacen-li/` |
+| Michelle Su | Aashna | Weekly/biweekly | `skip-level-reports/michelle-su/` |
+| Rutika Banakar | Aashna | Weekly/biweekly | `skip-level-reports/rutika-banakar/` |
+| Matan Perry | Justin | Weekly/biweekly | `skip-level-reports/matan-perry/` |
+
+### XFN Partners
+| Person | Role | Cadence | Folder |
+|--------|------|---------|--------|
+| Aaron Salls | Manager, Product | 3x/week | `xfn/aaron-salls/` |
+| Arthur Tonelli | Senior SWE | Weekly/biweekly | `xfn/arthur-tonelli/` |
+| Fan Wei | Senior SWE | Weekly/biweekly | `xfn/fan-wei/` |
+
+---
+
 ## How I Run 1:1s
 
 ### General Principles
