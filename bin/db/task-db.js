@@ -1,14 +1,14 @@
 // Shared data access module for task database.
 // Single source of truth for all SQLite operations.
-// Both ui/server.js and data/task-cli.js import this module.
+// Both ui/server.js and bin/db/task-cli.js import this module.
 // Neither consumer writes SQL directly.
 
 const { DatabaseSync } = require('node:sqlite');
 const fs = require('fs');
 const path = require('path');
 
-let ROOT = path.resolve(__dirname, '..');
-let DB_PATH = path.join(__dirname, 'cos.db');
+let ROOT = path.resolve(__dirname, '..', '..');
+let DB_PATH = path.join(ROOT, 'data', 'cos.db');
 const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
 
 // Data migration version - tracked in schema_migrations
@@ -103,7 +103,7 @@ function initialize() {
   runMigrations(database);
 
   // Check if YAML data migration is needed
-  const yamlExists = fs.existsSync(path.join(ROOT, 'tasks.yaml'));
+  const yamlExists = fs.existsSync(path.join(ROOT, 'data', 'files', 'tasks.yaml'));
   const migrated = hasDataMigration(database);
 
   if (yamlExists && !migrated) {
@@ -128,14 +128,15 @@ function initialize() {
 function migrateFromYaml(database) {
   // js-yaml lives in ui/node_modules (installed by start.sh)
   const yaml = require(path.join(ROOT, 'ui', 'node_modules', 'js-yaml'));
+  const FILES_DIR = path.join(ROOT, 'data', 'files');
   console.log('\nMigrating task data from YAML to SQLite...');
 
   const counts = { active: 0, archived: 0, recurring: 0, tags: 0, links: 0, errors: 0 };
 
   // Load YAML files
-  const tasksPath = path.join(ROOT, 'tasks.yaml');
-  const archivePath = path.join(ROOT, 'tasks-archive.yaml');
-  const recurringPath = path.join(ROOT, 'recurring.yaml');
+  const tasksPath = path.join(FILES_DIR, 'tasks.yaml');
+  const archivePath = path.join(FILES_DIR, 'tasks-archive.yaml');
+  const recurringPath = path.join(FILES_DIR, 'recurring.yaml');
 
   let activeTasks = [];
   let archivedTasks = [];

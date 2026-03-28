@@ -40,7 +40,7 @@ Run a **comprehensive diff** between this repo and `$UPSTREAM`. Do not cherry-pi
 
 ```bash
 # From the personal repo root:
-diff -rq . $UPSTREAM --exclude=node_modules --exclude=.git --exclude='*.db' --exclude='*.db-*' --exclude=bundle.js --exclude='bundle.js.map' --exclude=.annotations --exclude=cos-dev | grep -v 'Only in ./areas/' | grep -v 'Only in ./projects/' | grep -v 'Only in ./archive/'
+diff -rq . $UPSTREAM --exclude=node_modules --exclude=.git --exclude='*.db' --exclude='*.db-*' --exclude=bundle.js --exclude='bundle.js.map' --exclude=.annotations --exclude=cos-dev | grep -v 'Only in ./data/'
 ```
 
 This surfaces every file that differs, including static assets (CSS, HTML), build scripts, and source files — not just markdown. Then classify each difference using the categories below:
@@ -49,12 +49,12 @@ This surfaces every file that differs, including static assets (CSS, HTML), buil
 - `CLAUDE.md` — compare the "System Conventions" section (below the `---` separator). Ignore the personal context section above it.
 - `.claude/commands/` — any commands here that don't exist upstream
 - `README.md` — structural/documentation changes
-- `areas/one-on-ones/README.md` — 1:1 workflow docs
-- `areas/meetings/README.md` — meeting workflow docs
-- `areas/career/README.md` — career tracking scaffold
-- `style-guide.md` — structural changes (not personal content)
-- `data/` directory (task-db.js, task-cli.sh, task-cli.js, migrations) — schema and module changes only
-- `projects/INDEX.md` — template structure changes only
+- `data/files/areas/one-on-ones/README.md` — 1:1 workflow docs
+- `data/files/areas/meetings/README.md` — meeting workflow docs
+- `data/files/areas/career/README.md` — career tracking scaffold
+- `data/files/style-guide.md` — structural changes (not personal content)
+- `bin/db/` directory (task-db.js, task-cli.sh, task-cli.js, migrations) — schema and module changes only
+- `data/files/projects/INDEX.md` — template structure changes only
 - `.gitignore` — any additions
 
 **Code files** (often generalizable — these are just as important as config/docs):
@@ -63,20 +63,17 @@ This surfaces every file that differs, including static assets (CSS, HTML), buil
 - `ui/build.js` — client bundle build script
 - `ui/src/*.js` — all frontend source files (editor, main, toolbar, search, annotations, tasks)
 - `ui/public/` — HTML shell, CSS, static assets
-- `data/task-db.js` — shared data access module
-- `data/task-cli.js` — CLI implementation
-- `data/task-cli.sh` — nvm-aware shell wrapper
-- `data/migrations/` — SQL schema files
-- `data/tests/` — test suites
+- `bin/db/task-db.js` — shared data access module
+- `bin/db/task-cli.js` — CLI implementation
+- `bin/db/task-cli.sh` — nvm-aware shell wrapper
+- `bin/db/migrations/` — SQL schema files
+- `bin/db/tests/` — test suites
 
 **Important:** Code improvements are just as portable as documentation changes. New API endpoints, UI features, editor enhancements, build script improvements, and test coverage all belong upstream. Don't limit the diff to just markdown and config files.
 
 **Personal files** (never upstream):
-- Anything in `areas/one-on-ones/<person>/` (actual 1:1 data)
-- Anything in `areas/meetings/<meeting>/sessions/` (actual meeting notes)
-- Task content in YAML files
-- `areas/career/` personal content
-- `areas/comms/` drafts
+- Anything in `data/files/` that contains user-specific content (1:1 sessions, meeting notes, task data, career notes, comms drafts)
+- The `data/cos.db` database
 - The personal context section of CLAUDE.md (Role, Teams, Key People, Comms Style, Preferences, Integrations)
 
 ### 3. Categorize Changes
@@ -123,6 +120,6 @@ Show what was ported, what was skipped, and any remaining items for next time.
 - When in doubt about whether something is personal or generalizable, ask.
 - Preserve the template's style — it uses HTML comments for examples and generic language.
 - The template should work for any engineering manager/tech lead, not just the current user.
-- Don't over-templatize. If a command references `data/task-cli.sh` or `areas/one-on-ones/`, that's system structure — keep it. Only templatize things like specific names, teams, and channels.
+- Don't over-templatize. If a command references `bin/db/task-cli.sh` or `data/files/areas/one-on-ones/`, that's system structure — keep it. Only templatize things like specific names, teams, and channels.
 - When porting commands, replace first-person name references with "you" or remove them. The CLAUDE.md personal context section will have the user's name — commands don't need to hardcode it.
 - Always work on a branch and offer a PR. Never push directly to main.

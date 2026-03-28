@@ -7,21 +7,21 @@ If no name is provided, check today's calendar for upcoming 1:1s and ask which o
 ## Steps
 
 ### 1. Find the Person
-- Search `areas/one-on-ones/` for a folder matching the name (check direct-reports, peers, manager, skip-level, skip-level-reports, xfn)
+- Search `data/files/areas/one-on-ones/` for a folder matching the name (check direct-reports, peers, manager, skip-level, skip-level-reports, xfn)
 - Read their `README.md` for persistent context
 - Read their most recent session file in `sessions/`
 - If no folder exists, say so and offer to create one
 
 ### 2. Gather Context
 Run in parallel:
-- **Tasks**: Search `tasks.yaml` for any tasks tagged with their team or mentioning their name
+- **Tasks**: Run `bash bin/db/task-cli.sh list --format json` and search for tasks tagged with their team or mentioning their name
 - **Calendar**: Check today's calendar for the meeting time and any adjacent meetings. **Check the other person's RSVP status** — if they haven't accepted, have declined, or are marked as tentative, flag it prominently at the top of the prep (e.g., "[Name] has not accepted this invite — confirm they're available before prepping further"). Also check for any OOO signals from Slack/comms.
 - **Signals**: If a Slack/comms integration is available, search for recent messages from or mentioning this person (past week). Look for threads they started, decisions made, issues raised
 - **Shared Doc**: If the README has a shared Google Doc link, note it for reference (don't read unless specifically asked — it may be long)
-- **Projects**: Check if any active projects in `projects/INDEX.md` involve this person
+- **Projects**: Check if any active projects in `data/files/projects/INDEX.md` involve this person
 
 ### 3. Generate Session File
-Create a new session file at `areas/one-on-ones/[category]/[person]/sessions/YYYY-MM-DD.md` following the format defined in `areas/one-on-ones/README.md`.
+Create a new session file at `data/files/areas/one-on-ones/[category]/[person]/sessions/YYYY-MM-DD.md` following the format defined in `data/files/areas/one-on-ones/README.md`.
 
 The session file MUST start with a `## Shared Agenda` section — a compressed, copy/paste-ready list for the shared Google Doc. Each item should be a question or topic to check in on. Keep it tight, no background context.
 
@@ -37,7 +37,7 @@ Offer to copy the Shared Agenda to clipboard via pbcopy for easy pasting into th
 
 ## Rules
 - Always read the README and last session before generating anything.
-- Follow the session workflow defined in `areas/one-on-ones/README.md`.
+- Follow the session workflow defined in `data/files/areas/one-on-ones/README.md`.
 - Don't repeat context the person already knows — the shared agenda is for structuring the conversation, not lecturing.
 - If the README has "Next Session Topics", always include them and note that they came from a prior session.
 - After the meeting, the user will add raw notes. They can ask Claude to digest them separately.

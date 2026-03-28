@@ -129,33 +129,38 @@ These are configured in the `## Integrations` section of CLAUDE.md during or aft
 
 ```
 claude-chief-of-staff/
-  CLAUDE.md              # System instructions + your personal context
-  style-guide.md         # Your writing style (built over time)
-  google-docs-style-guide.md  # Google Docs formatting via Apps Script
-  inbox.md               # Raw capture - process into other lists
-  waiting-for.md         # Delegated items you're tracking
-  someday-maybe.md       # Ideas for later
-  reading-list.md        # Articles, videos, resources to consume
-  .claude/commands/      # Custom slash commands
-  .nvmrc                 # Node.js version (22+ required for built-in SQLite)
-  data/
-    cos.db               # SQLite task database (auto-created on first run)
-    task-cli.js           # Task CLI (list, add, done, archive, etc.)
-    task-cli.sh           # nvm-aware wrapper — always use this, not node directly
-    task-db.js            # Shared data access module (used by CLI and UI)
-    migrations/           # SQL schema migrations (applied automatically)
-    tests/                # Unit and integration tests (node --test)
-  ui/                    # Chief of Staff web UI (WYSIWYG editor, start with /ui)
-  projects/
-    INDEX.md             # Project registry (active, on hold, archived)
-    <project-id>/        # One folder per active project
-  areas/
-    one-on-ones/         # 1:1 system (per-person folders with README + sessions)
-    meetings/            # Recurring meetings (same pattern)
-    daily-briefings/     # Morning briefing history (sessions/YYYY-MM-DD.md)
-    career/              # Promotion tracking, growth plans
-    comms/               # Drafted messages
-  archive/               # Completed projects (moved from projects/)
+  CLAUDE.md                # System instructions + your personal context
+  .claude/commands/        # Custom slash commands
+  .nvmrc                   # Node.js version (22+ required for built-in SQLite)
+  bin/                     # Tooling scripts (template code)
+    md-to-gdoc-payload.js  # Google Docs publishing helper
+    db/                    # Task database tooling
+      task-cli.sh          # nvm-aware wrapper — always use this
+      task-cli.js          # Task CLI (list, add, done, archive, etc.)
+      task-db.js           # Shared data access module (used by CLI and UI)
+      migrations/          # SQL schema migrations (applied automatically)
+      tests/               # Unit and integration tests (node --test)
+  data/                    # All user-specific data
+    cos.db                 # SQLite task database (auto-created on first run)
+    files/                 # User content files
+      inbox.md             # Raw capture - process into other lists
+      waiting-for.md       # Delegated items you're tracking
+      someday-maybe.md     # Ideas for later
+      reading-list.md      # Articles, videos, resources to consume
+      style-guide.md       # Your writing style (built over time)
+      google-docs-style-guide.md  # Google Docs formatting via Apps Script
+      projects/
+        INDEX.md           # Project registry (active, on hold, archived)
+        <project-id>/      # One folder per active project
+      areas/
+        one-on-ones/       # 1:1 system (per-person folders with README + sessions)
+        meetings/          # Recurring meetings (same pattern)
+        daily-briefings/   # Morning briefing history (sessions/YYYY-MM-DD.md)
+        career/            # Promotion tracking, growth plans
+        comms/             # Drafted messages
+      archive/             # Completed projects (moved from projects/)
+  ui/                      # Chief of Staff web UI (WYSIWYG editor, start with /ui)
+  cos-dev/                 # Development documentation (PRDs, implementation loop)
 ```
 
 ## How it evolves

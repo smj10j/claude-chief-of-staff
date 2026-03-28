@@ -13,23 +13,23 @@ After the Agent returns, combine its findings with the calendar preview, present
 ## Steps (run data gathering in parallel)
 
 ### 1. What Got Done
-- Run `bash data/task-cli.sh list --archived --since $(date -v-monday +%Y-%m-%d) --format json` for tasks completed this week
+- Run `bash bin/db/task-cli.sh list --archived --since $(date -v-monday +%Y-%m-%d) --format json` for tasks completed this week
 - Run `git log --oneline --since="last monday"` to see what changed
 - Summarize accomplishments — group by project/area
 
 ### 2. Task Triage
-- Run `bash data/task-cli.sh list --format json` — identify all overdue tasks
+- Run `bash bin/db/task-cli.sh list --format json` — identify all overdue tasks
 - For each overdue task: recommend re-date, drop, or escalate
 - Flag any tasks that have been overdue for more than a week — these need a decision, not another re-date
 - Present the list and ask for confirmation before making changes
 
 ### 3. Project Health Check
-- Read `projects/INDEX.md` — check active projects
+- Read `data/files/projects/INDEX.md` — check active projects
 - For each active project, read the README and note: status, next milestone, any blockers
 - Flag projects with no activity this week
 
 ### 4. 1:1 Housekeeping
-- Check `areas/one-on-ones/` for any READMEs with "Next Session Topics" that haven't been addressed
+- Check `data/files/areas/one-on-ones/` for any READMEs with "Next Session Topics" that haven't been addressed
 - Flag any direct reports without a session file this week
 
 ### 5. Next Week Preview
@@ -38,7 +38,7 @@ After the Agent returns, combine its findings with the calendar preview, present
 - Flag any days that are packed vs. have space for deep work
 
 ### 6. Recurring Items
-- Run `bash data/task-cli.sh recurring --format json` — anything that needs updating or adding?
+- Run `bash bin/db/task-cli.sh recurring --format json` — anything that needs updating or adding?
 
 ## Output Format
 

@@ -12,15 +12,15 @@ Audit the local work-agent repo for internal inconsistencies. Fix anything found
 
 **Call 1 — Bash: full repo structure + task data in one shot**
 ```bash
-echo "=== TREE ===" && find areas/ projects/ archive/ .claude/commands/ -type f -o -type d | sort && echo "=== ROOT_FILES ===" && ls *.md *.yaml 2>/dev/null && echo "=== TASK_LIST ===" && bash data/task-cli.sh list --format json 2>/dev/null && echo "=== TASK_RECURRING ===" && bash data/task-cli.sh recurring --format json 2>/dev/null
+echo "=== TREE ===" && find data/files/ .claude/commands/ -type f -o -type d | sort && echo "=== ROOT_FILES ===" && ls *.md 2>/dev/null && echo "=== TASK_LIST ===" && bash bin/db/task-cli.sh list --format json 2>/dev/null && echo "=== TASK_RECURRING ===" && bash bin/db/task-cli.sh recurring --format json 2>/dev/null
 ```
 
 **Calls 2-6 — Read (in parallel): the 5 reference docs**
 - `CLAUDE.md`
 - `README.md`
-- `areas/one-on-ones/README.md`
-- `areas/meetings/README.md`
-- `projects/INDEX.md`
+- `data/files/areas/one-on-ones/README.md`
+- `data/files/areas/meetings/README.md`
+- `data/files/projects/INDEX.md`
 
 **That's it. No more tool calls.** Do all 8 checks by comparing the data from these 6 calls. Do NOT read individual README files, session files, or folders one at a time. Infer existence from the tree output.
 
@@ -39,7 +39,7 @@ The Agent should run each check below using ONLY the data gathered above. Collec
 
 ### 1. People: CLAUDE.md vs. 1:1 folders
 
-Compare the people listed in the **Key People** and **1:1 folder listing** in CLAUDE.md against the actual folders in `areas/one-on-ones/` (from tree output).
+Compare the people listed in the **Key People** and **1:1 folder listing** in CLAUDE.md against the actual folders in `data/files/areas/one-on-ones/` (from tree output).
 
 Check for:
 - People listed in CLAUDE.md but missing a 1:1 folder (not all Key People need folders — only those in the explicit 1:1 folder listing)
@@ -58,7 +58,7 @@ Check for:
 
 ### 3. Meetings: CLAUDE.md + meetings README vs. folders
 
-Compare the meetings listed in CLAUDE.md and `areas/meetings/README.md` against meeting folders in the tree output.
+Compare the meetings listed in CLAUDE.md and `data/files/areas/meetings/README.md` against meeting folders in the tree output.
 
 Check for:
 - Meeting folders that exist but aren't listed in either CLAUDE.md or the meetings README
@@ -68,12 +68,12 @@ Check for:
 
 ### 4. Projects: INDEX.md vs. folders
 
-Compare `projects/INDEX.md` against project/archive folders in the tree output.
+Compare `data/files/projects/INDEX.md` against project/archive folders in the tree output.
 
 Check for:
-- Active projects in INDEX.md that have no folder in `projects/`
-- Project folders in `projects/` that aren't listed in INDEX.md
-- Archived projects in INDEX.md that don't have a folder in `archive/`
+- Active projects in INDEX.md that have no folder in `data/files/projects/`
+- Project folders in `data/files/projects/` that aren't listed in INDEX.md
+- Archived projects in INDEX.md that don't have a folder in `data/files/archive/`
 - Archive folders that aren't listed in the Archived section of INDEX.md
 - Active project folders missing a `README.md` (warning, not error — some projects are lightweight)
 
@@ -81,21 +81,21 @@ Check for:
 
 Using the tree output and root files listing, verify that files referenced in CLAUDE.md actually exist:
 - `data/cos.db` (confirmed if task-cli commands returned data)
-- `style-guide.md`
-- `google-docs-style-guide.md`
+- `data/files/style-guide.md`
+- `data/files/google-docs-style-guide.md`
 
 Also flag any root-level `.md` or `.yaml` files that exist but aren't mentioned in CLAUDE.md (they may be orphaned or just undocumented).
 
 ### 6. Areas folder structure
 
-Using the tree output, verify the expected `areas/` subdirectories exist and have proper structure:
-- `areas/one-on-ones/` — must have README.md and subdirectories per relationship type
-- `areas/meetings/` — must have README.md
-- `areas/career/` — should exist
-- `areas/comms/` — should exist
-- `areas/daily-briefings/` — should have `sessions/` directory
+Using the tree output, verify the expected `data/files/areas/` subdirectories exist and have proper structure:
+- `data/files/areas/one-on-ones/` — must have README.md and subdirectories per relationship type
+- `data/files/areas/meetings/` — must have README.md
+- `data/files/areas/career/` — should exist
+- `data/files/areas/comms/` — should exist
+- `data/files/areas/daily-briefings/` — should have `sessions/` directory
 
-Flag any unexpected subdirectories in `areas/` that aren't accounted for.
+Flag any unexpected subdirectories in `data/files/areas/` that aren't accounted for.
 
 ### 7. Session files sanity
 
@@ -125,7 +125,7 @@ Present findings in a summary table:
 
 | # | Severity | Area | Finding | Suggested Fix |
 |---|----------|------|---------|---------------|
-| 1 | Error | People | Folder `areas/one-on-ones/xfn/foo` exists but isn't in CLAUDE.md | Add to CLAUDE.md or remove folder |
+| 1 | Error | People | Folder `data/files/areas/one-on-ones/xfn/foo` exists but isn't in CLAUDE.md | Add to CLAUDE.md or remove folder |
 | 2 | Warning | Commands | `/consistency-check` not listed in Custom Commands | Add to CLAUDE.md |
 | ... | ... | ... | ... | ... |
 

@@ -8,7 +8,7 @@ Process annotations left on a markdown file via the Chief of Staff web UI. Each 
 
 ## Arguments
 
-$ARGUMENTS — The relative file path to process (e.g., `areas/one-on-ones/direct-reports/alice/sessions/2026-03-24.md`). If no argument is provided, list all files with pending annotations and ask the user which to process.
+$ARGUMENTS — The relative file path to process (e.g., `data/files/areas/one-on-ones/direct-reports/alice/sessions/2026-03-24.md`). If no argument is provided, list all files with pending annotations and ask the user which to process.
 
 ## Steps
 
@@ -42,5 +42,5 @@ $ARGUMENTS — The relative file path to process (e.g., `areas/one-on-ones/direc
 
 - Process annotations in document order (top to bottom) to avoid position drift from earlier edits affecting later ones
 - If an annotation instruction is ambiguous, make your best judgment — the user can always undo via git
-- Respect the document's existing style and tone (consult `style-guide.md` if it's a comms draft)
+- Respect the document's existing style and tone (consult `data/files/style-guide.md` if it's a comms draft)
 - Do NOT modify parts of the document that aren't covered by an annotation
