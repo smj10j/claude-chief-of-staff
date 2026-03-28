@@ -362,6 +362,39 @@ function renderSidebar(tree) {
     return inner;
   });
 
+  // CoS Development (cos-dev/)
+  if (tree.docs && tree.docs.length) {
+    html += renderNavSection('CoS Development', () => {
+      let inner = '';
+      for (const item of tree.docs) {
+        if (item.type === 'file') {
+          inner += `<div class="nav-item" data-path="${item.path}">${item.label}</div>`;
+        } else if (item.type === 'dir') {
+          const indexFile = item.files.find(f => f.name === 'INDEX');
+          const subFiles = item.files.filter(f => f.name !== 'INDEX');
+          inner += `<div class="nav-group collapsed">`;
+          if (indexFile) {
+            inner += `<div class="nav-item nav-group-toggle" data-path="${indexFile.path}">
+              <span class="nav-item-label">${item.label}</span>
+              ${subFiles.length ? `<span class="badge">${subFiles.length}</span>` : ''}
+            </div>`;
+          } else {
+            inner += `<div class="nav-group-header nav-group-toggle">${item.label}</div>`;
+          }
+          if (subFiles.length) {
+            inner += `<div class="nav-group-children">`;
+            for (const file of subFiles) {
+              inner += `<div class="nav-item nav-sub-item" data-path="${file.path}">${file.label}</div>`;
+            }
+            inner += `</div>`;
+          }
+          inner += `</div>`;
+        }
+      }
+      return inner;
+    });
+  }
+
   // Save collapse state before re-render
   const collapsedSections = new Set();
   nav.querySelectorAll('.nav-section.collapsed .nav-section-header').forEach(el => {

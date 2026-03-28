@@ -2,8 +2,19 @@
 
 Review changes in this personal instance and identify what can be generalized back to the template repository.
 
-**Upstream repo:** <!-- Your upstream repo URL, e.g. https://github.com/youruser/claude-chief-of-staff.git -->
+**Upstream repo:** `https://github.com/smj10j/claude-chief-of-staff.git`
 **Personal instance:** this repo
+
+## Execution Strategy
+
+**Delegate the read-heavy phases (Steps 0-3) to a single Agent.** Launch one Agent that:
+1. Locates or clones the upstream repo
+2. Runs `/internal-consistency-check` (which itself uses an Agent for the audit)
+3. Diffs all key files between this repo and upstream
+4. Classifies each change as Generalizable / Personal / Needs Templatizing
+5. Returns the structured findings table from Step 4
+
+After the Agent returns, present the findings and proceed with Steps 5-6 (execute and summarize) in the main conversation — those need user confirmation and write access.
 
 ## Steps
 
@@ -14,7 +25,7 @@ Check if a local clone of the upstream repo exists. Search common locations:
 - Home code directories (e.g., `~/code/claude-chief-of-staff`)
 
 If found, use it. If not found:
-- Clone the upstream repo to a temporary location: `git clone <upstream-url> /tmp/claude-chief-of-staff`
+- Clone the upstream repo to a temporary location: `git clone https://github.com/smj10j/claude-chief-of-staff.git /tmp/claude-chief-of-staff`
 - Use the clone for diffing and as the target for changes
 
 Store the resolved path as `$UPSTREAM` for the rest of the workflow.
@@ -25,7 +36,14 @@ Run `/internal-consistency-check` to audit the local repo for internal inconsist
 
 ### 2. Diff the Repos
 
-Compare key files between this repo and `$UPSTREAM`. Focus on structural and workflow files, not personal content. Check these categories:
+Run a **comprehensive diff** between this repo and `$UPSTREAM`. Do not cherry-pick files — diff everything and then classify. The reliable way to catch all changes is:
+
+```bash
+# From the personal repo root:
+diff -rq . $UPSTREAM --exclude=node_modules --exclude=.git --exclude='*.db' --exclude='*.db-*' --exclude=bundle.js --exclude='bundle.js.map' --exclude=.annotations --exclude=cos-dev | grep -v 'Only in ./areas/' | grep -v 'Only in ./projects/' | grep -v 'Only in ./archive/'
+```
+
+This surfaces every file that differs, including static assets (CSS, HTML), build scripts, and source files — not just markdown. Then classify each difference using the categories below:
 
 **System files** (likely generalizable):
 - `CLAUDE.md` — compare the "System Conventions" section (below the `---` separator). Ignore the personal context section above it.
@@ -35,9 +53,23 @@ Compare key files between this repo and `$UPSTREAM`. Focus on structural and wor
 - `areas/meetings/README.md` — meeting workflow docs
 - `areas/career/README.md` — career tracking scaffold
 - `style-guide.md` — structural changes (not personal content)
-- Root-level YAML files (`tasks.yaml`, `tasks-archive.yaml`, `recurring.yaml`) — schema changes only
+- `data/` directory (task-db.js, task-cli.sh, task-cli.js, migrations) — schema and module changes only
 - `projects/INDEX.md` — template structure changes only
 - `.gitignore` — any additions
+
+**Code files** (often generalizable — these are just as important as config/docs):
+- `ui/start.sh` — server lifecycle management (nvm, start/stop, port checking)
+- `ui/server.js` — API endpoints, task integration, server logic
+- `ui/build.js` — client bundle build script
+- `ui/src/*.js` — all frontend source files (editor, main, toolbar, search, annotations, tasks)
+- `ui/public/` — HTML shell, CSS, static assets
+- `data/task-db.js` — shared data access module
+- `data/task-cli.js` — CLI implementation
+- `data/task-cli.sh` — nvm-aware shell wrapper
+- `data/migrations/` — SQL schema files
+- `data/tests/` — test suites
+
+**Important:** Code improvements are just as portable as documentation changes. New API endpoints, UI features, editor enhancements, build script improvements, and test coverage all belong upstream. Don't limit the diff to just markdown and config files.
 
 **Personal files** (never upstream):
 - Anything in `areas/one-on-ones/<person>/` (actual 1:1 data)
@@ -91,6 +123,6 @@ Show what was ported, what was skipped, and any remaining items for next time.
 - When in doubt about whether something is personal or generalizable, ask.
 - Preserve the template's style — it uses HTML comments for examples and generic language.
 - The template should work for any engineering manager/tech lead, not just the current user.
-- Don't over-templatize. If a command references `tasks.yaml` or `areas/one-on-ones/`, that's system structure — keep it. Only templatize things like specific names, teams, and channels.
+- Don't over-templatize. If a command references `data/task-cli.sh` or `areas/one-on-ones/`, that's system structure — keep it. Only templatize things like specific names, teams, and channels.
 - When porting commands, replace first-person name references with "you" or remove them. The CLAUDE.md personal context section will have the user's name — commands don't need to hardcode it.
 - Always work on a branch and offer a PR. Never push directly to main.

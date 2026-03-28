@@ -122,7 +122,7 @@ If Slack messages were found via Glean, analyze them and seed `style-guide.md` w
 ### 8. Web UI Setup
 
 After the commit, offer to set up the visual editor:
-> "Everything's committed. There's also a web UI that gives you a Google Docs-like editor for all these files — makes browsing and editing much nicer than raw markdown. Want me to get that running? It just takes a minute. (Requires Node.js 18+)"
+> "Everything's committed. There's also a web UI that gives you a Google Docs-like editor for all these files — makes browsing and editing much nicer than raw markdown. Want me to get that running? It just takes a minute. (Requires Node.js 22+)"
 
 If they say yes, run `/ui`. If they decline or don't have Node.js, no problem — move on.
 

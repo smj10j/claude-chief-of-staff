@@ -29,7 +29,7 @@ function findExecutable(name) {
 // --- File tree helpers ---
 
 function buildTree() {
-  const tree = { people: {}, meetings: [], projects: [], areas: [], reference: [] };
+  const tree = { people: {}, meetings: [], projects: [], areas: [], reference: [], docs: [] };
 
   // People (1:1s)
   const oneOnOnesDir = path.join(ROOT, 'areas', 'one-on-ones');
@@ -138,6 +138,38 @@ function buildTree() {
   for (const f of refFiles) {
     if (fs.existsSync(path.join(ROOT, f))) {
       tree.reference.push({ name: f.replace('.md', ''), label: formatName(f.replace('.md', '')), path: f });
+    }
+  }
+
+  // CoS Development
+  const docsDir = path.join(ROOT, 'cos-dev');
+  if (fs.existsSync(docsDir)) {
+    // Top-level docs
+    const topFiles = fs.readdirSync(docsDir).filter(f => f.endsWith('.md')).sort();
+    for (const f of topFiles) {
+      tree.docs.push({
+        name: f.replace('.md', ''),
+        label: f.replace('.md', ''),
+        path: path.relative(ROOT, path.join(docsDir, f)),
+        type: 'file',
+      });
+    }
+    // Subdirectories (e.g., PRDs)
+    for (const name of fs.readdirSync(docsDir).sort()) {
+      const subDir = path.join(docsDir, name);
+      if (!fs.statSync(subDir).isDirectory()) continue;
+      const files = fs.readdirSync(subDir).filter(f => f.endsWith('.md')).sort();
+      tree.docs.push({
+        name,
+        label: name,
+        path: path.relative(ROOT, subDir),
+        type: 'dir',
+        files: files.map(f => ({
+          name: f.replace('.md', ''),
+          label: f.replace('.md', ''),
+          path: path.relative(ROOT, path.join(subDir, f)),
+        })),
+      });
     }
   }
 

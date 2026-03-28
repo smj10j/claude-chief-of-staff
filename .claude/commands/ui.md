@@ -29,5 +29,5 @@ That's it. Just run the script and relay what it says.
 
 ## Requirements
 
-- Node.js (v18+)
+- Node.js (v22+)
 - No other setup needed — `start.sh` handles npm install and build automatically
