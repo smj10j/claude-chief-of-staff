@@ -13,3 +13,4 @@ ui/.annotations/
 data/cos.db
 data/cos.db-wal
 data/cos.db-shm
+*-export.yaml
