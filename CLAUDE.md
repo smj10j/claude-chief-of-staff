@@ -113,6 +113,12 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
   - `areas/comms/` - drafted messages and comms
   - `areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
 - `archive/` - completed projects moved from `projects/`. Not deleted — kept for reference.
+- `cos-dev/` - Chief of Staff development documentation
+  - `cos-dev/SECURITY.md` - Threat model, current controls, security checklist
+  - `cos-dev/implementation-loop.md` - Process for implementing PRDs (follow this when building features)
+  - `cos-dev/PRDs/` - Product requirement documents for UI features
+    - `cos-dev/PRDs/INDEX.md` - PRD registry (status, dates, links). Always update this when creating or completing a PRD.
+  - `cos-dev/implementations/` - Implementation trackers for completed PRDs (audit trail, soak logs, cleanup checklists)
 
 ### Project Lifecycle
 1. **Start**: create `projects/<id>/` folder, add row to `projects/INDEX.md`

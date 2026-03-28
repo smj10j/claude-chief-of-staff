@@ -10,3 +10,4 @@ node_modules/
 ui/public/bundle.js
 ui/public/bundle.js.map
 ui/.annotations/
+cos-dev/TODO-*.md
