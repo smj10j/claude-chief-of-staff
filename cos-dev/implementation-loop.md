@@ -17,7 +17,9 @@ Two kinds of tracking files exist during implementation:
 
 3. **Implement + test** - Build the changes. **Write tests alongside the code, not after.** Tests are not optional - every new module needs a test file. Mark items off in the TODO as they're completed. If the build plan is large, implement in logical chunks and commit at milestones.
 
-4. **Run tests** - Run all relevant tests (`node --test bin/db/tests/*.test.js`) and make sure they pass. Fix any failures before proceeding. If you wrote new code, there must be new tests.
+4. **Run tests** - Run all test suites and make sure they pass. Fix any failures before proceeding. If you wrote new code, there must be new tests.
+   - Database tests: `node --test bin/db/tests/*.test.js`
+   - UI server tests: `node --test ui/tests/*.test.js`
 
 5. **Update TODO against PRD** - Re-read the PRD's build plan, scope, and success criteria. **Check every item in the PRD against the TODO.** Add anything missing. Mark completed items. Note deferred work with rationale.
 
