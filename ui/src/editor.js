@@ -59,7 +59,7 @@ export function initEditor(containerEl, bubbleMenuEl, opts = {}) {
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Table.configure({ resizable: false }),
+      Table.configure({ resizable: false, allowTableNodeSelection: true }),
       TableRow,
       TableCell,
       TableHeader,

@@ -4,6 +4,7 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const chokidar = require('chokidar');
 const { spawn } = require('child_process');
+const taskDb = require('../data/task-db.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3737;
@@ -220,9 +221,19 @@ function listAnnotatedFiles() {
     .filter(f => f.count > 0);
 }
 
-// --- Task helpers ---
+// --- Task helpers (SQLite via shared module) ---
+// YAML loading preserved as fallback during migration
 
 function loadTasks() {
+  try {
+    return taskDb.loadAll();
+  } catch (e) {
+    console.error('[tasks] SQLite load failed, falling back to YAML:', e.message);
+    return loadTasksFromYaml();
+  }
+}
+
+function loadTasksFromYaml() {
   const tasksPath = path.join(ROOT, 'tasks.yaml');
   const archivePath = path.join(ROOT, 'tasks-archive.yaml');
   const recurringPath = path.join(ROOT, 'recurring.yaml');
@@ -286,6 +297,72 @@ app.get('/api/tree', (req, res) => {
 // Tasks data
 app.get('/api/tasks', (req, res) => {
   res.json(loadTasks());
+});
+
+// Task CRUD
+app.get('/api/task/:id', (req, res) => {
+  try {
+    const task = taskDb.getTask(req.params.id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    res.json(task);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/task', (req, res) => {
+  try {
+    const task = taskDb.createTask(req.body);
+    res.status(201).json(task);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.put('/api/task/:id', (req, res) => {
+  try {
+    const task = taskDb.updateTask(req.params.id, req.body);
+    res.json(task);
+  } catch (e) {
+    const status = e.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: e.message });
+  }
+});
+
+app.post('/api/task/:id/done', (req, res) => {
+  try {
+    const task = taskDb.markDone(req.params.id);
+    res.json(task);
+  } catch (e) {
+    const status = e.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: e.message });
+  }
+});
+
+app.post('/api/task/:id/archive', (req, res) => {
+  try {
+    const task = taskDb.archiveTask(req.params.id);
+    res.json(task);
+  } catch (e) {
+    const status = e.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: e.message });
+  }
+});
+
+app.post('/api/task/:id/unarchive', (req, res) => {
+  try {
+    const task = taskDb.unarchiveTask(req.params.id);
+    res.json(task);
+  } catch (e) {
+    const status = e.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: e.message });
+  }
+});
+
+app.put('/api/recurring-task/:id', (req, res) => {
+  try {
+    const task = taskDb.updateRecurringTask(req.params.id, req.body);
+    res.json(task);
+  } catch (e) {
+    const status = e.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: e.message });
+  }
 });
 
 // Read a file (raw markdown)

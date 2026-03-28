@@ -10,3 +10,6 @@ node_modules/
 ui/public/bundle.js
 ui/public/bundle.js.map
 ui/.annotations/
+data/cos.db
+data/cos.db-wal
+data/cos.db-shm
