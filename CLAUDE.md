@@ -11,42 +11,27 @@ This is a personal work management system, not a software project. There are no 
      ============================================================ -->
 
 ## Role
-Senior Engineering Manager, R&D at Chime. Manages 5 direct reports (3 EMs, 2 Staff SWEs) with 25 total in the org. Reports to Vinodh Sundararajan (Director of Engineering). Started March 2024.
+<!-- Your title, org, company. Example: "Senior Engineering Manager, Payments at Acme Corp" -->
 
 ## Teams
-- **MyPay** - Primary org. Multiple sub-teams: Expansion, DDer MX, Non-DDer, DDer on MMA, Pro MVP
-- **Lending** - Broader org that MyPay sits within
+<!-- Teams you manage or contribute to. Example:
+- **Payments Core** - Transaction processing and reconciliation
+- **Payments Growth** - New payment methods and conversion optimization
+-->
 
 ## Key People
-**Manager**
-- **Vinodh Sundararajan** - Director of Engineering. Weekly 1:1.
-
-**Direct Reports**
-- **Prashant Tiwari** - EM (7 reports). Started Dec 2025.
-- **Aashna Agarwal** - EM (8 reports). Started Aug 2021. 2x/week 1:1.
-- **Justin Sookikian** - EM (5 reports). Started May 2025.
-- **Daniel Cash** - Staff SWE. Started Sep 2020. Weekly 1:1.
-- **Bhargava Chinthirla** - Staff SWE. Started Jan 2022.
-
-**Peers**
-- **John Kelly** - Staff Engineer, also reports to Vinodh. Weekly 1:1.
-
-**XFN Partners**
-- **Aaron Salls** - Manager, Product (reports to Ivo Parashkevov, VP PM). Primary product partner. 3x/week 1:1.
-- **Arthur Tonelli** - Senior SWE (Thanh Khong's org).
-- **Fan Wei** - Senior SWE (Thanh Khong's org).
-
-**Skip-Level Reports**
-- **Jacen Li** - Senior SWE (reports to Aashna)
-- **Michelle Su** - SWE (reports to Aashna). Started Mar 2025.
-- **Rutika Banakar** - Senior SWE (reports to Aashna). Started Dec 2024.
-- **Matan Perry** - Senior SWE (reports to Justin)
+<!-- Your working relationships. Example:
+- **Alex** - Your manager (Director of Engineering)
+- **Jordan** - Direct report, M1 manager on Payments Core
+- **Sam** - Peer, Product Manager. Meet weekly.
+-->
 
 ## Comms Style
-<!-- Built over time from draft edits and feedback. See style-guide.md -->
+<!-- Built automatically as you use the style guide. Leave blank initially. -->
 - When drafting messages, always offer to copy to clipboard via `pbcopy`. Terminal rendering adds leading spaces on wrapped lines, making inline drafts hard to copy/paste. Use `echo -n "message" | pbcopy` to put clean text directly on the clipboard.
 
 ## Preferences
+<!-- Personal workflow preferences. Some defaults to keep or customize: -->
 - Familiar with GTD framework
 - Comfortable reading/writing code
 - Wants to offload delegatable work (agendas, polls, drafts)
@@ -56,12 +41,18 @@ Senior Engineering Manager, R&D at Chime. Manages 5 direct reports (3 EMs, 2 Sta
 - Automatically update `style-guide.md` when drafts are edited or style feedback is given — note what changed and why.
 
 ## Integrations
-- **Google Workspace** - Calendar, Docs, Sheets, Slides
-- **Glean** - Slack search, people lookup, document discovery
-- **Atlassian** (Jira + Confluence) - Cloud ID: `a40b7113-0103-4597-b693-76b66e0a4614`
-- **Datadog** - Observability and monitoring
-- **Rollbar** - Error tracking
-- **Slack** - Direct messaging and channel search
+<!-- Optional MCP servers and data sources. Configure what you have available.
+     The system works without any of these — it just uses your local files.
+     When integrations are available, features like 1:1 prep will use them
+     for richer context (e.g., searching recent Slack threads).
+
+Examples:
+- **Slack search** (via Glean MCP, Slack MCP, etc.) - search team conversations
+- **Notion** - shared docs and databases
+- **Calendar** - meeting awareness
+- **Jira/Linear** - engineering work items
+- **Rollbar/Datadog** - incident and observability context
+-->
 
 ---
 
