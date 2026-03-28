@@ -2,15 +2,23 @@
 
 Friday GTD-style review. Close out the week, set up the next one.
 
+## Execution Strategy
+
+**Delegate data gathering (Steps 1-4 and 6) to a single Agent.** Launch one Agent that runs all the read-heavy steps below and returns a structured report covering: accomplishments, overdue tasks, project health, 1:1 housekeeping, and recurring items. The Agent should return enough detail for the main conversation to present findings and make triage recommendations.
+
+Step 5 (Next Week Preview) stays in the main conversation since it may use calendar integrations for calendar data.
+
+After the Agent returns, combine its findings with the calendar preview, present the full weekly review, and proceed with triage confirmations.
+
 ## Steps (run data gathering in parallel)
 
 ### 1. What Got Done
-- Read `tasks-archive.yaml` for tasks completed this week
+- Run `bash data/task-cli.sh list --archived --since $(date -v-monday +%Y-%m-%d) --format json` for tasks completed this week
 - Run `git log --oneline --since="last monday"` to see what changed
 - Summarize accomplishments — group by project/area
 
 ### 2. Task Triage
-- Read `tasks.yaml` — identify all overdue tasks
+- Run `bash data/task-cli.sh list --format json` — identify all overdue tasks
 - For each overdue task: recommend re-date, drop, or escalate
 - Flag any tasks that have been overdue for more than a week — these need a decision, not another re-date
 - Present the list and ask for confirmation before making changes
@@ -25,12 +33,12 @@ Friday GTD-style review. Close out the week, set up the next one.
 - Flag any direct reports without a session file this week
 
 ### 5. Next Week Preview
-- If a calendar integration is available, pull next week's calendar (Monday–Friday)
-- Identify: 1:1s that need prep, big meetings, deadlines from tasks.yaml
+- If a calendar integration is available, pull next week's calendar (Monday-Friday)
+- Identify: 1:1s that need prep, big meetings, deadlines from task list
 - Flag any days that are packed vs. have space for deep work
 
 ### 6. Recurring Items
-- Read `recurring.yaml` — anything that needs updating or adding?
+- Run `bash data/task-cli.sh recurring --format json` — anything that needs updating or adding?
 
 ## Output Format
 
