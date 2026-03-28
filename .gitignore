@@ -13,5 +13,5 @@ ui/.annotations/
 data/cos.db
 data/cos.db-wal
 data/cos.db-shm
-*-export.yaml
+data/files/exports/
 cos-dev/TODO-prd-*.md
