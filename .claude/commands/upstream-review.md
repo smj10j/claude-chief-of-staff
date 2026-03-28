@@ -2,7 +2,7 @@
 
 Review changes in this personal instance and identify what can be generalized back to the template repository.
 
-**Upstream repo:** `https://github.com/smj10j/claude-chief-of-staff.git`
+**Upstream repo:** <!-- Your upstream repo URL, e.g. https://github.com/smj10j/claude-chief-of-staff.git -->
 **Personal instance:** this repo
 
 ## Execution Strategy
@@ -25,7 +25,7 @@ Check if a local clone of the upstream repo exists. Search common locations:
 - Home code directories (e.g., `~/code/claude-chief-of-staff`)
 
 If found, use it. If not found:
-- Clone the upstream repo to a temporary location: `git clone https://github.com/smj10j/claude-chief-of-staff.git /tmp/claude-chief-of-staff`
+- Clone the upstream repo to a temporary location: `git clone <upstream-url> /tmp/claude-chief-of-staff`
 - Use the clone for diffing and as the target for changes
 
 Store the resolved path as `$UPSTREAM` for the rest of the workflow.
