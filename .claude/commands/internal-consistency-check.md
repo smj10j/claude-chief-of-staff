@@ -54,9 +54,7 @@ Check for:
 ### 5. Root files referenced in CLAUDE.md
 
 Verify that files referenced in CLAUDE.md actually exist:
-- `tasks.yaml`
-- `tasks-archive.yaml`
-- `recurring.yaml`
+- `data/cos.db` (task database - verify via `bash data/task-cli.sh list` and `bash data/task-cli.sh recurring`)
 - `style-guide.md`
 - `google-docs-style-guide.md`
 
@@ -79,6 +77,19 @@ Spot-check session files across 1:1s and meetings:
 - Any session files that don't follow the `YYYY-MM-DD.md` naming pattern
 - Any session files with an empty `## Raw Notes` section that are more than 7 days old (likely forgotten post-session digests)
 - Any person folders where the most recent session is more than 60 days old (potentially stale relationship — info only)
+
+### 8. README vs. CLAUDE.md consistency
+
+Compare the repo's `README.md` against `CLAUDE.md` and the actual repo structure for high-level accuracy. The README is the external-facing description — it must not describe a system that no longer exists.
+
+Check for:
+- **Task storage description**: Does the README describe YAML files when the system uses SQLite? Or vice versa?
+- **Node.js version**: Does the README say a different version than `.nvmrc` or CLAUDE.md?
+- **Commands table**: Are commands listed in CLAUDE.md but missing from the README's commands table? (Not all need to be in the README, but core ones should be.)
+- **File structure tree**: Does the README's file structure section list files that don't exist (e.g., `tasks.yaml`) or omit directories that do (e.g., `data/`)?
+- **Feature descriptions**: Does the README describe capabilities the system doesn't have, or omit major features?
+
+This check is about factual accuracy, not style. Only flag things that are objectively wrong or misleading.
 
 ---
 
