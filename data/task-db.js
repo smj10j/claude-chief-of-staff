@@ -434,13 +434,21 @@ function updateTask(id, fields) {
   if (!task) throw new Error(`Task not found: ${id}`);
   if (task.is_archived) throw new Error(`Cannot update archived task: ${id}. Use unarchive first.`);
 
-  // Reject lifecycle field changes
-  const forbidden = ['status', 'is_archived', 'completed_at', 'archived_at'];
+  // Reject lifecycle field changes (archive/completion fields)
+  const forbidden = ['is_archived', 'completed_at', 'archived_at'];
   for (const key of forbidden) {
     if (key in fields) throw new Error(`Cannot set ${key} via update. Use action endpoints (done/archive/unarchive).`);
   }
 
-  const allowed = ['title', 'priority', 'due', 'project', 'notes'];
+  // Status: allow todo <-> in-progress transitions, block done (must use markDone)
+  if ('status' in fields) {
+    const allowed_statuses = ['todo', 'in-progress'];
+    if (!allowed_statuses.includes(fields.status)) {
+      throw new Error(`Cannot set status to '${fields.status}' via update. Use action endpoints (done/archive/unarchive).`);
+    }
+  }
+
+  const allowed = ['title', 'status', 'priority', 'due', 'project', 'notes'];
   const sets = [];
   const values = [];
   for (const key of allowed) {
@@ -532,6 +540,16 @@ function unarchiveTask(id) {
   return getTask(id);
 }
 
+function deleteTask(id) {
+  const database = getDb();
+  const task = database.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  if (!task) throw new Error(`Task not found: ${id}`);
+
+  // CASCADE deletes task_tags and task_links
+  database.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  return task;
+}
+
 // --- Recurring task mutations ---
 
 function updateRecurringTask(id, fields) {
@@ -588,6 +606,7 @@ module.exports = {
   markDone,
   archiveTask,
   unarchiveTask,
+  deleteTask,
   updateRecurringTask,
   generateId,
   slugify,

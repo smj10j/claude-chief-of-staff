@@ -357,6 +357,16 @@ app.put('/api/task/:id', (req, res) => {
   }
 });
 
+app.delete('/api/task/:id', (req, res) => {
+  try {
+    const task = taskDb.deleteTask(req.params.id);
+    res.json(task);
+  } catch (e) {
+    const status = e.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: e.message });
+  }
+});
+
 app.post('/api/task/:id/done', (req, res) => {
   try {
     const task = taskDb.markDone(req.params.id);

@@ -674,8 +674,245 @@ main {
   display: none;
 }
 
-.task-card.expanded .task-notes {
+.task-card.editing .task-notes {
   display: block;
+}
+
+/* --- Tasks Header Row --- */
+
+.tasks-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.tasks-header-row h1 {
+  margin: 0;
+}
+
+/* --- Task Checkbox (Mark Done) --- */
+
+.task-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.task-checkbox input {
+  display: none;
+}
+
+.task-checkbox-mark {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+
+.task-checkbox:hover .task-checkbox-mark {
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+/* --- Task Edit Panel --- */
+
+.task-edit-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.task-edit-field {
+  margin-bottom: 10px;
+}
+
+.task-edit-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.task-edit-field input[type="text"],
+.task-edit-field input[type="date"],
+.task-edit-field select,
+.task-edit-field textarea {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.task-edit-field input:focus,
+.task-edit-field select:focus,
+.task-edit-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.task-edit-field textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+.task-edit-row {
+  display: flex;
+  gap: 12px;
+}
+
+.task-edit-row .task-edit-field {
+  flex: 1;
+}
+
+/* --- Tag Pill Editor --- */
+
+.tag-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  min-height: 32px;
+  background: var(--bg);
+}
+
+.tag-editor:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.tag-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.tag-remove:hover {
+  color: var(--priority-high);
+}
+
+.tag-input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 2px 4px !important;
+  font-size: 12px;
+  background: transparent;
+  color: var(--text);
+  flex: 1;
+  min-width: 80px;
+}
+
+/* --- Task Edit Actions --- */
+
+.task-edit-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.task-edit-actions-left,
+.task-edit-actions-right {
+  display: flex;
+  gap: 6px;
+}
+
+.task-delete-btn {
+  color: var(--priority-high) !important;
+  border-color: transparent;
+}
+
+.task-delete-btn:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--priority-high);
+}
+
+/* --- Toast Notification --- */
+
+.task-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transition: opacity 0.2s;
+}
+
+.task-toast.hidden {
+  display: none;
+}
+
+.task-toast.success {
+  background: var(--accent);
+  color: white;
+}
+
+.task-toast.error {
+  background: var(--priority-high);
+  color: white;
+}
+
+.toast-action {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .tasks-section-header {
