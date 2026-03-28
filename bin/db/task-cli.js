@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Task CLI - thin wrapper over data/task-db.js
+// Task CLI - thin wrapper over bin/db/task-db.js
 // Primary consumer: Claude Code (default output is compact/token-efficient)
-// Usage: node data/task-cli.js <command> [args] [--format compact|json|table]
+// Usage: bash bin/db/task-cli.sh <command> [args] [--format compact|json|table]
 
 const taskDb = require('./task-db.js');
 const path = require('path');
@@ -232,7 +232,7 @@ function printHelp() {
   console.log(`
 Task CLI - manage tasks from the command line
 
-Usage: node data/task-cli.js <command> [args] [--format compact|json|table]
+Usage: bash bin/db/task-cli.sh <command> [args] [--format compact|json|table]
 
 Commands:
   list                       List active tasks (default)

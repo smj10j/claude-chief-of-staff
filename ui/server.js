@@ -4,7 +4,7 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const chokidar = require('chokidar');
 const { spawn } = require('child_process');
-const taskDb = require('../data/task-db.js');
+const taskDb = require('../bin/db/task-db.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3737;
@@ -32,7 +32,7 @@ function buildTree() {
   const tree = { people: {}, meetings: [], projects: [], areas: [], reference: [], docs: [] };
 
   // People (1:1s)
-  const oneOnOnesDir = path.join(ROOT, 'areas', 'one-on-ones');
+  const oneOnOnesDir = path.join(ROOT, 'data', 'files', 'areas', 'one-on-ones');
   const relationshipTypes = [
     { dir: 'direct-reports', label: 'Direct Reports' },
     { dir: 'manager', label: 'Manager' },
@@ -72,7 +72,7 @@ function buildTree() {
   }
 
   // Meetings
-  const meetingsDir = path.join(ROOT, 'areas', 'meetings');
+  const meetingsDir = path.join(ROOT, 'data', 'files', 'areas', 'meetings');
   if (fs.existsSync(meetingsDir)) {
     for (const name of fs.readdirSync(meetingsDir).sort()) {
       const meetingDir = path.join(meetingsDir, name);
@@ -99,7 +99,7 @@ function buildTree() {
   }
 
   // Projects
-  const projectsDir = path.join(ROOT, 'projects');
+  const projectsDir = path.join(ROOT, 'data', 'files', 'projects');
   if (fs.existsSync(projectsDir)) {
     for (const name of fs.readdirSync(projectsDir).sort()) {
       if (name === 'INDEX.md') continue;
@@ -119,7 +119,7 @@ function buildTree() {
   }
 
   // Areas (non-1:1, non-meeting)
-  const areasDir = path.join(ROOT, 'areas');
+  const areasDir = path.join(ROOT, 'data', 'files', 'areas');
   for (const name of ['career', 'comms', 'daily-briefings']) {
     const areaDir = path.join(areasDir, name);
     if (!fs.existsSync(areaDir)) continue;
@@ -134,10 +134,15 @@ function buildTree() {
   }
 
   // Reference files
-  const refFiles = ['reading-list.md', 'style-guide.md', 'google-docs-style-guide.md', 'CLAUDE.md'];
-  for (const f of refFiles) {
-    if (fs.existsSync(path.join(ROOT, f))) {
-      tree.reference.push({ name: f.replace('.md', ''), label: formatName(f.replace('.md', '')), path: f });
+  const refFiles = [
+    { file: 'data/files/reading-list.md', name: 'reading-list' },
+    { file: 'data/files/style-guide.md', name: 'style-guide' },
+    { file: 'data/files/google-docs-style-guide.md', name: 'google-docs-style-guide' },
+    { file: 'CLAUDE.md', name: 'CLAUDE' },
+  ];
+  for (const { file, name } of refFiles) {
+    if (fs.existsSync(path.join(ROOT, file))) {
+      tree.reference.push({ name, label: formatName(name), path: file });
     }
   }
 
@@ -266,9 +271,9 @@ function loadTasks() {
 }
 
 function loadTasksFromYaml() {
-  const tasksPath = path.join(ROOT, 'tasks.yaml');
-  const archivePath = path.join(ROOT, 'tasks-archive.yaml');
-  const recurringPath = path.join(ROOT, 'recurring.yaml');
+  const tasksPath = path.join(ROOT, 'data', 'files', 'tasks.yaml');
+  const archivePath = path.join(ROOT, 'data', 'files', 'tasks-archive.yaml');
+  const recurringPath = path.join(ROOT, 'data', 'files', 'recurring.yaml');
 
   let active = [];
   let archived = [];

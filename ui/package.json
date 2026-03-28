@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.js",
     "start": "node build.js && node server.js",
-    "dev": "node build.js --watch & node server.js"
+    "dev": "node build.js --watch & node server.js",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "@tiptap/core": "^2.12.0",

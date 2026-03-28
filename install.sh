@@ -53,6 +53,13 @@ if git remote get-url origin 2>/dev/null | grep -q "smj10j/claude-chief-of-staff
   git remote rename origin template 2>/dev/null || true
 fi
 
+# Check if existing install needs migration (old flat structure)
+if [[ -d "$INSTALL_DIR/areas" ]] || [[ -f "$INSTALL_DIR/data/task-cli.sh" ]]; then
+  warn ""
+  warn "Detected old directory structure. Running migration..."
+  bash "$INSTALL_DIR/bin/migrate-restructure.sh"
+fi
+
 ok ""
 ok "Installed to $INSTALL_DIR"
 info ""

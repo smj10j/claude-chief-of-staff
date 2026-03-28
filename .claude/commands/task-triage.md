@@ -5,7 +5,7 @@ Surface and manage overdue or stale tasks. Quick cleanup pass.
 ## Steps
 
 ### 1. Load Tasks
-- Read `tasks.yaml` and identify:
+- Run `bash bin/db/task-cli.sh list --format json` and identify:
   - **Overdue**: due date is in the past
   - **Stale**: no due date and priority is low, or has been sitting with no updates
   - **Due soon**: due within the next 3 days
@@ -28,9 +28,9 @@ Flag any that look at risk of slipping.
 
 ### 3. Execute Changes
 After confirming decisions:
-- Update due dates in `tasks.yaml`
-- Move dropped/completed tasks to `tasks-archive.yaml` under the current week
-- Update any notes with new context
+- Use `bash bin/db/task-cli.sh update <id>` to update due dates
+- Use `bash bin/db/task-cli.sh done <id>` or `bash bin/db/task-cli.sh archive <id>` for completed/dropped tasks
+- Use `bash bin/db/task-cli.sh update <id> --notes "..."` to add context
 
 ### 4. Summary
 Show what changed: how many re-dated, dropped, completed, still overdue.

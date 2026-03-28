@@ -74,7 +74,7 @@ fi
 node build.js
 
 # Initialize database (runs migrations, auto-migrates from YAML if needed)
-node -e "require('../data/task-db.js').initialize()"
+node -e "require('../bin/db/task-db.js').initialize()"
 
 # Start server in background
 node server.js &

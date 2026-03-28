@@ -37,8 +37,8 @@ This is a personal work management system, not a software project. There are no 
 - Wants to offload delegatable work (agendas, polls, drafts)
 - "New AI" or "Add an AI" = just add to action items, don't start working on it. Ask clarifying questions to capture it properly but nothing more.
 - When adding/augmenting an action item, default to just capturing it. Don't try to fetch or process unless asked.
-- Always consult `style-guide.md` when drafting documents, messages, or comms.
-- Automatically update `style-guide.md` when drafts are edited or style feedback is given — note what changed and why.
+- Always consult `data/files/style-guide.md` when drafting documents, messages, or comms.
+- Automatically update `data/files/style-guide.md` when drafts are edited or style feedback is given — note what changed and why.
 
 ## Integrations
 <!-- Optional MCP servers and data sources. Configure what you have available.
@@ -82,21 +82,21 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 
 ## System
 - GTD-style tracking via SQLite database (`data/cos.db`) managed through a CLI
-- **Task CLI** (`bash data/task-cli.sh`) - primary interface for reading and writing tasks. Use this instead of editing files directly. Always use the `.sh` wrapper (not `node data/task-cli.js` directly) — it sources nvm to ensure Node 22+.
+- **Task CLI** (`bash bin/db/task-cli.sh`) - primary interface for reading and writing tasks. Use this instead of editing files directly. Always use the `.sh` wrapper (not `node bin/db/task-cli.js` directly) — it sources nvm to ensure Node 22+.
   ```
-  bash data/task-cli.sh list                    # Active tasks (compact format)
-  bash data/task-cli.sh list --due-by today     # Tasks due today or earlier
-  bash data/task-cli.sh list --tag team:payments # Filter by tag
-  bash data/task-cli.sh list --archived         # Archived/completed tasks
-  bash data/task-cli.sh list --archived --since 2026-03-20  # Recent archive
-  bash data/task-cli.sh get <id>                # Single task details
-  bash data/task-cli.sh add "Task title" --due 2026-04-01 --priority high --tags work,admin
-  bash data/task-cli.sh update <id> --due 2026-04-15 --priority medium
-  bash data/task-cli.sh done <id>               # Mark done (auto-archives)
-  bash data/task-cli.sh archive <id>            # Drop without completing
-  bash data/task-cli.sh unarchive <id>          # Return to active list
-  bash data/task-cli.sh recurring               # List recurring tasks
-  bash data/task-cli.sh --help                  # Full reference
+  bash bin/db/task-cli.sh list                    # Active tasks (compact format)
+  bash bin/db/task-cli.sh list --due-by today     # Tasks due today or earlier
+  bash bin/db/task-cli.sh list --tag team:payments # Filter by tag
+  bash bin/db/task-cli.sh list --archived         # Archived/completed tasks
+  bash bin/db/task-cli.sh list --archived --since 2026-03-20  # Recent archive
+  bash bin/db/task-cli.sh get <id>                # Single task details
+  bash bin/db/task-cli.sh add "Task title" --due 2026-04-01 --priority high --tags work,admin
+  bash bin/db/task-cli.sh update <id> --due 2026-04-15 --priority medium
+  bash bin/db/task-cli.sh done <id>               # Mark done (auto-archives)
+  bash bin/db/task-cli.sh archive <id>            # Drop without completing
+  bash bin/db/task-cli.sh unarchive <id>          # Return to active list
+  bash bin/db/task-cli.sh recurring               # List recurring tasks
+  bash bin/db/task-cli.sh --help                  # Full reference
   ```
   - Use `--format json` for full task data (includes notes, links)
   - Use `--format table` for human-readable terminal output
@@ -106,30 +106,39 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
     - **Type**: `admin`, `incident`, `comms`, `prep` (optional, use when useful for filtering)
     - **Team**: `team:<team-name>` (for team-specific work)
     - **Relationship**: `career`, `xfn` (for cross-functional or career-building tasks)
-- `inbox.md` - GTD inbox for quick capture. Items here haven't been processed yet — triage them into the task database, someday-maybe.md, or delete.
-- `someday-maybe.md` - ideas and projects to revisit later. Not committed to, but worth keeping visible.
-- `waiting-for.md` - items delegated or blocked on someone else. Track who and when.
-- `reading-list.md` - articles, docs, and resources to read. Can include links and brief notes on why.
-- `style-guide.md` - writing style guide built from your actual messages over time
-- `google-docs-style-guide.md` - formatting conventions for Google Docs edited via Apps Script (bold patterns, spacing, lists, code blocks)
+- `data/files/inbox.md` - GTD inbox for quick capture. Items here haven't been processed yet — triage them into the task database, someday-maybe.md, or delete.
+- `data/files/someday-maybe.md` - ideas and projects to revisit later. Not committed to, but worth keeping visible.
+- `data/files/waiting-for.md` - items delegated or blocked on someone else. Track who and when.
+- `data/files/reading-list.md` - articles, docs, and resources to read. Can include links and brief notes on why.
+- `data/files/style-guide.md` - writing style guide built from your actual messages over time
+- `data/files/google-docs-style-guide.md` - formatting conventions for Google Docs edited via Apps Script (bold patterns, spacing, lists, code blocks)
 
 ### Folder Structure
-- `projects/` - time-bound initiatives with a clear finish line
-  - `projects/INDEX.md` - authoritative project registry (status, start/end dates, notes). Always update this when creating or completing a project.
-  - Tasks link to projects via the `project` field in the task database (value = project folder ID)
-- `areas/` - ongoing responsibilities with no finish line (never archived)
-  - `areas/one-on-ones/` - 1:1 system with per-person folders
-    - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
-    - Organized by relationship type: `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
-    - **Session workflow defined in `areas/one-on-ones/README.md`** — follow this for all prep and digest steps
-    - Before a 1:1: read README + last session, generate session doc with empty `## Raw Notes` section. After: digest raw notes, read shared doc if available via integration, update README, update tasks, propose new AIs
-    - Every session file MUST start with a `## Shared Agenda` section at the top — a compressed, copy/paste-ready list that can be dropped directly into a shared doc. Each item should be a question or a topic to check in on. Keep it tight — no background context unless absolutely necessary. The full prep (context, coaching notes, research) goes in the sections below. This shared agenda serves three purposes: (1) gives the other person context before the meeting, (2) structures the live conversation, (3) makes it easy for Claude to read the doc afterward and capture outcomes.
-  - `areas/meetings/` - recurring meetings and forums (not 1:1s). Same pattern: `README.md` (persistent context, attendees, standing agenda) + `sessions/` (dated prep/notes)
-    - Before a meeting: read README + last session. After: create session file. Periodically: update README
-  - `areas/career/` - promotion tracking, growth plans, strategic relationships
-  - `areas/comms/` - drafted messages and comms
-  - `areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
-- `archive/` - completed projects moved from `projects/`. Not deleted — kept for reference.
+
+The repo separates **template code** (syncs with upstream) from **user data** (unique to your instance):
+
+- `bin/` - tooling scripts (template code)
+  - `bin/db/` - task CLI, data access module, migrations, tests
+  - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
+- `data/` - all user-specific data (ignored by upstream review)
+  - `data/cos.db` - SQLite task database (auto-created on first run)
+  - `data/files/` - all user content files:
+    - `data/files/projects/` - time-bound initiatives with a clear finish line
+      - `data/files/projects/INDEX.md` - authoritative project registry (status, start/end dates, notes). Always update this when creating or completing a project.
+      - Tasks link to projects via the `project` field in the task database (value = project folder ID)
+    - `data/files/areas/` - ongoing responsibilities with no finish line (never archived)
+      - `data/files/areas/one-on-ones/` - 1:1 system with per-person folders
+        - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
+        - Organized by relationship type: `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
+        - **Session workflow defined in `data/files/areas/one-on-ones/README.md`** — follow this for all prep and digest steps
+        - Before a 1:1: read README + last session, generate session doc with empty `## Raw Notes` section. After: digest raw notes, read shared doc if available via integration, update README, update tasks, propose new AIs
+        - Every session file MUST start with a `## Shared Agenda` section at the top — a compressed, copy/paste-ready list that can be dropped directly into a shared doc. Each item should be a question or a topic to check in on. Keep it tight — no background context unless absolutely necessary. The full prep (context, coaching notes, research) goes in the sections below. This shared agenda serves three purposes: (1) gives the other person context before the meeting, (2) structures the live conversation, (3) makes it easy for Claude to read the doc afterward and capture outcomes.
+      - `data/files/areas/meetings/` - recurring meetings and forums (not 1:1s). Same pattern: `README.md` (persistent context, attendees, standing agenda) + `sessions/` (dated prep/notes)
+        - Before a meeting: read README + last session. After: create session file. Periodically: update README
+      - `data/files/areas/career/` - promotion tracking, growth plans, strategic relationships
+      - `data/files/areas/comms/` - drafted messages and comms
+      - `data/files/areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
+    - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
 - `cos-dev/` - Chief of Staff development documentation
   - `cos-dev/SECURITY.md` - Threat model, current controls, security checklist
   - `cos-dev/implementation-loop.md` - Process for implementing PRDs (follow this when building features)
@@ -138,9 +147,9 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
   - `cos-dev/implementations/` - Implementation trackers for completed PRDs (audit trail, soak logs, cleanup checklists)
 
 ### Project Lifecycle
-1. **Start**: create `projects/<id>/` folder, add row to `projects/INDEX.md`
-2. **Complete**: mark done in INDEX.md with completion date, move folder to `archive/`
-3. **Areas** never complete — they persist in `areas/` indefinitely
+1. **Start**: create `data/files/projects/<id>/` folder, add row to `data/files/projects/INDEX.md`
+2. **Complete**: mark done in INDEX.md with completion date, move folder to `data/files/archive/`
+3. **Areas** never complete — they persist in `data/files/areas/` indefinitely
 
 ### Chief of Staff UI
 - Local web UI at `http://localhost:3737` — WYSIWYG markdown editor powered by Tiptap
@@ -154,4 +163,4 @@ When asked "what's on my list today?", "what should I prioritize?", or similar �
 
 ## 1:1 Prep
 
-When asked to prep for a 1:1, run `/prep-1on1 [name]`. The full prep workflow, relationship type guidance, and session template are defined in `areas/one-on-ones/README.md`.
+When asked to prep for a 1:1, run `/prep-1on1 [name]`. The full prep workflow, relationship type guidance, and session template are defined in `data/files/areas/one-on-ones/README.md`.

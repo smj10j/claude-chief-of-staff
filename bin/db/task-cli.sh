@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper that ensures Node 22+ via nvm before running the task CLI.
-# Usage: bash data/task-cli.sh <command> [args] [--format compact|json|table]
+# Usage: bash bin/db/task-cli.sh <command> [args] [--format compact|json|table]
 
 # Auto-switch Node version via nvm
 if [ -s "$NVM_DIR/nvm.sh" ]; then

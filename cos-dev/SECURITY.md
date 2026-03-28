@@ -152,7 +152,7 @@ When adding features, verify:
 ### SQLite database
 
 - Database file at `data/cos.db` (gitignored)
-- All queries use parameterized statements via the shared data module (`data/task-db.js`) - no string concatenation for SQL
+- All queries use parameterized statements via the shared data module (`bin/db/task-db.js`) - no string concatenation for SQL
 - Input validation on all mutation endpoints: status/priority enums, title required, lifecycle rules enforced in the data module
 - CRUD endpoints (`POST/PUT/DELETE /api/task/:id`) are thin wrappers over the shared module - validation happens in one place
 - The `DELETE /api/task/:id` endpoint permanently removes data (no soft-delete) - the UI shows a confirmation dialog before calling it

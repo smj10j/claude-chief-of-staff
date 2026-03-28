@@ -97,22 +97,22 @@ After confirmation, create everything:
 
 **1:1 folders** — For each confirmed person with a regular 1:1:
 1. Determine relationship category (from user's confirmation)
-2. Create `areas/one-on-ones/<category>/<name>/README.md` with name, role, team, cadence
-3. Create `areas/one-on-ones/<category>/<name>/sessions/.gitkeep`
+2. Create `data/files/areas/one-on-ones/<category>/<name>/README.md` with name, role, team, cadence
+3. Create `data/files/areas/one-on-ones/<category>/<name>/sessions/.gitkeep`
 
 **Meeting folders** — For each confirmed recurring meeting:
-1. Create `areas/meetings/<meeting-id>/README.md` with cadence, attendees, linked doc
-2. Create `areas/meetings/<meeting-id>/sessions/.gitkeep`
+1. Create `data/files/areas/meetings/<meeting-id>/README.md` with cadence, attendees, linked doc
+2. Create `data/files/areas/meetings/<meeting-id>/sessions/.gitkeep`
 
 **Projects** — For each identified active project/initiative:
-1. Create `projects/<id>/README.md`
-2. Add row to `projects/INDEX.md`
+1. Create `data/files/projects/<id>/README.md`
+2. Add row to `data/files/projects/INDEX.md`
 
-Update `areas/one-on-ones/README.md` and `areas/meetings/README.md` with the full listings.
+Update `data/files/areas/one-on-ones/README.md` and `data/files/areas/meetings/README.md` with the full listings.
 
 ### 6. Style Guide
 
-If Slack messages were found via Glean, analyze them and seed `style-guide.md` with observed patterns (greeting style, sign-off patterns, formatting preferences, tone). Otherwise, explain it builds automatically as they edit drafts.
+If Slack messages were found via Glean, analyze them and seed `data/files/style-guide.md` with observed patterns (greeting style, sign-off patterns, formatting preferences, tone). Otherwise, explain it builds automatically as they edit drafts.
 
 ### 7. Git Setup
 
