@@ -128,8 +128,16 @@ describe('updateTask', () => {
     assert.deepEqual(updated.tags, ['new', 'tags']);
   });
 
-  it('rejects status change via update', () => {
-    const task = taskDb.createTask({ title: 'No status change' });
+  it('allows todo/in-progress status transitions via update', () => {
+    const task = taskDb.createTask({ title: 'Status toggle' });
+    const updated = taskDb.updateTask(task.id, { status: 'in-progress' });
+    assert.equal(updated.status, 'in-progress');
+    const back = taskDb.updateTask(task.id, { status: 'todo' });
+    assert.equal(back.status, 'todo');
+  });
+
+  it('rejects done status via update', () => {
+    const task = taskDb.createTask({ title: 'No done via update' });
     assert.throws(() => taskDb.updateTask(task.id, { status: 'done' }), /Cannot set status/);
   });
 
@@ -290,6 +298,42 @@ describe('loadAll', () => {
     assert.ok(Array.isArray(all.recurring));
     assert.equal(all.active.length, 1);
     assert.equal(all.archived.length, 1);
+  });
+});
+
+// --- Delete Task ---
+
+describe('deleteTask', () => {
+  before(setupFreshDb);
+  after(cleanup);
+
+  it('deletes an existing task', () => {
+    const task = taskDb.createTask({ title: 'To delete', tags: ['work'] });
+    const deleted = taskDb.deleteTask(task.id);
+    assert.equal(deleted.id, task.id);
+
+    // Should not be findable
+    const found = taskDb.getTask(task.id);
+    assert.equal(found, null);
+  });
+
+  it('cascades delete to tags and links', () => {
+    const task = taskDb.createTask({ title: 'Cascade delete', tags: ['work', 'admin'] });
+    const db = taskDb.getDb();
+
+    // Verify tags exist
+    const tagsBefore = db.prepare('SELECT * FROM task_tags WHERE task_id = ?').all(task.id);
+    assert.equal(tagsBefore.length, 2);
+
+    taskDb.deleteTask(task.id);
+
+    // Tags should be gone
+    const tagsAfter = db.prepare('SELECT * FROM task_tags WHERE task_id = ?').all(task.id);
+    assert.equal(tagsAfter.length, 0);
+  });
+
+  it('throws for non-existent task', () => {
+    assert.throws(() => taskDb.deleteTask('nonexistent'), /not found/);
   });
 });
 

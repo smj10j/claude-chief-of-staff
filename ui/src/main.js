@@ -1,6 +1,6 @@
 import { initEditor, loadFile, getCurrentPath } from './editor.js';
 import { initToolbar } from './toolbar.js';
-import { renderTasks, setupTaskInteractions } from './tasks.js';
+import { renderTasks, setupTaskInteractions, setRefreshCallback } from './tasks.js';
 import { initSearch, updateSearchTree } from './search.js';
 
 let tree = null;
@@ -238,6 +238,7 @@ async function navigate(filePath, pushState = true) {
 async function showTasks(pushState = true) {
   const tasks = await fetchJSON('/api/tasks');
   const container = document.getElementById('tasks-view');
+  setRefreshCallback(() => showTasks(false));
   container.innerHTML = renderTasks(tasks);
   setupTaskInteractions(container);
 

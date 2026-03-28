@@ -149,15 +149,17 @@ When adding features, verify:
  9. **Sensitive data in prompts**: When building prompts that include content from 1:1 notes, tasks, or career docs, consider whether that content could end up in an external tool call (e.g., search query, Jira description). Avoid leaking sensitive context into external services
 10. **Review generated files**: Automated workflows that write session files or briefings should be treated as drafts, not final artifacts. The workflow documentation should make this clear
 
+### SQLite database
+
+- Database file at `data/cos.db` (gitignored)
+- All queries use parameterized statements via the shared data module (`data/task-db.js`) - no string concatenation for SQL
+- Input validation on all mutation endpoints: status/priority enums, title required, lifecycle rules enforced in the data module
+- CRUD endpoints (`POST/PUT/DELETE /api/task/:id`) are thin wrappers over the shared module - validation happens in one place
+- The `DELETE /api/task/:id` endpoint permanently removes data (no soft-delete) - the UI shows a confirmation dialog before calling it
+- Connection cleanup on process exit via the shared module's `close()` function
+- XSS protection: all task data rendered in the UI is escaped via `escapeHtml()` (DOM-based, not regex) before insertion into HTML
+
 ## Future Considerations
-
-### If adding a database (SQLite)
-
-- Store the `.db` file inside the repo or a well-defined local path
-- Use parameterized queries exclusively (no string concatenation for SQL)
-- Consider encryption at rest if the database will contain sensitive 1:1 notes
-- Ensure the database file is excluded from git (`.gitignore`)
-- Implement proper connection cleanup on server shutdown
 
 ### If ever exposing beyond localhost
 
