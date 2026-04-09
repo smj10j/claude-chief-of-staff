@@ -9,9 +9,19 @@ export function setRefreshCallback(fn) {
   refreshCallback = fn;
 }
 
+function formatDueDisplay(due) {
+  if (!due) return 'no date';
+  if (due.length === 10) return due; // date-only
+  // YYYY-MM-DD HH:MM -> YYYY-MM-DD H:MM AM/PM
+  const [date, time] = due.split(' ');
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${date} ${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 export function renderTasks(tasks) {
   allTasks = tasks;
-  const today = new Date().toISOString().slice(0, 10);
   let html = '';
 
   // Collect all tags and projects for autocomplete
@@ -48,29 +58,29 @@ export function renderTasks(tasks) {
   html += `<datalist id="tag-suggestions">${[...allTags].map(t => `<option value="${t}">`).join('')}</datalist>`;
   html += `<datalist id="project-suggestions">${[...allProjects].map(p => `<option value="${p}">`).join('')}</datalist>`;
 
-  // Active tasks
-  const overdue = tasks.active.filter(t => t.due && t.due < today).sort((a, b) => (a.due || '').localeCompare(b.due || ''));
-  const upcoming = tasks.active.filter(t => t.due && t.due >= today).sort((a, b) => (a.due || '').localeCompare(b.due || ''));
+  // Active tasks - use server-provided isOverdue field
+  const overdue = tasks.active.filter(t => t.isOverdue).sort((a, b) => (a.due || '').localeCompare(b.due || ''));
+  const upcoming = tasks.active.filter(t => t.due && !t.isOverdue).sort((a, b) => (a.due || '').localeCompare(b.due || ''));
   const noDue = tasks.active.filter(t => !t.due);
 
   if (overdue.length) {
     html += `<div class="tasks-section-header">Overdue (${overdue.length})</div>`;
-    html += overdue.map(t => renderTaskCard(t, today, false, allTags, allProjects)).join('');
+    html += overdue.map(t => renderTaskCard(t, null, false, allTags, allProjects)).join('');
   }
 
   if (upcoming.length) {
     html += `<div class="tasks-section-header">Upcoming</div>`;
-    html += upcoming.map(t => renderTaskCard(t, today, false, allTags, allProjects)).join('');
+    html += upcoming.map(t => renderTaskCard(t, null, false, allTags, allProjects)).join('');
   }
 
   if (noDue.length) {
     html += `<div class="tasks-section-header">No Due Date</div>`;
-    html += noDue.map(t => renderTaskCard(t, today, false, allTags, allProjects)).join('');
+    html += noDue.map(t => renderTaskCard(t, null, false, allTags, allProjects)).join('');
   }
 
   if (tasks.recurring.length) {
     html += `<div class="tasks-section-header">Recurring</div>`;
-    html += tasks.recurring.map(t => renderTaskCard(t, today, true, allTags, allProjects)).join('');
+    html += tasks.recurring.map(t => renderTaskCard(t, null, true, allTags, allProjects)).join('');
   }
 
   html += `</div>`;
@@ -81,10 +91,10 @@ export function renderTasks(tasks) {
   return html;
 }
 
-function renderTaskCard(task, today, isRecurring = false, allTags = new Set(), allProjects = new Set()) {
-  const isOverdue = !isRecurring && task.due && task.due < today;
+function renderTaskCard(task, _unused, isRecurring = false, allTags = new Set(), allProjects = new Set()) {
+  const isOverdueFlag = !isRecurring && task.isOverdue;
   const tags = (task.tags || []).map(t => `<span class="task-tag">${escapeHtml(t)}</span>`).join(' ');
-  const dueText = task.due ? task.due : (isRecurring && task.cadence ? task.cadence : 'no date');
+  const dueText = task.due ? formatDueDisplay(task.due) : (isRecurring && task.cadence ? task.cadence : 'no date');
   const priority = task.priority || 'medium';
   const notes = task.notes ? task.notes.trim() : '';
   const project = task.project ? `<span class="task-tag">${escapeHtml(task.project)}</span>` : '';
@@ -102,7 +112,7 @@ function renderTaskCard(task, today, isRecurring = false, allTags = new Set(), a
       <span class="task-card-title">${escapeHtml(task.title)}</span>
     </div>
     <div class="task-meta">
-      <span class="${isOverdue ? 'task-overdue' : ''}">${isOverdue ? 'OVERDUE: ' : ''}${dueText}</span>
+      <span class="${isOverdueFlag ? 'task-overdue' : ''}">${isOverdueFlag ? 'OVERDUE: ' : ''}${dueText}</span>
       ${project}
       ${tags}
     </div>
@@ -122,7 +132,9 @@ function renderEditPanel(task, allTags, allProjects) {
   const title = task ? escapeAttr(task.title) : '';
   const status = task ? task.status : 'todo';
   const priority = task ? task.priority : 'medium';
-  const due = task ? (task.due || '') : '';
+  const dueRaw = task ? (task.due || '') : '';
+  const dueDate = dueRaw.slice(0, 10);
+  const dueTime = dueRaw.length > 10 ? dueRaw.slice(11) : '';
   const project = task ? (task.project || '') : '';
   const tags = task ? (task.tags || []) : [];
   const notes = task ? (task.notes || '') : '';
@@ -149,8 +161,12 @@ function renderEditPanel(task, allTags, allProjects) {
         </select>
       </div>
       <div class="task-edit-field">
-        <label>Due</label>
-        <input type="date" name="due" value="${due}">
+        <label>Due Date</label>
+        <input type="date" name="due-date" value="${dueDate}">
+      </div>
+      <div class="task-edit-field">
+        <label>Due Time</label>
+        <input type="time" name="due-time" value="${dueTime}">
       </div>
     </div>
     <div class="task-edit-field">
@@ -325,7 +341,11 @@ async function saveTask(panel) {
     title,
     status: panel.querySelector('[name="status"]').value,
     priority: panel.querySelector('[name="priority"]').value,
-    due: panel.querySelector('[name="due"]').value || null,
+    due: (() => {
+      const d = panel.querySelector('[name="due-date"]').value;
+      const t = panel.querySelector('[name="due-time"]').value;
+      return d ? (t ? `${d} ${t}` : d) : null;
+    })(),
     project: panel.querySelector('[name="project"]').value.trim() || null,
     tags,
     notes: panel.querySelector('[name="notes"]').value || null,

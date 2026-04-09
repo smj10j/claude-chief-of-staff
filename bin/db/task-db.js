@@ -314,9 +314,62 @@ function verifyMigration(database, activeTasks, archivedTasks, recurringTasks) {
 
 // --- Helpers ---
 
+function localDateStr(d) {
+  if (!d) d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function localTimeStr(d) {
+  if (!d) d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function validateDateRange(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (m < 1 || m > 12 || d < 1 || d > 31) {
+    throw new Error(`Invalid date: "${dateStr}". Month must be 1-12, day must be 1-31.`);
+  }
+}
+
+function validateTimeRange(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  if (h < 0 || h > 23 || m < 0 || m > 59) {
+    throw new Error(`Invalid time: "${timeStr}". Hours must be 0-23, minutes must be 0-59.`);
+  }
+}
+
+function toDueStr(val) {
+  if (!val) return null;
+  // Date objects -> date-only string (no current caller passes Date objects with
+  // meaningful time components; if that changes, extend to include localTimeStr)
+  if (val instanceof Date) return localDateStr(val);
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    validateDateRange(s);
+    return s;
+  }
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) {
+    validateDateRange(s.slice(0, 10));
+    validateTimeRange(s.slice(11));
+    return s;
+  }
+  throw new Error(`Invalid due format: "${s}". Expected YYYY-MM-DD or YYYY-MM-DD HH:MM (e.g., 2026-04-01 or 2026-04-01 14:00)`);
+}
+
+function isOverdue(task) {
+  if (!task.due) return false;
+  const now = new Date();
+  const today = localDateStr(now);
+  if (task.due.length === 10) {
+    return task.due < today;
+  }
+  return task.due < `${today} ${localTimeStr(now)}`;
+}
+
+// Legacy alias kept for YAML migration code path
 function toDateStr(val) {
   if (!val) return null;
-  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  if (val instanceof Date) return localDateStr(val);
   return String(val);
 }
 
@@ -415,7 +468,7 @@ function createTask({ title, priority, due, project, tags, notes, links }) {
   database.prepare(`
     INSERT INTO tasks (id, title, status, priority, due, project, notes, created_at, updated_at, is_archived)
     VALUES (?, ?, 'todo', ?, ?, ?, ?, ?, ?, 0)
-  `).run(id, title, priority || 'medium', due || null, project || null, notes || null, now, now);
+  `).run(id, title, priority || 'medium', toDueStr(due), project || null, notes || null, now, now);
 
   if (tags && tags.length) {
     const stmt = database.prepare('INSERT INTO task_tags (task_id, tag) VALUES (?, ?)');
@@ -454,8 +507,10 @@ function updateTask(id, fields) {
   const values = [];
   for (const key of allowed) {
     if (key in fields) {
+      let val = fields[key] === undefined ? null : fields[key];
+      if (key === 'due') val = toDueStr(val);
       sets.push(`${key} = ?`);
-      values.push(fields[key] === undefined ? null : fields[key]);
+      values.push(val);
     }
   }
 
@@ -493,7 +548,7 @@ function markDone(id) {
   if (!task) throw new Error(`Task not found: ${id}`);
 
   const now = new Date().toISOString();
-  const today = now.slice(0, 10);
+  const today = localDateStr();
 
   database.prepare(`
     UPDATE tasks SET status = 'done', completed_at = ?, is_archived = 1, archived_at = ?, updated_at = ?
@@ -611,5 +666,9 @@ module.exports = {
   updateRecurringTask,
   generateId,
   slugify,
+  localDateStr,
+  localTimeStr,
+  isOverdue,
+  toDueStr,
   get DB_PATH() { return DB_PATH; },
 };

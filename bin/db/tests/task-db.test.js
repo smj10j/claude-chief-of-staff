@@ -424,3 +424,159 @@ describe('database constraints', () => {
     assert.equal(tags.length, 0);
   });
 });
+
+// --- toDueStr validation ---
+
+describe('toDueStr', () => {
+  it('accepts null/undefined', () => {
+    assert.equal(taskDb.toDueStr(null), null);
+    assert.equal(taskDb.toDueStr(undefined), null);
+    assert.equal(taskDb.toDueStr(''), null);
+  });
+
+  it('accepts valid date-only format', () => {
+    assert.equal(taskDb.toDueStr('2026-04-01'), '2026-04-01');
+  });
+
+  it('accepts valid date+time format', () => {
+    assert.equal(taskDb.toDueStr('2026-04-01 14:00'), '2026-04-01 14:00');
+    assert.equal(taskDb.toDueStr('2026-04-01 09:30'), '2026-04-01 09:30');
+    assert.equal(taskDb.toDueStr('2026-04-01 00:00'), '2026-04-01 00:00');
+    assert.equal(taskDb.toDueStr('2026-04-01 23:59'), '2026-04-01 23:59');
+  });
+
+  it('converts Date objects to date-only', () => {
+    const d = new Date(2026, 3, 1); // April 1
+    assert.equal(taskDb.toDueStr(d), '2026-04-01');
+  });
+
+  it('trims whitespace', () => {
+    assert.equal(taskDb.toDueStr('  2026-04-01 '), '2026-04-01');
+    assert.equal(taskDb.toDueStr('  2026-04-01 14:00  '), '2026-04-01 14:00');
+  });
+
+  it('rejects invalid strings', () => {
+    assert.throws(() => taskDb.toDueStr('not-a-date'), /Invalid due format/);
+    assert.throws(() => taskDb.toDueStr('today'), /Invalid due format/);
+    assert.throws(() => taskDb.toDueStr('2026/04/01'), /Invalid due format/);
+    assert.throws(() => taskDb.toDueStr('2026-04-01T14:00'), /Invalid due format/);
+  });
+
+  it('rejects out-of-range months', () => {
+    assert.throws(() => taskDb.toDueStr('2026-13-01'), /Invalid date/);
+    assert.throws(() => taskDb.toDueStr('2026-00-01'), /Invalid date/);
+  });
+
+  it('rejects out-of-range days', () => {
+    assert.throws(() => taskDb.toDueStr('2026-04-32'), /Invalid date/);
+    assert.throws(() => taskDb.toDueStr('2026-04-00'), /Invalid date/);
+  });
+
+  it('rejects out-of-range hours', () => {
+    assert.throws(() => taskDb.toDueStr('2026-04-01 24:00'), /Invalid time/);
+    assert.throws(() => taskDb.toDueStr('2026-04-01 25:00'), /Invalid time/);
+  });
+
+  it('rejects out-of-range minutes', () => {
+    assert.throws(() => taskDb.toDueStr('2026-04-01 14:60'), /Invalid time/);
+  });
+});
+
+// --- isOverdue ---
+
+describe('isOverdue', () => {
+  it('returns false for null due', () => {
+    assert.equal(taskDb.isOverdue({ due: null }), false);
+  });
+
+  it('returns false for future date-only', () => {
+    assert.equal(taskDb.isOverdue({ due: '2099-12-31' }), false);
+  });
+
+  it('returns true for past date-only', () => {
+    assert.equal(taskDb.isOverdue({ due: '2020-01-01' }), true);
+  });
+
+  it('returns false for future date+time', () => {
+    assert.equal(taskDb.isOverdue({ due: '2099-12-31 23:59' }), false);
+  });
+
+  it('returns true for past date+time', () => {
+    assert.equal(taskDb.isOverdue({ due: '2020-01-01 09:00' }), true);
+  });
+});
+
+// --- localDateStr / localTimeStr ---
+
+describe('localDateStr', () => {
+  it('returns YYYY-MM-DD from a Date object', () => {
+    const d = new Date(2026, 2, 15); // March 15
+    assert.equal(taskDb.localDateStr(d), '2026-03-15');
+  });
+
+  it('pads single-digit months and days', () => {
+    const d = new Date(2026, 0, 5); // Jan 5
+    assert.equal(taskDb.localDateStr(d), '2026-01-05');
+  });
+});
+
+describe('localTimeStr', () => {
+  it('returns HH:MM from a Date object', () => {
+    const d = new Date(2026, 0, 1, 14, 30);
+    assert.equal(taskDb.localTimeStr(d), '14:30');
+  });
+
+  it('pads single-digit hours and minutes', () => {
+    const d = new Date(2026, 0, 1, 9, 5);
+    assert.equal(taskDb.localTimeStr(d), '09:05');
+  });
+});
+
+// --- Time-based task CRUD ---
+
+describe('time-based due dates', () => {
+  before(setupFreshDb);
+  after(cleanup);
+
+  it('creates a task with date+time due', () => {
+    const task = taskDb.createTask({ title: 'Timed task', due: '2026-04-01 14:00' });
+    assert.equal(task.due, '2026-04-01 14:00');
+  });
+
+  it('updates a task to add time', () => {
+    const task = taskDb.createTask({ title: 'Add time later' });
+    const updated = taskDb.updateTask(task.id, { due: '2026-04-01 09:30' });
+    assert.equal(updated.due, '2026-04-01 09:30');
+  });
+
+  it('updates a task to remove time (date-only)', () => {
+    const task = taskDb.createTask({ title: 'Remove time', due: '2026-04-01 14:00' });
+    const updated = taskDb.updateTask(task.id, { due: '2026-04-01' });
+    assert.equal(updated.due, '2026-04-01');
+  });
+
+  it('rejects invalid due via createTask', () => {
+    assert.throws(() => taskDb.createTask({ title: 'Bad date', due: 'not-valid' }), /Invalid due format/);
+  });
+
+  it('rejects invalid due via updateTask', () => {
+    const task = taskDb.createTask({ title: 'Bad update target' });
+    assert.throws(() => taskDb.updateTask(task.id, { due: 'garbage' }), /Invalid due format/);
+  });
+
+  it('sorts mixed date-only and date+time correctly', () => {
+    taskDb.close();
+    setupFreshDb();
+
+    taskDb.createTask({ title: 'Date only', due: '2026-04-01' });
+    taskDb.createTask({ title: 'Morning', due: '2026-04-01 09:00' });
+    taskDb.createTask({ title: 'Afternoon', due: '2026-04-01 14:00' });
+    taskDb.createTask({ title: 'Next day', due: '2026-04-02' });
+
+    const active = taskDb.listActive();
+    assert.equal(active[0].title, 'Date only');     // 2026-04-01
+    assert.equal(active[1].title, 'Morning');        // 2026-04-01 09:00
+    assert.equal(active[2].title, 'Afternoon');      // 2026-04-01 14:00
+    assert.equal(active[3].title, 'Next day');       // 2026-04-02
+  });
+});
