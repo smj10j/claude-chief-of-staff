@@ -138,7 +138,7 @@ Each person's folder has two layers:
 **Steps (in order):**
 
 1. **Read raw notes** from the session file (everything under `## Raw Notes`)
-2. **Read the shared Google Doc** if available via integration (link in person's README) — capture agenda items the other person added, outcomes written live, anything not in raw notes
+2. **Read the shared Google Doc** if available via integration (link in person's README) — capture agenda items the other person added, outcomes written live, anything not in raw notes. **Always read the shared Google Doc/collaborative notes during digest** — the other person often takes live notes there that don't appear in the session file's Raw Notes section
 3. **Restructure the session file:**
    - Keep `## Shared Agenda` at the top unchanged
    - Replace `## Raw Notes` and `## Prep` with structured `## Session Notes` (organized by topic, not by order taken)

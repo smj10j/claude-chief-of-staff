@@ -105,7 +105,7 @@ function buildTree() {
       if (name === 'INDEX.md') continue;
       const projDir = path.join(projectsDir, name);
       if (!fs.statSync(projDir).isDirectory()) continue;
-      const files = fs.readdirSync(projDir).filter(f => f.endsWith('.md'));
+      const files = fs.readdirSync(projDir).filter(f => f.endsWith('.md')).sort();
       tree.projects.push({
         name,
         label: formatName(name),
@@ -181,14 +181,27 @@ function buildTree() {
   return tree;
 }
 
+function isDateName(name) {
+  return /^\d{4}-\d{2}-\d{2}/.test(name);
+}
+
 function collectMarkdownFiles(dir, result, root) {
-  for (const entry of fs.readdirSync(dir).sort()) {
+  const entries = fs.readdirSync(dir).sort();
+  // Sort date-named files descending (newest first), others ascending
+  const files = [];
+  for (const entry of entries) {
     const full = path.join(dir, entry);
     if (fs.statSync(full).isDirectory()) {
       collectMarkdownFiles(full, result, root);
     } else if (entry.endsWith('.md')) {
-      result.push({ name: entry.replace('.md', ''), path: path.relative(root, full) });
+      files.push({ name: entry.replace('.md', ''), path: path.relative(root, full), entry });
     }
+  }
+  if (files.length > 0 && files.some(f => isDateName(f.entry))) {
+    files.reverse(); // date-named files: newest first
+  }
+  for (const f of files) {
+    result.push({ name: f.name, path: f.path });
   }
 }
 
@@ -263,7 +276,10 @@ function listAnnotatedFiles() {
 
 function loadTasks() {
   try {
-    return taskDb.loadAll();
+    const all = taskDb.loadAll();
+    // Enrich with computed isOverdue field
+    all.active = all.active.map(t => ({ ...t, isOverdue: taskDb.isOverdue(t) }));
+    return all;
   } catch (e) {
     console.error('[tasks] SQLite load failed, falling back to YAML:', e.message);
     return loadTasksFromYaml();

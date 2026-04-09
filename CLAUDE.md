@@ -71,6 +71,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc for mobile reading. Optionally pass a doc URL to update in-place.
 - `/process-ui-annotations [file]` — Process annotations left in the Chief of Staff UI. Reads highlighted text + instructions, applies changes, clears annotations. Triggered by the "Process with Claude" button in the UI, or run manually from terminal.
+- `/review-reminders` — Import pending items from Apple Reminders into the task database. Reads from a configured list, lets you selectively import with tag/date enrichment.
 - `/task-export` — Export the task database to YAML files for backup or debugging
 - `/internal-consistency-check` — Audit repo for internal inconsistencies: missing READMEs, mismatched listings, orphaned folders, stale sessions
 - `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
@@ -91,7 +92,9 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
   bash bin/db/task-cli.sh list --archived --since 2026-03-20  # Recent archive
   bash bin/db/task-cli.sh get <id>                # Single task details
   bash bin/db/task-cli.sh add "Task title" --due 2026-04-01 --priority high --tags work,admin
-  bash bin/db/task-cli.sh update <id> --due 2026-04-15 --priority medium
+  bash bin/db/task-cli.sh add "Prep for 1:1" --due "2026-04-01 14:00"  # Due at 2pm
+  bash bin/db/task-cli.sh add "Send update" --due "today at 2pm"       # Natural language
+  bash bin/db/task-cli.sh update <id> --due "2026-04-15 09:00" --priority medium
   bash bin/db/task-cli.sh done <id>               # Mark done (auto-archives)
   bash bin/db/task-cli.sh archive <id>            # Drop without completing
   bash bin/db/task-cli.sh unarchive <id>          # Return to active list
@@ -119,6 +122,7 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
 
 - `bin/` - tooling scripts (template code)
   - `bin/db/` - task CLI, data access module, migrations, tests
+  - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run.
   - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
 - `data/` - all user-specific data (ignored by upstream review)
   - `data/cos.db` - SQLite task database (auto-created on first run)

@@ -6,6 +6,46 @@
 const taskDb = require('./task-db.js');
 const path = require('path');
 
+// --- Natural language due date parsing ---
+
+function parseDue(input) {
+  if (!input) return null;
+  const s = input.trim();
+
+  // Already canonical
+  if (/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(s)) return s;
+
+  // Relative date keywords: today, tomorrow (with optional time)
+  const dateKeywords = { today: 0, tomorrow: 1 };
+  const match = s.match(/^(today|tomorrow)(?:\s+(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?$/i);
+  if (match) {
+    const date = new Date();
+    date.setDate(date.getDate() + dateKeywords[match[1].toLowerCase()]);
+    const dateStr = taskDb.localDateStr(date);
+    if (!match[2]) return dateStr;
+    return `${dateStr} ${parseTime(match[2])}`;
+  }
+
+  // YYYY-MM-DD with natural time (e.g., "2026-04-01 at 2pm")
+  const dateTimeMatch = s.match(/^(\d{4}-\d{2}-\d{2})\s+(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)$/i);
+  if (dateTimeMatch) {
+    return `${dateTimeMatch[1]} ${parseTime(dateTimeMatch[2])}`;
+  }
+
+  return s; // Pass through, let toDueStr() validate
+}
+
+function parseTime(timeStr) {
+  const t = timeStr.trim().toLowerCase();
+  const m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+  if (!m) throw new Error(`Cannot parse time: "${timeStr}"`);
+  let hours = parseInt(m[1]);
+  const minutes = m[2] || '00';
+  if (m[3] === 'pm' && hours < 12) hours += 12;
+  if (m[3] === 'am' && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, '0')}:${minutes}`;
+}
+
 const COMMANDS = {
   list: 'List tasks (active by default)',
   get: 'Get a single task by ID',
@@ -81,9 +121,9 @@ function cmdList(flags, format) {
     tasks = tasks.filter(t => t.project === flags.project);
   }
   if (flags['due-by']) {
-    const cutoff = flags['due-by'] === 'today'
-      ? new Date().toISOString().slice(0, 10)
-      : flags['due-by'];
+    let cutoff = parseDue(flags['due-by']);
+    // Date-only cutoff should include all times on that date
+    if (/^\d{4}-\d{2}-\d{2}$/.test(cutoff)) cutoff += ' 23:59';
     tasks = tasks.filter(t => t.due && t.due <= cutoff);
   }
 
@@ -105,7 +145,7 @@ function cmdAdd(flags, format) {
   const task = taskDb.createTask({
     title,
     priority: flags.priority,
-    due: flags.due,
+    due: parseDue(flags.due),
     project: flags.project,
     tags: flags.tags ? flags.tags.split(',').map(t => t.trim()) : undefined,
     notes: flags.notes,
@@ -120,7 +160,7 @@ function cmdUpdate(flags, format) {
   const fields = {};
   if (flags.title) fields.title = flags.title;
   if (flags.priority) fields.priority = flags.priority;
-  if ('due' in flags) fields.due = flags.due || null;
+  if ('due' in flags) fields.due = parseDue(flags.due) || null;
   if (flags.project !== undefined) fields.project = flags.project || null;
   if (flags.notes !== undefined) fields.notes = flags.notes || null;
   if (flags.tags) fields.tags = flags.tags.split(',').map(t => t.trim());
@@ -178,16 +218,17 @@ function cmdRecurring(flags, format) {
 
 function outputTasks(tasks, format) {
   if (format === 'json') {
-    console.log(JSON.stringify(tasks, null, 2));
+    const enriched = tasks.map(t => ({ ...t, isOverdue: taskDb.isOverdue(t) }));
+    console.log(JSON.stringify(enriched, null, 2));
   } else if (format === 'table') {
-    console.log('ID'.padEnd(40) + 'STATUS'.padEnd(14) + 'PRI'.padEnd(8) + 'DUE'.padEnd(12) + 'PROJECT'.padEnd(25) + 'TITLE');
-    console.log('-'.repeat(120));
+    console.log('ID'.padEnd(40) + 'STATUS'.padEnd(14) + 'PRI'.padEnd(8) + 'DUE'.padEnd(18) + 'PROJECT'.padEnd(25) + 'TITLE');
+    console.log('-'.repeat(126));
     for (const t of tasks) {
       console.log(
         (t.id || '').padEnd(40) +
         (t.status || '').padEnd(14) +
         (t.priority || '').padEnd(8) +
-        (t.due || '').padEnd(12) +
+        (t.due || '').padEnd(18) +
         (t.project || '').padEnd(25) +
         (t.title || '')
       );
@@ -240,12 +281,15 @@ Commands:
     --since YYYY-MM-DD       Filter archived tasks by date
     --tag TAG                Filter by tag (e.g., --tag work, --tag team:payments)
     --project ID             Filter by project
-    --due-by DATE|today      Filter tasks due by date
+    --due-by DATE|today      Filter tasks due on or before date/time
+                             Accepts same formats as --due (e.g., "today 14:00")
 
   get <id>                   Get a single task by ID
 
   add <title>                Create a new task
-    --due YYYY-MM-DD         Due date
+    --due "YYYY-MM-DD"       Due date (date only)
+    --due "YYYY-MM-DD HH:MM" Due date with time
+    --due "today at 2pm"     Natural language (today/tomorrow + optional time)
     --priority high|medium|low
     --tags tag1,tag2         Comma-separated tags
     --project ID             Project ID
@@ -270,4 +314,9 @@ Compact output columns: id, status, priority, due, project, title
   `.trim());
 }
 
-main();
+// Export for testing (only used when required as a module, not when run as CLI)
+if (require.main === module) {
+  main();
+} else {
+  module.exports = { parseDue, parseTime };
+}

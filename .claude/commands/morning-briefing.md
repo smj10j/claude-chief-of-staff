@@ -6,9 +6,9 @@ Generate a prioritized daily briefing. Run all data gathering in parallel, then 
 
 1. **Calendar**: If a calendar integration is available, get today's events. Convert all times to the user's local timezone. Note which are accepted vs. maybe vs. declined.
 
-2. **Tasks**: Run `bash bin/db/task-cli.sh list --format json` and `bash bin/db/task-cli.sh recurring --format json`. Identify:
-   - Tasks due today
-   - Overdue tasks (past due date)
+2. **Tasks**: Run `bash bin/db/task-cli.sh list --format json` and `bash bin/db/task-cli.sh recurring --format json`. The JSON output includes a computed `isOverdue` field. Identify:
+   - Tasks due today (with times, if set - partition into time-specific vs. end-of-day)
+   - Overdue tasks (use the `isOverdue` field - this is time-aware for tasks with due times)
    - In-progress tasks
    - High-priority tasks without due dates that may need attention
 
@@ -23,6 +23,8 @@ Generate a prioritized daily briefing. Run all data gathering in parallel, then 
 
 6. **Projects**: Scan `data/files/projects/INDEX.md` for active projects with upcoming milestones.
 
+7. **Mobile Captures**: Run `bash bin/reminders/apple-reminders.sh list`. If non-empty, include in briefing. If the adapter fails (permission denied, compilation error), log the error as a note rather than failing the entire briefing. Run this in parallel with the other data gathering steps — it takes ~1.5s.
+
 ## Output Format
 
 ### Calendar
@@ -31,8 +33,24 @@ Table with: Time | Meeting | Status | Notes (prep needed, conflicts, key context
 ### Top Priorities
 Numbered list of the 3-5 most important things to focus on today, synthesized from tasks + calendar + signals. Explain WHY each is the top priority (deadline, dependency, opportunity).
 
+### Mobile Captures
+If `bin/reminders/apple-reminders.sh list` returned pending reminders, display them:
+
+```markdown
+## Mobile Captures (N pending)
+
+| # | Reminder | Due | Notes |
+|---|----------|-----|-------|
+| 1 | Follow up with Alex on threshold changes | - | - |
+| 2 | Book dentist appointment | Apr 5 | Re: crown |
+
+Run `/review-reminders` to import.
+```
+
+If no pending reminders, omit this section entirely. If the adapter failed, include a brief note (e.g., "Mobile Captures: adapter error — Reminders access denied") but don't fail the briefing.
+
 ### Tasks Due / Overdue
-Grouped list. Flag anything that should be re-dated vs. actually done today.
+Grouped list. If any tasks have specific due times (due field contains `YYYY-MM-DD HH:MM`), list them under a **Time-specific** sub-heading in chronological order with the time shown (e.g., `09:00 - Prep for 1:1`). Tasks due today without a specific time go under **By end of day**. Flag anything that should be re-dated vs. actually done today.
 
 ### 1:1 Prep Status
 For each 1:1 today: prepped or needs prep. If needs prep, offer to run the prep workflow. **Flag if the other person has not accepted, has declined, or is tentative on the calendar invite** — don't prep for a meeting that may not happen. Also flag any OOO signals from Slack/comms.
