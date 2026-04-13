@@ -90,7 +90,7 @@ Each person's folder has two layers:
 1. Read the person's `README.md` + most recent session file. Note open action items and follow-ups
 2. If a Slack/comms integration is available, search for recent context involving that person (since last 1:1 or last 2 weeks)
 3. Run targeted searches based on README topics and open action items
-4. Cross-reference `tasks.yaml` and project docs for anything related to this person
+4. Cross-reference the task database (`bash bin/db/task-cli.sh list`) and project docs for anything related to this person
 5. Contextualize by relationship type (see "How I Run 1:1s" above)
 6. Update README if new context changes what's top of mind
 7. Create the session file using the template below
@@ -146,7 +146,7 @@ Each person's folder has two layers:
    - Add `## Follow-ups` with checkboxed action items
    - Preserve original prep under `## Prep Context (pre-session)` for reference
 4. **Update the person's README** — propagate durable changes (role shifts, personnel, growth signals, relationship dynamics). Update "as of" dates
-5. **Update tasks.yaml** — augment existing tasks with new context, update status/dates if discussed
+5. **Update tasks** — augment existing tasks with new context via the task CLI, update status/dates if discussed
 6. **Propose new action items** — list suggested new tasks, task updates, and potential new projects for review. **Do not create until approved**
 
 ### Conventions
