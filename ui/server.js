@@ -120,7 +120,7 @@ function buildTree() {
 
   // Areas (non-1:1, non-meeting)
   const areasDir = path.join(ROOT, 'data', 'files', 'areas');
-  for (const name of ['career', 'comms', 'daily-briefings']) {
+  for (const name of ['career', 'comms', 'daily-briefings', 'task-triage']) {
     const areaDir = path.join(areasDir, name);
     if (!fs.existsSync(areaDir)) continue;
     const files = [];

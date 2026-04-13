@@ -7,14 +7,15 @@ Review changes in this personal instance and identify what can be generalized ba
 
 ## Execution Strategy
 
-**Delegate the read-heavy phases (Steps 0-3) to a single Agent.** Launch one Agent that:
-1. Locates or clones the upstream repo
-2. Runs `/internal-consistency-check` (which itself uses an Agent for the audit)
-3. Diffs all key files between this repo and upstream
-4. Classifies each change as Generalizable / Personal / Needs Templatizing
-5. Returns the structured findings table from Step 4
+**Run the internal consistency check first, then delegate the diff/classify work to an Agent.**
 
-After the Agent returns, present the findings and proceed with Steps 5-6 (execute and summarize) in the main conversation — those need user confirmation and write access.
+1. **Step 1 first (serial):** Run `/internal-consistency-check` in the main conversation. Fix any findings before proceeding. This ensures the repo is clean and consistent before diffing against upstream — otherwise the consistency fixes would show up as upstream-portable changes when they're really just local housekeeping.
+2. **Steps 0, 2-4 (delegated):** After consistency fixes are applied, launch one Agent that:
+   - Locates or clones the upstream repo
+   - Diffs all key files between this repo and upstream
+   - Classifies each change as Generalizable / Personal / Needs Templatizing
+   - Returns the structured findings table from Step 4
+3. **Steps 5-6 (main conversation):** Present findings and proceed with execution and summary — these need user confirmation and write access.
 
 ## Steps
 
@@ -30,9 +31,9 @@ If found, use it. If not found:
 
 Store the resolved path as `$UPSTREAM` for the rest of the workflow.
 
-### 1. Internal Consistency Check
+### 1. Internal Consistency Check (serial — run before delegating)
 
-Run `/internal-consistency-check` to audit the local repo for internal inconsistencies. Fix any findings before proceeding to the upstream diff — this keeps the repo clean before sharing changes externally.
+Run `/internal-consistency-check` to audit the local repo for internal inconsistencies. **Fix all findings in the main conversation before launching the diff Agent.** This keeps the repo clean before sharing changes externally and prevents consistency fixes from polluting the upstream diff.
 
 ### 2. Diff the Repos
 

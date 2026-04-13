@@ -67,6 +67,8 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week
 - `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
 - `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
+- `/digest-meeting [name]` — Digest notes from a completed 1:1 or meeting: reads shared Google Doc + raw notes, structures session file, updates READMEs, proposes task updates
+- `/level-candidate [name]` — IC leveling assessment against your engineering leveling framework
 - `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches
 - `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc for mobile reading. Optionally pass a doc URL to update in-place.
@@ -134,7 +136,8 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/one-on-ones/` - 1:1 system with per-person folders
         - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
         - Organized by relationship type: `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
-        - **Session workflow defined in `data/files/areas/one-on-ones/README.md`** — follow this for all prep and digest steps
+        - **Full people listing and folder tree in** `data/files/areas/one-on-ones/README.md` — that file is the source of truth for who has folders and which category they're in
+        - **Session workflow also defined in** `data/files/areas/one-on-ones/README.md` — follow this for all prep and digest steps
         - Before a 1:1: read README + last session, generate session doc with empty `## Raw Notes` section. After: digest raw notes, read shared doc if available via integration, update README, update tasks, propose new AIs
         - Every session file MUST start with a `## Shared Agenda` section at the top — a compressed, copy/paste-ready list that can be dropped directly into a shared doc. Each item should be a question or a topic to check in on. Keep it tight — no background context unless absolutely necessary. The full prep (context, coaching notes, research) goes in the sections below. This shared agenda serves three purposes: (1) gives the other person context before the meeting, (2) structures the live conversation, (3) makes it easy for Claude to read the doc afterward and capture outcomes.
       - `data/files/areas/meetings/` - recurring meetings and forums (not 1:1s). Same pattern: `README.md` (persistent context, attendees, standing agenda) + `sessions/` (dated prep/notes)
@@ -142,6 +145,7 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/career/` - promotion tracking, growth plans, strategic relationships
       - `data/files/areas/comms/` - drafted messages and comms
       - `data/files/areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
+      - `data/files/areas/task-triage/` - working directory for `/task-triage` output (triage.md)
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
 - `cos-dev/` - Chief of Staff development documentation
   - `cos-dev/SECURITY.md` - Threat model, current controls, security checklist

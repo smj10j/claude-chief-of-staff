@@ -15,4 +15,5 @@ data/cos.db-wal
 data/cos.db-shm
 data/files/exports/
 bin/reminders/.apple-reminders-bin
+data/files/exports/
 cos-dev/TODO-prd-*.md
