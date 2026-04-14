@@ -149,6 +149,14 @@ Each person's folder has two layers:
 5. **Update tasks** — augment existing tasks with new context via the task CLI, update status/dates if discussed
 6. **Propose new action items** — list suggested new tasks, task updates, and potential new projects for review. **Do not create until approved**
 
+### Source Links in Prep
+
+Include links to source materials (Slack threads, Google Drive files, Jira tickets, Confluence articles) in session prep when appropriate. Showing your work makes prep more useful — the user can click through to see the full context. Be thoughtful about when to link:
+
+- **Link when:** referencing a specific Slack discussion/decision, a shared document, a Jira ticket, or a Confluence page that the user might want to read
+- **Don't link when:** the reference is obvious, the user already knows the URL, or the link wouldn't add any value
+- Most of the time, linking is useful. Err on the side of including links.
+
 ### Conventions
 
 | Situation | What to write in Raw Notes |

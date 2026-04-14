@@ -30,6 +30,7 @@ Below the shared agenda, include:
 - Topics from the README's "Next Session Topics" section (if any)
 - Questions from the README's rotation questions
 - Any signals from Slack/tasks that should be discussed
+- Include links to source materials (Slack threads, Google Docs, Jira tickets, Confluence) inline in the prep. Show your work — most of the time a link is useful. Be thoughtful about when to link and when not to.
 - A `## Raw Notes` section at the bottom (empty, for live note-taking)
 
 ### 4. Offer to Copy
