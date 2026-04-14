@@ -1,6 +1,6 @@
 # Apple Reminders Integration
 
-Bridges the work-agent task database with Apple Reminders for mobile notifications.
+Bridges the chief-of-staff task database with Apple Reminders for mobile notifications.
 
 ## Components
 
@@ -43,7 +43,7 @@ bash bin/reminders/overdue-notifier.sh
 
 **Configuration:**
 - `NOTIFIER_LIST` — which Apple Reminders list to create notifications in (default: "New Tasks")
-- `WORK_AGENT_DIR` — path to the work-agent repo (auto-detected)
+- `COS_DIR` — path to the chief-of-staff repo (auto-detected)
 
 ### Setup Script (`overdue-notifier-setup.sh`)
 
@@ -66,7 +66,7 @@ bash bin/reminders/overdue-notifier-setup.sh uninstall
 **What install does:**
 1. Compiles the Swift adapter (if needed)
 2. Tests Reminders access (may prompt for permission)
-3. Creates a `launchd` plist at `~/Library/LaunchAgents/com.work-agent.overdue-notifier.plist`
+3. Creates a `launchd` plist at `~/Library/LaunchAgents/com.chief-of-staff.overdue-notifier.plist`
 4. Loads the agent
 
 **Logs:** `data/logs/overdue-notifier.log` and `data/logs/overdue-notifier.err`

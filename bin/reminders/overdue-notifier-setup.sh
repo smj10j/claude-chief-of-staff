@@ -22,11 +22,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORK_AGENT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PLIST_NAME="com.work-agent.overdue-notifier"
+COS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PLIST_NAME="com.chief-of-staff.overdue-notifier"
 PLIST_PATH="$HOME/Library/LaunchAgents/${PLIST_NAME}.plist"
 NOTIFIER_SCRIPT="$SCRIPT_DIR/overdue-notifier.sh"
-LOG_DIR="$WORK_AGENT_DIR/data/logs"
+LOG_DIR="$COS_DIR/data/logs"
 
 # Default schedule: 8:00 AM local time. Override with NOTIFIER_HOUR env var.
 HOUR="${NOTIFIER_HOUR:-8}"
@@ -63,8 +63,8 @@ install() {
     </array>
     <key>EnvironmentVariables</key>
     <dict>
-        <key>WORK_AGENT_DIR</key>
-        <string>${WORK_AGENT_DIR}</string>
+        <key>COS_DIR</key>
+        <string>${COS_DIR}</string>
         <key>PATH</key>
         <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
     </dict>

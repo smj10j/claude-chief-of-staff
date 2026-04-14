@@ -12,15 +12,15 @@
 #
 # Configuration:
 #   NOTIFIER_LIST  — Apple Reminders list to write to (default: "Overdue Tasks")
-#   WORK_AGENT_DIR — Path to the work-agent repo (default: script's grandparent dir)
+#   COS_DIR — Path to the chief-of-staff repo (default: script's grandparent dir)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORK_AGENT_DIR="${WORK_AGENT_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+COS_DIR="${COS_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 REMINDERS_SH="$SCRIPT_DIR/apple-reminders.sh"
-TASK_CLI="$WORK_AGENT_DIR/bin/db/task-cli.sh"
-NOTIFIED_FILE="$WORK_AGENT_DIR/data/.overdue-notified"
+TASK_CLI="$COS_DIR/bin/db/task-cli.sh"
+NOTIFIED_FILE="$COS_DIR/data/.overdue-notified"
 DRY_RUN=false
 
 if [[ "${1:-}" == "--dry-run" ]]; then
