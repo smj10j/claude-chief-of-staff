@@ -27,8 +27,13 @@ The agent ingests data from multiple external sources and has write access to th
 | Google Docs/Sheets | Google Workspace MCP, Glean - 1:1 prep, doc reads | Medium - requires doc edit access |
 | Jira tickets | Atlassian MCP - task triage, epic planning | Medium - requires Jira access |
 | Calendar events | Google Workspace MCP - morning briefings | Low - requires calendar invite access |
+| Apple Reminders | EventKit via `bin/reminders/` - `/review-reminders` import | **None** - local-only, user-authored (see below) |
 
 <!-- Update this table when you add new MCP servers or external data sources -->
+
+**Why Apple Reminders doesn't need untrusted content tags:**
+
+Not all data sources carry prompt injection risk. Apple Reminders is read via EventKit on the local machine - the content is authored entirely by the user. There is no vector for a third party to inject adversarial text into your own reminder titles. This is fundamentally different from Slack messages (authored by others), web pages (authored by anyone), or wiki pages (editable by coworkers). Local, single-author data sources like Reminders, local files, and the task database itself don't warrant `<untrusted-content>` wrapping. Reserve that treatment for data where the author is not the user.
 
 **What an attacker could achieve:**
 

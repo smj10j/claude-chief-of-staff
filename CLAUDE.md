@@ -124,7 +124,9 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
 
 - `bin/` - tooling scripts (template code)
   - `bin/db/` - task CLI, data access module, migrations, tests
-  - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run.
+  - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run. Supports `list`, `complete`, and `add` commands.
+    - `bin/reminders/overdue-notifier.sh` - checks the task DB for overdue tasks and creates Apple Reminders with alarms (read-only — never modifies tasks). Tracks notified tasks in `data/.overdue-notified` to avoid duplicates.
+    - `bin/reminders/overdue-notifier-setup.sh` - installs/uninstalls a macOS launchd agent that runs the notifier daily at 8:00 AM. Run `bash bin/reminders/overdue-notifier-setup.sh install` to enable.
   - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
 - `data/` - all user-specific data (ignored by upstream review)
   - `data/cos.db` - SQLite task database (auto-created on first run)
@@ -147,7 +149,9 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
       - `data/files/areas/task-triage/` - working directory for `/task-triage` output (triage.md)
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
-- `cos-dev/` - Chief of Staff development documentation
+- `cos-dev/` - Chief of Staff UI development documentation
+  - `cos-dev/TDD.md` - Technical design document (current architecture)
+  - `cos-dev/DESIGN.md` - Design principles guiding UI decisions
   - `cos-dev/SECURITY.md` - Threat model, current controls, security checklist
   - `cos-dev/implementation-loop.md` - Process for implementing PRDs (follow this when building features)
   - `cos-dev/PRDs/` - Product requirement documents for UI features
@@ -168,6 +172,18 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
 ## Daily Briefing
 
 When asked "what's on my list today?", "what should I prioritize?", or similar — run the `/morning-briefing` command. It handles calendar, tasks, 1:1/meeting prep, signals, and writes a dated briefing file.
+
+## Overdue Task Notifications
+
+A macOS `launchd` agent runs daily at 8:00 AM, checks the task DB for overdue items, and creates Apple Reminders with alarms so they push to the phone. Read-only — never modifies the task database. See `bin/reminders/README.md` for full docs.
+
+```bash
+bash bin/reminders/overdue-notifier-setup.sh install     # Enable (daily at 8 AM)
+bash bin/reminders/overdue-notifier-setup.sh status      # Check if running
+bash bin/reminders/overdue-notifier-setup.sh uninstall   # Disable
+bash bin/reminders/overdue-notifier.sh --dry-run         # Preview without creating reminders
+NOTIFIER_HOUR=9 bash bin/reminders/overdue-notifier-setup.sh install  # Change time
+```
 
 ## 1:1 Prep
 
