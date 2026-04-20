@@ -39,6 +39,18 @@ content = content.replace(/^-{3,}\s*$/gm, '');
 content = content.replace(/^NOTE:.*$/gm, '');
 // Replace em dashes
 content = content.replace(/\u2014/g, ' - ');
+// Decode HTML entities
+content = content.replace(/&gt;/g, '>');
+content = content.replace(/&lt;/g, '<');
+content = content.replace(/&amp;/g, '&');
+content = content.replace(/&quot;/g, '"');
+content = content.replace(/&#39;/g, "'");
+content = content.replace(/&nbsp;/g, ' ');
+// Remove backslash escapes from markdown (e.g. \- \~ \# \*)
+content = content.replace(/\\([~\-#*`|>![\](){}+.])/g, '$1');
+// Strip <mark> annotation tags (from UI annotations)
+content = content.replace(/<mark[^>]*>/g, '');
+content = content.replace(/<\/mark>/g, '');
 // Collapse excess blank lines
 content = content.replace(/\n{4,}/g, '\n\n\n');
 content = content.trim();
@@ -87,13 +99,26 @@ function parseInlineRuns(text) {
         continue;
       }
     }
-    // Link [text](url)
+    // Link [text](url) — also handles [**bold text**](url)
     if (text[i] === '[') {
       const cb = text.indexOf(']', i);
       if (cb !== -1 && text[cb + 1] === '(') {
         const cp = text.indexOf(')', cb + 2);
         if (cp !== -1) {
-          runs.push({ t: text.substring(i + 1, cb), link: text.substring(cb + 2, cp) });
+          let linkText = text.substring(i + 1, cb);
+          const linkUrl = text.substring(cb + 2, cp);
+          const run = { t: linkText, link: linkUrl };
+          // Strip bold markers from link text and flag as bold
+          if (linkText.startsWith('**') && linkText.endsWith('**')) {
+            run.t = linkText.slice(2, -2);
+            run.b = true;
+          }
+          // Strip italic markers from link text and flag as italic
+          if (run.t.startsWith('*') && run.t.endsWith('*') && !run.t.startsWith('**')) {
+            run.t = run.t.slice(1, -1);
+            run.i = true;
+          }
+          runs.push(run);
           i = cp + 1;
           continue;
         }
@@ -128,16 +153,26 @@ for (let i = 0; i < lines.length; i++) {
   // Blank line
   if (trimmed === '') { addSpacer(); continue; }
 
-  // Heading
+  // Heading — strip inline markdown from heading text
   const hm = trimmed.match(/^(#{1,4})\s+(.+)$/);
-  if (hm) { addBlock({ type: 'h' + hm[1].length, text: hm[2] }); continue; }
+  if (hm) {
+    let hText = hm[2];
+    // Strip bold markers
+    hText = hText.replace(/\*\*([^*]+)\*\*/g, '$1');
+    // Strip link syntax, keep display text
+    hText = hText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    addBlock({ type: 'h' + hm[1].length, text: hText });
+    continue;
+  }
 
   // Table row
   if (trimmed.match(/^\|/)) {
     if (trimmed.match(/^\|[\s\-:|]+\|$/)) continue; // separator row
     const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+    // Parse inline runs for each cell so bold/italic/links render properly
+    const parsedCells = cells.map(c => parseInlineRuns(c));
     if (tableRows === null) tableRows = [];
-    tableRows.push(cells);
+    tableRows.push(parsedCells);
     continue;
   }
 
@@ -178,7 +213,11 @@ const blocksJson = JSON.stringify(blocks);
 const script = `var blocks = ${blocksJson};
 
 var body = doc.getBody();
-body.clear();
+// Clear all content: append a blank paragraph first, then remove everything before it
+body.appendParagraph('');
+while (body.getNumChildren() > 1) {
+  body.removeChild(body.getChild(0));
+}
 
 for (var i = 0; i < blocks.length; i++) {
   var b = blocks[i];
@@ -205,7 +244,48 @@ for (var i = 0; i < blocks.length; i++) {
     applyRuns(li, b.runs);
 
   } else if (b.type === 'table') {
-    var table = body.appendTable(b.rows);
+    // Build plain-text rows for table structure, then apply inline formatting
+    var plainRows = [];
+    for (var ri = 0; ri < b.rows.length; ri++) {
+      var row = b.rows[ri];
+      var plainCells = [];
+      for (var ci = 0; ci < row.length; ci++) {
+        var cell = row[ci];
+        if (typeof cell === 'string') {
+          plainCells.push(cell);
+        } else {
+          // cell is an array of runs - join their text
+          var cellText = '';
+          for (var cri = 0; cri < cell.length; cri++) cellText += cell[cri].t;
+          plainCells.push(cellText);
+        }
+      }
+      plainRows.push(plainCells);
+    }
+    var table = body.appendTable(plainRows);
+    // Apply inline formatting to cells
+    for (var ri = 0; ri < b.rows.length; ri++) {
+      var row = b.rows[ri];
+      var tableRow = table.getRow(ri);
+      for (var ci = 0; ci < row.length; ci++) {
+        var cell = row[ci];
+        if (typeof cell !== 'string' && Array.isArray(cell)) {
+          var cellElem = tableRow.getCell(ci).editAsText();
+          var offset = 0;
+          for (var cri = 0; cri < cell.length; cri++) {
+            var run = cell[cri];
+            var runEnd = offset + run.t.length - 1;
+            if (run.t.length > 0) {
+              if (run.b) cellElem.setBold(offset, runEnd, true);
+              if (run.i) cellElem.setItalic(offset, runEnd, true);
+              if (run.link) cellElem.setLinkUrl(offset, runEnd, run.link);
+            }
+            offset += run.t.length;
+          }
+        }
+      }
+    }
+    // Bold header row
     var headerRow = table.getRow(0);
     for (var c = 0; c < headerRow.getNumCells(); c++) {
       headerRow.getCell(c).editAsText().setBold(true);
@@ -224,8 +304,9 @@ function applyRuns(element, runs) {
   for (var r = 0; r < runs.length; r++) {
     var run = runs[r];
     var text = element.appendText(run.t);
-    if (run.b) text.setBold(true);
-    if (run.i) text.setItalic(true);
+    // Explicitly set bold/italic to override inherited formatting
+    text.setBold(!!run.b);
+    text.setItalic(!!run.i);
     if (run.link) text.setLinkUrl(run.link);
   }
 }

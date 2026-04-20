@@ -78,11 +78,17 @@ export function initToolbar(bubbleMenuEl) {
     updateActiveStates(bubbleMenuEl);
   });
 
-  // Update active button states when editor selection changes
+  // Update active button states when editor selection changes.
+  // Only listen to selectionUpdate (not every transaction) to avoid
+  // expensive DOM queries on every keystroke in large documents.
   const editor = getEditor();
   if (editor) {
-    editor.on('selectionUpdate', () => updateActiveStates(bubbleMenuEl));
-    editor.on('transaction', () => updateActiveStates(bubbleMenuEl));
+    let activeStatesTimer = null;
+    const debouncedUpdate = () => {
+      clearTimeout(activeStatesTimer);
+      activeStatesTimer = setTimeout(() => updateActiveStates(bubbleMenuEl), 100);
+    };
+    editor.on('selectionUpdate', debouncedUpdate);
   }
 }
 

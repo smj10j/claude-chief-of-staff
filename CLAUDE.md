@@ -64,7 +64,8 @@ Examples:
 Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
 - `/init` — Interactive onboarding: populates CLAUDE.md, creates 1:1 and meeting folders, seeds style guide
 - `/morning-briefing` — Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones
-- `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week
+- `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week, compact old sessions, persist output to `data/files/areas/weekly-reviews/`. Runs automatically every Friday at 8 PM via scheduled launchd agent.
+- `/compact-sessions` — Compact old session files: creates structured summaries, archives originals. Keeps last 3 sessions full-fidelity per person/meeting, compacts older ones. Preserves coaching signals for direct reports. Run standalone or automatically as part of `/weekly-review`.
 - `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
 - `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
 - `/digest-meeting [name]` — Digest notes from a completed 1:1 or meeting: reads shared Google Doc + raw notes, structures session file, updates READMEs, proposes task updates
@@ -124,7 +125,7 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
 
 - `bin/` - tooling scripts (template code)
   - `bin/db/` - task CLI, data access module, migrations, tests
-  - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run. Supports `list`, `complete`, and `add` commands.
+  - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run. Supports `list`, `complete`, `add`, and `update` commands.
     - `bin/reminders/overdue-notifier.sh` - checks the task DB for overdue tasks and creates Apple Reminders with alarms (read-only — never modifies tasks). Tracks notified tasks in `data/.overdue-notified` to avoid duplicates.
     - `bin/reminders/overdue-notifier-setup.sh` - installs/uninstalls a macOS launchd agent that runs the notifier daily at 8:00 AM. Run `bash bin/reminders/overdue-notifier-setup.sh install` to enable.
   - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
@@ -147,6 +148,7 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/career/` - promotion tracking, growth plans, strategic relationships
       - `data/files/areas/comms/` - drafted messages and comms
       - `data/files/areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
+      - `data/files/areas/weekly-reviews/` - Friday weekly review artifacts. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/weekly-review`.
       - `data/files/areas/task-triage/` - working directory for `/task-triage` output (triage.md)
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
 - `cos-dev/` - Chief of Staff UI development documentation
@@ -188,3 +190,71 @@ NOTIFIER_HOUR=9 bash bin/reminders/overdue-notifier-setup.sh install  # Change t
 ## 1:1 Prep
 
 When asked to prep for a 1:1, run `/prep-1on1 [name]`. The full prep workflow, relationship type guidance, and session template are defined in `data/files/areas/one-on-ones/README.md`.
+
+## Leveling Candidates
+
+When asked to level a candidate, run `/level-candidate [name or PDF path]`. Uses the IC competency framework and personal leveling guidelines if available. See `data/files/areas/career/` for leveling docs.
+
+## Session Compaction
+
+Session files are compacted weekly (as part of `/weekly-review`) to keep context window consumption manageable while preserving all information.
+
+### How It Works
+- **Hot (last 3 sessions per person/meeting):** Full fidelity. Read as-is during prep.
+- **Warm (4th+ session):** Original moved to `sessions/archive/`. Compact summary added to a single consolidated file per person/area: `sessions/compacted_STARTDATE_to_ENDDATE.md`. Each session is an H2 section within that file.
+- **Daily briefings:** More aggressive — anything older than 2 weeks is compacted.
+- **Archives:** Originals preserved in `sessions/archive/` for grep/search. Never deleted.
+
+### Prep Behavior
+- `/prep-1on1` and `/morning-briefing` read the last 3 full sessions per person. The `compacted_*.md` file is a lightweight reference for longer-term context threads — scan it if needed, but don't load it by default.
+
+### Running Manually
+```bash
+/compact-sessions              # Compact all candidates
+/compact-sessions [name]       # Compact one person
+/compact-sessions --dry-run    # Preview without changes
+```
+
+## Setup Guide
+
+Steps to set up a new instance of this work management system. Run `/init` first for interactive onboarding, then complete these manual steps.
+
+### Prerequisites
+- **Node.js 22+** — required for task CLI, UI, and tooling scripts. Install via nvm: `nvm install 22`
+- **macOS** — required for Apple Reminders integration (EventKit/Swift)
+- **Claude Code** — the CLI tool that acts as chief-of-staff
+
+### 1. Initialize the Repo
+Run `/init` in Claude Code. This populates CLAUDE.md, creates 1:1 and meeting folders, and seeds the style guide.
+
+### 2. Overdue Task Notifications (Daily, 8 AM)
+Installs a macOS launchd agent that checks for overdue tasks and pushes them to your phone via Apple Reminders.
+```bash
+bash bin/reminders/overdue-notifier-setup.sh install     # Enable (daily at 8 AM)
+bash bin/reminders/overdue-notifier-setup.sh status       # Verify it's running
+bash bin/reminders/overdue-notifier.sh --dry-run          # Test without creating reminders
+NOTIFIER_HOUR=9 bash bin/reminders/overdue-notifier-setup.sh install  # Change time
+```
+
+### 3. Weekly Review Automation (Friday, 8 PM)
+Installs a macOS launchd agent that runs Claude Code CLI every Friday at 8 PM with the `/weekly-review` command. Runs task triage, project health check, session compaction, and persists output.
+```bash
+bash bin/weekly-review/weekly-review-setup.sh install     # Enable (Fridays at 8 PM)
+bash bin/weekly-review/weekly-review-setup.sh status       # Verify it's running
+bash bin/weekly-review/weekly-review-runner.sh             # Test run now
+REVIEW_HOUR=19 bash bin/weekly-review/weekly-review-setup.sh install  # Change time
+```
+Output is saved to `data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md`.
+
+### 4. Chief of Staff UI
+```bash
+/ui    # First run auto-installs Node dependencies and builds
+```
+Opens at http://localhost:3737. WYSIWYG markdown editor with live reload.
+
+### 5. MCP Server Integrations (Optional)
+Each integration requires a one-time setup. The system works without any of them — features degrade gracefully to local-only context.
+- **Slack** — bidirectional search, read, send
+- **Google Workspace** — Calendar, Sheets, Slides, Docs
+- **Jira/Linear** — engineering work items
+- **Observability** (Datadog, etc.) — incident context

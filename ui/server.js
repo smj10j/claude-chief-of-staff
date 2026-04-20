@@ -28,6 +28,23 @@ function findExecutable(name) {
 
 // --- File tree helpers ---
 
+// Cache the tree to avoid re-crawling the filesystem on every request.
+// Invalidated when the watcher detects a file change.
+let cachedTree = null;
+let treeCacheValid = false;
+
+function getCachedTree() {
+  if (!treeCacheValid || !cachedTree) {
+    cachedTree = buildTree();
+    treeCacheValid = true;
+  }
+  return cachedTree;
+}
+
+function invalidateTreeCache() {
+  treeCacheValid = false;
+}
+
 function buildTree() {
   const tree = { people: {}, meetings: [], projects: [], areas: [], reference: [], docs: [] };
 
@@ -50,22 +67,15 @@ function buildTree() {
       const personDir = path.join(dirPath, name);
       if (!fs.statSync(personDir).isDirectory()) continue;
       const sessionsDir = path.join(personDir, 'sessions');
-      let sessions = [];
-      if (fs.existsSync(sessionsDir)) {
-        sessions = fs.readdirSync(sessionsDir)
-          .filter(f => f.endsWith('.md'))
-          .sort()
-          .reverse();
-      }
+      const sessionData = buildSessionList(sessionsDir);
       people.push({
         name,
         label: formatName(name),
         path: path.relative(ROOT, personDir),
         readmePath: path.relative(ROOT, path.join(personDir, 'README.md')),
-        sessions: sessions.map(s => ({
-          name: s.replace('.md', ''),
-          path: path.relative(ROOT, path.join(sessionsDir, s)),
-        })),
+        sessions: sessionData.sessions,
+        compacted: sessionData.compacted,
+        archive: sessionData.archive,
       });
     }
     tree.people[rt.dir] = { label: rt.label, people };
@@ -78,22 +88,15 @@ function buildTree() {
       const meetingDir = path.join(meetingsDir, name);
       if (!fs.statSync(meetingDir).isDirectory()) continue;
       const sessionsDir = path.join(meetingDir, 'sessions');
-      let sessions = [];
-      if (fs.existsSync(sessionsDir)) {
-        sessions = fs.readdirSync(sessionsDir)
-          .filter(f => f.endsWith('.md'))
-          .sort()
-          .reverse();
-      }
+      const sessionData = buildSessionList(sessionsDir);
       tree.meetings.push({
         name,
         label: formatName(name),
         path: path.relative(ROOT, meetingDir),
         readmePath: path.relative(ROOT, path.join(meetingDir, 'README.md')),
-        sessions: sessions.map(s => ({
-          name: s.replace('.md', ''),
-          path: path.relative(ROOT, path.join(sessionsDir, s)),
-        })),
+        sessions: sessionData.sessions,
+        compacted: sessionData.compacted,
+        archive: sessionData.archive,
       });
     }
   }
@@ -120,7 +123,7 @@ function buildTree() {
 
   // Areas (non-1:1, non-meeting)
   const areasDir = path.join(ROOT, 'data', 'files', 'areas');
-  for (const name of ['career', 'comms', 'daily-briefings', 'task-triage']) {
+  for (const name of ['career', 'comms', 'daily-briefings', 'task-triage', 'weekly-reviews']) {
     const areaDir = path.join(areasDir, name);
     if (!fs.existsSync(areaDir)) continue;
     const files = [];
@@ -181,26 +184,76 @@ function buildTree() {
   return tree;
 }
 
+function buildSessionList(sessionsDir) {
+  const result = { sessions: [], compacted: null, archive: null };
+  if (!fs.existsSync(sessionsDir)) return result;
+
+  const allEntries = fs.readdirSync(sessionsDir);
+
+  // Active session files (date-named .md, not compacted_*)
+  result.sessions = allEntries
+    .filter(f => f.endsWith('.md') && !f.startsWith('compacted_'))
+    .sort()
+    .reverse()
+    .map(s => ({
+      name: s.replace('.md', ''),
+      path: path.relative(ROOT, path.join(sessionsDir, s)),
+    }));
+
+  // Compacted file (should be at most one)
+  const compactedFile = allEntries.find(f => f.endsWith('.md') && f.startsWith('compacted_'));
+  if (compactedFile) {
+    result.compacted = {
+      name: compactedFile.replace('.md', ''),
+      path: path.relative(ROOT, path.join(sessionsDir, compactedFile)),
+    };
+  }
+
+  // Archive directory
+  const archiveDir = path.join(sessionsDir, 'archive');
+  if (fs.existsSync(archiveDir)) {
+    const archiveFiles = fs.readdirSync(archiveDir)
+      .filter(f => f.endsWith('.md'))
+      .sort()
+      .reverse();
+    if (archiveFiles.length > 0) {
+      result.archive = {
+        count: archiveFiles.length,
+        files: archiveFiles.map(s => ({
+          name: s.replace('.md', ''),
+          path: path.relative(ROOT, path.join(archiveDir, s)),
+        })),
+      };
+    }
+  }
+
+  return result;
+}
+
 function isDateName(name) {
   return /^\d{4}-\d{2}-\d{2}/.test(name);
 }
 
 function collectMarkdownFiles(dir, result, root) {
   const entries = fs.readdirSync(dir).sort();
-  // Sort date-named files descending (newest first), others ascending
-  const files = [];
+  const dateFiles = [];
+  const compactedFiles = [];
+  const otherFiles = [];
   for (const entry of entries) {
     const full = path.join(dir, entry);
     if (fs.statSync(full).isDirectory()) {
+      if (entry === 'archive') continue;
       collectMarkdownFiles(full, result, root);
     } else if (entry.endsWith('.md')) {
-      files.push({ name: entry.replace('.md', ''), path: path.relative(root, full), entry });
+      const item = { name: entry.replace('.md', ''), path: path.relative(root, full), entry };
+      if (entry.startsWith('compacted_')) compactedFiles.push(item);
+      else if (isDateName(entry)) dateFiles.push(item);
+      else otherFiles.push(item);
     }
   }
-  if (files.length > 0 && files.some(f => isDateName(f.entry))) {
-    files.reverse(); // date-named files: newest first
-  }
-  for (const f of files) {
+  // Date files: newest first, then compacted, then others
+  dateFiles.reverse();
+  for (const f of [...dateFiles, ...compactedFiles, ...otherFiles]) {
     result.push({ name: f.name, path: f.path });
   }
 }
@@ -317,12 +370,7 @@ function loadTasksFromYaml() {
 
 const sseClients = new Set();
 
-function broadcastReload(filePath) {
-  const rel = path.relative(ROOT, filePath);
-  for (const res of sseClients) {
-    res.write(`data: ${JSON.stringify({ type: 'reload', file: rel })}\n\n`);
-  }
-}
+// broadcastReload is now handled by the debounced onFileChange in the watcher section below
 
 // --- Express app ---
 
@@ -342,9 +390,9 @@ app.get('/api/events', (req, res) => {
   req.on('close', () => sseClients.delete(res));
 });
 
-// Navigation tree
+// Navigation tree (cached, invalidated on file changes)
 app.get('/api/tree', (req, res) => {
-  res.json(buildTree());
+  res.json(getCachedTree());
 });
 
 // Tasks data
@@ -443,6 +491,8 @@ app.put('/api/file', (req, res) => {
   if (!filePath.startsWith(ROOT)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
+  // Mark this file as a self-save so the watcher ignores the resulting event
+  recentSaves.set(filePath, Date.now());
   fs.writeFileSync(filePath, req.body.content, 'utf8');
   res.json({ ok: true });
 });
@@ -589,7 +639,11 @@ app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- File watcher ---
+// --- File watcher (debounced) ---
+
+// Track files changed by the UI's own PUT /api/file to suppress self-triggered reloads
+const recentSaves = new Map(); // filePath -> timestamp
+const SELF_SAVE_WINDOW_MS = 1000; // ignore watcher events within 1s of our own save
 
 const watcher = chokidar.watch(ROOT, {
   ignored: [
@@ -602,8 +656,36 @@ const watcher = chokidar.watch(ROOT, {
   ignoreInitial: true,
 });
 
-watcher.on('change', broadcastReload);
-watcher.on('add', broadcastReload);
+// Debounce: collect changed files and broadcast once after a quiet period.
+// This prevents event storms when Claude writes many files in rapid succession.
+let pendingChanges = new Set();
+let debounceTimer = null;
+const DEBOUNCE_MS = 300;
+
+function onFileChange(filePath) {
+  // Suppress events triggered by our own saves (auto-save loop prevention)
+  const savedAt = recentSaves.get(filePath);
+  if (savedAt && Date.now() - savedAt < SELF_SAVE_WINDOW_MS) {
+    recentSaves.delete(filePath);
+    return;
+  }
+
+  invalidateTreeCache();
+  pendingChanges.add(filePath);
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    // Broadcast a single reload event with all changed files
+    const files = [...pendingChanges];
+    pendingChanges = new Set();
+    const payload = JSON.stringify({ type: 'reload', files: files.map(f => path.relative(ROOT, f)) });
+    for (const res of sseClients) {
+      res.write(`data: ${payload}\n\n`);
+    }
+  }, DEBOUNCE_MS);
+}
+
+watcher.on('change', onFileChange);
+watcher.on('add', onFileChange);
 
 // --- Start ---
 

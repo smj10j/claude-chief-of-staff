@@ -1,6 +1,6 @@
 # Google Docs Formatting Style Guide
 
-Reference for Claude when creating or editing Google Docs on the user's behalf via Apps Script.
+Reference for Claude when creating or editing Google Docs on your behalf via Apps Script.
 
 ## Document Structure
 
@@ -44,7 +44,7 @@ Reference for Claude when creating or editing Google Docs on the user's behalf v
 
 ### Dashes
 
-- **Use hyphens (**`-`**), not em dashes.** This differs from markdown files where em dashes are acceptable.
+- **Use hyphens (**`-`**), not em dashes.** Preferred in Google Docs. This differs from markdown files where em dashes are acceptable.
 
 ### Quotes
 
@@ -62,12 +62,14 @@ Reference for Claude when creating or editing Google Docs on the user's behalf v
 Two patterns depending on content type:
 
 **Concept/component lists** (e.g., "Three building blocks", "Why Now" reasons):
+
 - Bold the title/label text — it anchors the reader within the list
 - Add a line break (`\r` in Apps Script) after the bold title
 - Body text follows on the next line within the same list item
 - This creates a two-line structure: bold title on top, regular explanation below
 
 **Steps/process lists** (e.g., "How we'd build it", "How we'd approach it"):
+
 - Plain text, single-line items — no bold, no `\r` breaks
 - The numbering provides enough structure for sequential steps
 
@@ -116,3 +118,23 @@ p.appendText('CRP migration is underway \u2014 and the evaluation path is being 
 body.appendHorizontalRule();
 // Just use the H2 heading — it's enough
 ```
+
+### HTML entities must be decoded
+
+Markdown files may contain HTML entities (`&gt;`, `&lt;`, `&amp;`, `&quot;`). These MUST be decoded to their actual characters before rendering. Never pass raw entity codes to Google Docs — they will display as literal text.
+
+### Backslash escapes must be stripped
+
+Markdown escapes like `\-`, `\~`, `\#`, `\*` must have the backslash removed. Google Docs should show `-`, `~`, `#`, `*` — not the escaped versions.
+
+### Lists are normal weight by default
+
+Bullet and numbered list items should be **normal weight** (not bold) unless a specific run within the item is explicitly marked bold. Do not apply bold to the entire list item. Only inline `**bold**` markers within the text should produce bold runs.
+
+### Links must render as hyperlinks
+
+Markdown link syntax `[text](url)` must be converted to actual hyperlinks — display text with a clickable URL. Never pass raw markdown link syntax as plain text. This includes links inside bold markers: `[**bold text**](url)` should render as a bold hyperlink, not literal text with asterisks and brackets.
+
+### `<mark>` and other HTML tags must be stripped
+
+Annotation tags like `<mark data-annotation-id="...">text</mark>` from the UI should be stripped, preserving only the inner text.

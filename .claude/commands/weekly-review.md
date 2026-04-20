@@ -58,7 +58,37 @@ Day-by-day summary: key meetings, 1:1s needing prep, deadlines.
 ### Housekeeping
 Any cleanup actions: archive completed projects, update READMEs, etc.
 
+### 7. Session Compaction
+
+Run the `/compact-sessions` pipeline as part of the weekly review. This keeps session volumes manageable and ensures compaction happens regularly.
+
+1. Run the scan phase — identify all compaction candidates across 1:1s, meetings, and daily briefings
+2. Present the summary table in the weekly review output
+3. Run verification — check digestion status, follow-ups in task DB, README gaps
+4. **Auto-resolve where safe:**
+   - Follow-up item exists in the task DB → verified, proceed
+   - Follow-up clearly addressed in a subsequent session → verified, proceed
+   - README gaps that are factual updates → apply automatically
+5. **Flag for user review:**
+   - Orphaned action items not found in task DB or subsequent sessions
+   - Undigested sessions (still have Raw Notes, no Session Notes)
+   - Coaching signals (direct reports) that might need career doc updates
+6. Batch all confirmations into a single prompt — present the full list with recommended actions and ask for blanket approval with exceptions (don't ask per-file)
+7. Execute compaction for all verified/approved candidates
+8. Generate the compaction report for inclusion in the persisted weekly review
+
+### 8. Persist Weekly Review
+
+Save the complete weekly review output as a dated artifact.
+
+1. Determine the Friday date: `date +%Y-%m-%d` (or the most recent Friday if running on another day)
+2. Write the full review to `data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md`
+3. The output should include ALL sections from above: Wins, Task Triage, Project Health, 1:1 Housekeeping, Next Week Preview, Compaction Report, Recurring Items, and Housekeeping Actions
+4. Commit: `weekly review: YYYY-MM-DD`
+
 ## Rules
 - Don't make changes to tasks without confirmation. Present recommendations, then execute.
 - Keep the wins section punchy — this is ammo for updates and self-advocacy.
 - If overdue tasks are consistently piling up, say so directly. The system isn't working if things keep slipping.
+- Session compaction runs AFTER task triage and project health — those steps may resolve orphaned items that compaction would otherwise flag.
+- When running via scheduled cron (Friday 8 PM), auto-resolve safe items and defer flagged items to the persisted report for Monday review. Don't block on confirmations in unattended mode.
