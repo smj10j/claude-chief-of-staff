@@ -44,13 +44,15 @@ if [ -z "$OVERDUE_JSON" ] || [ "$OVERDUE_JSON" = "[]" ]; then
     exit 0
 fi
 
+# Fetch existing incomplete reminders so we can update instead of duplicate
+EXISTING_REMINDERS=$("$REMINDERS_SH" list 2>/dev/null || echo "[]")
+
 # Process each overdue task
 echo "$OVERDUE_JSON" | node -e "
 const tasks = JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8'));
 const now = new Date();
 for (const t of tasks) {
     if (!t.isOverdue && t.due && !t.due.includes(' ')) {
-        // Due today (date only, no time) — not overdue yet
         continue;
     }
     if (t.isOverdue || t.due) {
@@ -69,20 +71,30 @@ for (const t of tasks) {
         continue
     fi
 
-    # Build the reminder with the task's actual due date and high priority
     REMINDER_TITLE="[Overdue] $TASK_TITLE"
     NOTES="Priority: $TASK_PRIORITY | Due: $TASK_DUE | Task ID: $TASK_ID"
-
-    # Set due to right now so the alarm fires immediately.
-    # The task is already overdue — the original due date is in the past.
-    # The point is to notify NOW, not replay the old deadline.
     DUE_ARGS="--due $(date +%Y-%m-%d) $(date +%H:%M)"
 
+    # Check if a reminder already exists for this task (match by Task ID in notes)
+    EXISTING_ID=$(echo "$EXISTING_REMINDERS" | node -e "
+        const reminders = JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8'));
+        const taskId = '$TASK_ID';
+        const match = reminders.find(r => r.notes && r.notes.includes('Task ID: ' + taskId));
+        if (match) console.log(match.id);
+    " 2>/dev/null)
+
     if $DRY_RUN; then
-        echo "Would create reminder: $REMINDER_TITLE ($NOTES) [due: $TASK_DUE, priority: high]"
+        if [ -n "$EXISTING_ID" ]; then
+            echo "Would update reminder ($EXISTING_ID): $REMINDER_TITLE — due now"
+        else
+            echo "Would create reminder: $REMINDER_TITLE ($NOTES) [due: $TASK_DUE, priority: high]"
+        fi
     else
-        "$REMINDERS_SH" add "$REMINDER_TITLE" $DUE_ARGS --priority high --notes "$NOTES" > /dev/null 2>&1 || true
-        # Track that we notified for this task today
+        if [ -n "$EXISTING_ID" ]; then
+            "$REMINDERS_SH" update "$EXISTING_ID" $DUE_ARGS --notes "$NOTES" > /dev/null 2>&1 || true
+        else
+            "$REMINDERS_SH" add "$REMINDER_TITLE" $DUE_ARGS --priority high --notes "$NOTES" > /dev/null 2>&1 || true
+        fi
         echo "${TASK_ID}|${TODAY}" >> "$NOTIFIED_FILE"
     fi
 done

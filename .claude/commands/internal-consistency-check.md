@@ -100,7 +100,7 @@ Flag any unexpected subdirectories in `data/files/areas/` that aren't accounted 
 ### 7. Session files sanity
 
 Using the tree output, spot-check session files across 1:1s and meetings:
-- Any session files that don't follow the `YYYY-MM-DD.md` naming pattern
+- Any session files that don't follow the `YYYY-MM-DD.md` or `compacted_YYYY-MM-DD_to_YYYY-MM-DD.md` naming pattern
 - Any person folders where the most recent session is more than 60 days old (potentially stale relationship — info only)
 - For empty `## Raw Notes` detection: only check if 3 or fewer candidate files are older than 7 days AND can be read in a single parallel batch. Otherwise skip this sub-check and note it was skipped.
 

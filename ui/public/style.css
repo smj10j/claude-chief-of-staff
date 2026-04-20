@@ -195,6 +195,26 @@ body {
   color: var(--text-sidebar);
 }
 
+.nav-deep-item {
+  padding-left: 64px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nav-deep-item:hover {
+  color: var(--text-sidebar);
+}
+
+.nav-compacted {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.nav-archive-toggle {
+  font-style: italic;
+  opacity: 0.6;
+}
+
 .nav-special {
   padding-left: 28px;
   font-weight: 500;

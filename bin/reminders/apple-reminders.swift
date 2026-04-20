@@ -131,6 +131,53 @@ func handleAdd(_ title: String, dueDate: String?, notes: String?, priority: Int)
     semaphore.wait()
 }
 
+func handleUpdate(_ id: String, dueDate: String?, notes: String?, priority: Int?) {
+    store.requestFullAccessToReminders { granted, error in
+        guard granted else {
+            printError("Reminders access denied. Grant permission in System Settings > Privacy & Security > Reminders.")
+        }
+        let items = store.calendarItems(withExternalIdentifier: id)
+        guard let reminder = items.compactMap({ $0 as? EKReminder }).first else {
+            printError("Reminder not found: \(id)")
+        }
+        if let notes = notes {
+            reminder.notes = notes
+        }
+        if let priority = priority {
+            reminder.priority = priority
+        }
+        if let due = dueDate {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            var date: Date? = nil
+            formatter.dateFormat = "yyyy-MM-dd HH:mm"
+            date = formatter.date(from: due)
+            if date == nil {
+                formatter.dateFormat = "yyyy-MM-dd"
+                date = formatter.date(from: due)
+            }
+            if let date = date {
+                let components = Calendar.current.dateComponents(
+                    [.year, .month, .day, .hour, .minute], from: date)
+                reminder.dueDateComponents = components
+                // Remove old alarms and add a new one at the updated time
+                if let alarms = reminder.alarms {
+                    for alarm in alarms { reminder.removeAlarm(alarm) }
+                }
+                reminder.addAlarm(EKAlarm(absoluteDate: date))
+            }
+        }
+        do {
+            try store.save(reminder, commit: true)
+            print("{\"ok\": true}")
+        } catch {
+            printError("Failed to save: \(error.localizedDescription)")
+        }
+        semaphore.signal()
+    }
+    semaphore.wait()
+}
+
 func handleComplete(_ id: String) {
     store.requestFullAccessToReminders { granted, error in
         guard granted else {
@@ -202,7 +249,41 @@ case "add":
         i += 1
     }
     handleAdd(title, dueDate: dueDate, notes: notes, priority: priority)
+case "update":
+    guard args.count >= 3 else {
+        fputs("Usage: apple-reminders update <id> [--due YYYY-MM-DD [HH:MM]] [--notes TEXT] [--priority high|medium|low]\n", stderr)
+        exit(1)
+    }
+    let updateId = args[2]
+    var updateDue: String? = nil
+    var updateNotes: String? = nil
+    var updatePriority: Int? = nil
+    var j = 3
+    while j < args.count {
+        if args[j] == "--due" && j + 1 < args.count {
+            j += 1
+            updateDue = args[j]
+            if j + 1 < args.count && args[j + 1].contains(":") && !args[j + 1].hasPrefix("--") {
+                j += 1
+                updateDue! += " " + args[j]
+            }
+        } else if args[j] == "--notes" && j + 1 < args.count {
+            j += 1
+            updateNotes = args[j]
+        } else if args[j] == "--priority" && j + 1 < args.count {
+            j += 1
+            switch args[j].lowercased() {
+            case "high": updatePriority = 1
+            case "medium": updatePriority = 5
+            case "low": updatePriority = 9
+            case "none": updatePriority = 0
+            default: updatePriority = 1
+            }
+        }
+        j += 1
+    }
+    handleUpdate(updateId, dueDate: updateDue, notes: updateNotes, priority: updatePriority)
 default:
-    fputs("Unknown command: \(args[1]). Use 'list', 'complete', or 'add'.\n", stderr)
+    fputs("Unknown command: \(args[1]). Use 'list', 'complete', 'add', or 'update'.\n", stderr)
     exit(1)
 }

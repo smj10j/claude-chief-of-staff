@@ -279,13 +279,9 @@ function renderSidebar(tree) {
           <span class="nav-item-label">${person.label}</span>
           ${count ? `<span class="badge">${count}</span>` : ''}
         </div>`;
-        if (count) {
-          inner += `<div class="nav-group-children">`;
-          for (const session of person.sessions) {
-            inner += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
-          }
-          inner += `</div>`;
-        }
+        inner += `<div class="nav-group-children">`;
+        inner += renderSessionChildren(person);
+        inner += `</div>`;
         inner += `</div>`;
       }
     }
@@ -302,13 +298,9 @@ function renderSidebar(tree) {
         <span class="nav-item-label">${meeting.label}</span>
         ${count ? `<span class="badge">${count}</span>` : ''}
       </div>`;
-      if (count) {
-        inner += `<div class="nav-group-children">`;
-        for (const session of meeting.sessions) {
-          inner += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
-        }
-        inner += `</div>`;
-      }
+      inner += `<div class="nav-group-children">`;
+      inner += renderSessionChildren(meeting);
+      inner += `</div>`;
       inner += `</div>`;
     }
     return inner;
@@ -457,6 +449,33 @@ function renderSidebar(tree) {
   }
 }
 
+function renderSessionChildren(item) {
+  let html = '';
+  // Active sessions (reverse sorted, most recent first)
+  for (const session of item.sessions) {
+    html += `<div class="nav-item nav-sub-item" data-path="${session.path}">${session.name}</div>`;
+  }
+  // Compacted file
+  if (item.compacted) {
+    const label = item.compacted.name
+      .replace('compacted_', '')
+      .replace(/_to_/g, ' to ')
+      .replace(/_/g, '-');
+    html += `<div class="nav-item nav-sub-item nav-compacted" data-path="${item.compacted.path}">Compacted ${label}</div>`;
+  }
+  // Archive folder (collapsed by default)
+  if (item.archive && item.archive.files.length > 0) {
+    html += `<div class="nav-group collapsed">`;
+    html += `<div class="nav-item nav-sub-item nav-group-toggle nav-archive-toggle">Archive <span class="badge">${item.archive.count}</span></div>`;
+    html += `<div class="nav-group-children">`;
+    for (const file of item.archive.files) {
+      html += `<div class="nav-item nav-deep-item" data-path="${file.path}">${file.name}</div>`;
+    }
+    html += `</div></div>`;
+  }
+  return html;
+}
+
 function renderNavSection(label, contentFn) {
   return `<div class="nav-section">
     <div class="nav-section-header"><span class="chevron">&#9660;</span> ${label}</div>
@@ -536,21 +555,50 @@ function setupBreadcrumbNav() {
 
 function setupSSE() {
   const events = new EventSource('/api/events');
-  events.onmessage = async (e) => {
-    const data = JSON.parse(e.data);
-    if (data.type === 'reload') {
-      // Refresh sidebar tree
-      tree = await fetchJSON('/api/tree');
-      renderSidebar(tree);
-      updateSearchTree(tree);
-      await refreshAnnotationIndicators();
-      const cp = getCurrentPath();
-      if (cp) updateActiveNav(cp);
 
-      // Don't reload the file we're currently editing (would clobber changes)
-      // Only reload if it's a different file than what we're editing
-      // (SSE fires on our own saves too - ignore those)
+  // Debounce SSE-triggered refreshes so a burst of events doesn't freeze the UI.
+  // Multiple SSE messages within the window are coalesced into one refresh.
+  let sseRefreshTimer = null;
+  const SSE_DEBOUNCE_MS = 500;
+  let pendingSSEFiles = [];
+
+  events.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'reload') {
+        // Collect changed files from this event
+        const files = data.files || (data.file ? [data.file] : []);
+        pendingSSEFiles.push(...files);
+
+        clearTimeout(sseRefreshTimer);
+        sseRefreshTimer = setTimeout(async () => {
+          const changedFiles = [...new Set(pendingSSEFiles)];
+          pendingSSEFiles = [];
+
+          // Refresh sidebar tree
+          tree = await fetchJSON('/api/tree');
+          renderSidebar(tree);
+          updateSearchTree(tree);
+          await refreshAnnotationIndicators();
+          const cp = getCurrentPath();
+          if (cp) updateActiveNav(cp);
+
+          // If a file we're NOT currently editing was changed externally,
+          // we could reload it here. For now we skip to avoid clobbering edits.
+        }, SSE_DEBOUNCE_MS);
+      }
+    } catch (err) {
+      // Ignore malformed SSE data
     }
+  };
+
+  // Handle SSE errors gracefully - EventSource auto-reconnects, but
+  // log so we know if it's thrashing
+  events.onerror = () => {
+    // EventSource reconnects automatically. No action needed, but clear
+    // any pending refresh to avoid stale state after reconnect.
+    clearTimeout(sseRefreshTimer);
+    pendingSSEFiles = [];
   };
 }
 

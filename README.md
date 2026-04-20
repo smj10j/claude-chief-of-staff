@@ -11,11 +11,15 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 ## What it does
 
 - **Task tracking** via SQLite database with a CLI — priorities, due dates, projects, and tags
-- **1:1 prep** — reads persistent context about each person, researches recent activity, generates session agendas
+- **1:1 prep and digest** — reads persistent context about each person, researches recent activity, generates session agendas. After: digests notes, updates READMEs, proposes task updates
 - **Meeting prep** — same pattern for recurring team meetings and forums
 - **Project lifecycle** — tracks active projects from start to archive
 - **Comms drafting** — learns your writing style and drafts messages in your voice
 - **Daily briefings** — cross-references your tasks, calendar, and projects to recommend what to prioritize and which meetings matter most
+- **Weekly review** — automated Friday review: task triage, project health, session compaction, next week preview. Can run unattended via launchd
+- **Session compaction** — keeps context window manageable by compacting older sessions into structured summaries while preserving all information in archives
+- **Overdue task notifications** — daily launchd agent pushes overdue tasks to Apple Reminders for phone alerts
+- **Leveling assessments** — IC leveling against your engineering competency framework
 - **GTD workflow** — inbox capture, processing, next actions, waiting-for, someday/maybe
 
 ## Philosophy
@@ -72,10 +76,14 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 |---------|-------------|
 | `/init` | Interactive onboarding - populates CLAUDE.md with your role, people, teams, and creates folder structure |
 | `/morning-briefing` | Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones |
-| `/weekly-review` | Friday GTD review: archive done tasks, triage overdue, check project health, preview next week |
-| `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last session, gathers context, generates session file |
+| `/weekly-review` | Friday GTD review: task triage, project health, session compaction, next week preview. Persists output. Runs unattended via launchd |
+| `/compact-sessions` | Compact old session files into structured summaries. Archives originals. Keeps last 3 full-fidelity per person/meeting |
+| `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last session, gathers context via integrations, generates session file with source links |
+| `/digest-meeting [name]` | Digest notes from a completed 1:1 or meeting: reads shared doc + raw notes, structures session file, updates READMEs, proposes task updates |
 | `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
 | `/review-launch-tracker` | Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches |
+| `/level-candidate [name]` | IC leveling assessment against your engineering leveling framework |
+| `/review-reminders` | Import pending items from Apple Reminders into the task database. Reads from a configured list, lets you selectively import |
 | `/ui` | Start the Chief of Staff web UI — a WYSIWYG markdown editor at localhost:3737 |
 | `/publish-to-gdoc` | Render a markdown file into a formatted Google Doc (requires google-workspace MCP) |
 | `/process-ui-annotations [file]` | Process annotations left in the web UI — Claude reads your instructions and applies changes |
@@ -84,6 +92,36 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
 
 You can add your own commands by creating `.md` files in `.claude/commands/`.
+
+## Set up automation
+
+The system includes two macOS launchd agents for unattended operation. Both are optional.
+
+### Overdue task notifications (daily, 8 AM)
+
+Checks the task DB for overdue items and pushes them to your phone via Apple Reminders.
+
+```bash
+bash bin/reminders/overdue-notifier-setup.sh install     # Enable (daily at 8 AM)
+bash bin/reminders/overdue-notifier-setup.sh status       # Check if running
+bash bin/reminders/overdue-notifier.sh --dry-run          # Preview without creating reminders
+NOTIFIER_HOUR=9 bash bin/reminders/overdue-notifier-setup.sh install  # Change time
+bash bin/reminders/overdue-notifier-setup.sh uninstall    # Disable
+```
+
+### Weekly review (Friday, 8 PM)
+
+Runs the full `/weekly-review` command via Claude Code CLI in non-interactive mode. Handles task triage, project health, session compaction, and persists a dated review file.
+
+```bash
+bash bin/weekly-review/weekly-review-setup.sh install     # Enable (Fridays at 8 PM)
+bash bin/weekly-review/weekly-review-setup.sh status       # Check if running
+bash bin/weekly-review/weekly-review-runner.sh             # Test run now
+REVIEW_HOUR=19 bash bin/weekly-review/weekly-review-setup.sh install  # Change time
+bash bin/weekly-review/weekly-review-setup.sh uninstall    # Disable
+```
+
+Output is saved to `data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md`.
 
 ## Web UI
 
@@ -140,6 +178,8 @@ claude-chief-of-staff/
       task-db.js           # Shared data access module (used by CLI and UI)
       migrations/          # SQL schema migrations (applied automatically)
       tests/               # Unit and integration tests (node --test)
+    reminders/             # Apple Reminders adapter (overdue notifier + import)
+    weekly-review/         # Friday review automation (launchd agent)
   data/                    # All user-specific data
     cos.db                 # SQLite task database (auto-created on first run)
     files/                 # User content files
@@ -149,6 +189,7 @@ claude-chief-of-staff/
       reading-list.md      # Articles, videos, resources to consume
       style-guide.md       # Your writing style (built over time)
       google-docs-style-guide.md  # Google Docs formatting via Apps Script
+      exports/             # Exported data (YAML backups from /task-export)
       projects/
         INDEX.md           # Project registry (active, on hold, archived)
         <project-id>/      # One folder per active project
@@ -156,6 +197,7 @@ claude-chief-of-staff/
         one-on-ones/       # 1:1 system (per-person folders with README + sessions)
         meetings/          # Recurring meetings (same pattern)
         daily-briefings/   # Morning briefing history (sessions/YYYY-MM-DD.md)
+        weekly-reviews/    # Friday review artifacts (sessions/YYYY-MM-DD.md)
         career/            # Promotion tracking, growth plans
         comms/             # Drafted messages
       archive/             # Completed projects (moved from projects/)
@@ -172,6 +214,17 @@ The system gets better as you use it:
 - **Tasks** build up a record of what you've shipped
 
 Commit periodically so you have a timeline of when things changed.
+
+## Session compaction
+
+Over time, session files accumulate. The compaction system keeps things manageable:
+
+- **Last 3 sessions per person/meeting** are kept at full fidelity
+- **Older sessions** are archived to `sessions/archive/` and summarized into a single `sessions/compacted_STARTDATE_to_ENDDATE.md` file
+- **Daily briefings** compact anything older than 2 weeks
+- **Originals are never deleted** — they're always in `sessions/archive/` for grep/search
+
+Compaction runs automatically as part of `/weekly-review`, or manually via `/compact-sessions`.
 
 ## Contributing back
 
