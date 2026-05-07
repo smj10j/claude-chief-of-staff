@@ -11,8 +11,8 @@ Import pending items from Apple Reminders into the task database.
 
 2. **Display numbered list** with due dates and notes:
    ```
-   1. Follow up with Alex on threshold changes
-   2. Book dentist appointment (due: Apr 5) - "Re: crown"
+   1. Follow up with Bob on threshold changes
+   2. Book dentist appointment (due: Apr 5) - "Dr. Patel, re: crown"
    3. Read article on platform engineering
    ```
    Show due dates inline. Show notes in quotes after a dash if present. Flag stale dates (in the past) with a warning.
@@ -29,14 +29,14 @@ Import pending items from Apple Reminders into the task database.
 
    | # | Reminder | Tags | Due | Priority |
    |---|----------|------|-----|----------|
-   | 1 | Follow up with Alex on thresholds | work, xfn | tomorrow | medium |
+   | 1 | Follow up with Bob on thresholds | work, xfn | tomorrow | medium |
    | 3 | Read platform engineering article | work | - | low |
 
    Look right, or any changes?
    ```
 
    **Tag inference** — use full repo context:
-   - Cross-reference names against `data/files/areas/one-on-ones/` (e.g., a name in `xfn/` -> `xfn`, a name in `direct-reports/` -> `work` + team tag)
+   - Cross-reference names against `data/files/areas/one-on-ones/` (e.g., "Bob" -> `xfn`, "Alice" -> `work, team:<your-team>`)
    - Personal-sounding items (dentist, gym, groceries, filter, passport, LinkedIn) -> `personal`
    - Team/project references -> appropriate team tag
    - Default: `work`
@@ -50,11 +50,11 @@ Import pending items from Apple Reminders into the task database.
 
 5. **Execute import** for each confirmed item:
    ```bash
-   bash bin/db/task-cli.sh add "<name>" --due "<date>" --tags "<tags>" --priority <priority>
+   bash bin/cos task add "<name>" --due "<date>" --tags "<tags>" --priority <priority>
    bash bin/reminders/apple-reminders.sh complete <id>
    ```
    - If `complete` fails (already completed on another device), warn but don't fail the import
-   - Confirm: "Imported and completed in Reminders: 'Follow up with Alex...'"
+   - Confirm: "Imported and completed in Reminders: 'Follow up with Bob...'"
 
 6. **Summary**: List what was imported and what was skipped.
 

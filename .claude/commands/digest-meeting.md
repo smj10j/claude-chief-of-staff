@@ -1,8 +1,10 @@
 # Digest Meeting
 
-Digest notes from a completed 1:1 or meeting. The person/meeting name will be provided as $ARGUMENTS.
+Digest notes from a completed 1:1 or meeting. `$ARGUMENTS` is one of:
 
-If no name is provided, check today's calendar for recently ended meetings and ask which one to digest.
+1. **A direct path to the session file** under `data/files/areas/one-on-ones/<rel>/<slug>/sessions/<date>.md` or `data/files/areas/meetings/<slug>/sessions/<date>.md`. The v2 UI passes this when invoked from the editor toolbar.
+2. **A person or meeting name** — fall back to today's session file under their folder.
+3. **Empty** — check today's calendar for recently ended meetings and ask which one to digest.
 
 This command handles both:
 - **1:1s** (folders in `data/files/areas/one-on-ones/`)
@@ -10,7 +12,11 @@ This command handles both:
 
 ## Steps
 
-### 1. Find the Session File
+### 1. Resolve the session file
+
+If `$ARGUMENTS` starts with `data/files/areas/`, it's a direct path — use that exact file. The folder containing `sessions/` is the person/meeting folder; read its `README.md` for context.
+
+Otherwise, treat as a name:
 
 **For 1:1s:**
 - Search `data/files/areas/one-on-ones/` for a folder matching the name
@@ -28,9 +34,9 @@ If no session file exists for today, ask if the user wants to create one.
 
 Run in parallel:
 - **Read raw notes** from the session file (everything under `## Raw Notes`)
-- **Read the shared Google Doc** if available via integration (link in README). For large docs, read just the most recent tab/section. **This is often the primary source of meeting content** — participants frequently take live notes in the Google Doc, not in the internal session file.
+- **Read the shared Google Doc** via `mcp__google-workspace__google_docs_read` (link in README). For large docs, read just the most recent tab/section. **This is often the primary source of meeting content** — participants frequently take live notes in the Google Doc, not in the internal session file.
 - **Read any inline notes** the user added directly to the README (sometimes quick notes get dropped there instead of the session file)
-- **Check Slack** (if integration available) for any post-meeting feedback, follow-up threads, or action items related to the meeting (search last 2 hours)
+- **Check Slack** for any post-meeting feedback, follow-up threads, or action items related to the meeting (search last 2 hours)
 
 ### 3. Digest the Session File
 
@@ -40,14 +46,14 @@ Run in parallel:
 3. Add `## Follow-ups` with checkboxed action items
 4. Preserve original prep under `## Prep Context (pre-session)`
 5. Update the person's `README.md` — propagate durable changes (role shifts, growth signals, relationship dynamics, shared doc link). Move any inline notes from the README into the session file
-6. Propose new action items and task updates for review
+6. Propose new action items and task updates for the user to review
 
 **For meetings**, structure the session file as:
 1. `## Session Notes` — organized by topic, not chronological
 2. `## Key Takeaways & Follow-ups` — checkboxed action items
 3. `## OKR Updates` (if applicable)
 4. Preserve pre-meeting notes under `## Pre-Meeting Notes (for reference)`
-5. Update the meeting's `README.md` if anything durable changed (attendees, cadence, OKR status)
+5. Update the meeting's `README.md` if anything durable changed (attendees, cadence, OKR status, the user's role)
 6. Propose new action items and task updates
 
 ### 4. Update Tasks
@@ -62,11 +68,27 @@ Run in parallel:
 If the user mentions feedback they received (positive or negative):
 - Include it in the session notes
 - Update the relevant README (e.g., meeting README, person README)
-- If it's career-relevant feedback, note it in the session and consider whether it belongs in `data/files/areas/career/`
+- If it's career-relevant feedback for the user, note it in the session and consider whether it belongs in `data/files/areas/career/`
+
+### 6. Print the saved path (last line, exact format)
+
+After all writes, print a brief summary (what changed, what tasks were proposed) followed by **exactly one final line** matching this format:
+
+```
+SAVED: <repo-relative-path-to-the-session-file>
+```
+
+Example:
+```
+Digested 1:1 with Alice. Proposed 2 follow-ups; updated README with shared-doc link. Read shared Google Doc (3 tabs).
+SAVED: data/files/areas/one-on-ones/direct-reports/alice/sessions/2026-04-24.md
+```
+
+The v2 UI parses this line to know which file to reload in the editor. **The `SAVED:` line must be the last line of the response.**
 
 ## Rules
-- Always read both the internal session file AND the shared Google Doc (if available). The Google Doc is often the primary source.
-- Always convert timestamps to the user's local timezone.
+- Always read both the internal session file AND the shared Google Doc. The Google Doc is often the primary source.
+- Always convert timestamps to CDT.
 - Don't repeat context the person already knows.
 - If the user provides verbal notes (in the chat message), treat those as raw notes and incorporate them.
 - After digesting, offer to create/update tasks for any follow-ups identified.

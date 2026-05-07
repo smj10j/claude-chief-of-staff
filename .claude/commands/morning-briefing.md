@@ -6,7 +6,7 @@ Generate a prioritized daily briefing. Run all data gathering in parallel, then 
 
 1. **Calendar**: If a calendar integration is available, get today's events. Convert all times to the user's local timezone. Note which are accepted vs. maybe vs. declined.
 
-2. **Tasks**: Run `bash bin/db/task-cli.sh list --format json` and `bash bin/db/task-cli.sh recurring --format json`. The JSON output includes a computed `isOverdue` field. Identify:
+2. **Tasks**: Run `bash bin/cos task list --format json` and `bash bin/cos task recurring --format json`. The JSON output includes a computed `isOverdue` field. Identify:
    - Tasks due today (with times, if set - partition into time-specific vs. end-of-day)
    - Overdue tasks (use the `isOverdue` field - this is time-aware for tasks with due times)
    - In-progress tasks
@@ -41,8 +41,8 @@ If `bin/reminders/apple-reminders.sh list` returned pending reminders, display t
 
 | # | Reminder | Due | Notes |
 |---|----------|-----|-------|
-| 1 | Follow up with Alex on threshold changes | - | - |
-| 2 | Book dentist appointment | Apr 5 | Re: crown |
+| 1 | Follow up with Bob on threshold changes | - | - |
+| 2 | Book dentist appointment | Apr 5 | Dr. Patel, re: crown |
 
 Run `/review-reminders` to import.
 ```
@@ -50,7 +50,7 @@ Run `/review-reminders` to import.
 If no pending reminders, omit this section entirely. If the adapter failed, include a brief note (e.g., "Mobile Captures: adapter error — Reminders access denied") but don't fail the briefing.
 
 ### Tasks Due / Overdue
-Grouped list. If any tasks have specific due times (due field contains `YYYY-MM-DD HH:MM`), list them under a **Time-specific** sub-heading in chronological order with the time shown (e.g., `09:00 - Prep for 1:1`). Tasks due today without a specific time go under **By end of day**. Flag anything that should be re-dated vs. actually done today.
+Grouped list. If any tasks have specific due times (due field contains `YYYY-MM-DD HH:MM`), list them under a **Time-specific** sub-heading in chronological order with the time shown (e.g., `09:00 - Prep for Alice 1:1`). Tasks due today without a specific time go under **By end of day**. Flag anything that should be re-dated vs. actually done today.
 
 ### 1:1 Prep Status
 For each 1:1 today: prepped or needs prep. If needs prep, offer to run the prep workflow. **Flag if the other person has not accepted, has declined, or is tentative on the calendar invite** — don't prep for a meeting that may not happen. Also flag any OOO signals from Slack/comms.
@@ -106,9 +106,24 @@ This creates a running history of daily briefings, following the same date-based
 - Always offer to copy any draft messages to clipboard via pbcopy.
 - If overdue tasks are piling up, proactively suggest a triage pass.
 - Prep FIRST, then write the briefing — so the briefing is the final, complete picture of the day.
-- **Always include file links** when referencing repo items. Prepped 1:1s and meetings should link to their session files. Projects should link to their folder or `data/files/projects/INDEX.md`. The briefing should be a clickable hub.
+- **Always include source links** for every external claim. Prepped 1:1s and meetings link to their session files. Projects link to their folder or `data/files/projects/INDEX.md`. Slack threads, Google Docs, Jira tickets, Confluence pages, and GitHub PRs cited in the briefing must carry their permalink/URL — never paraphrase a source without linking it. The briefing should be a clickable hub. See `data/files/areas/one-on-ones/README.md` → "Source Links in Prep (REQUIRED)" for the canonical rule.
 - **Relative link paths**: The briefing file lives at `data/files/areas/daily-briefings/sessions/YYYY-MM-DD.md` (5 levels deep from repo root). All relative links must account for this depth:
   - To sibling `areas/` folders (one-on-ones, meetings): `../../one-on-ones/...`, `../../meetings/...`
   - To projects: `../../../projects/...`
   - To repo root files: `../../../../../CLAUDE.md`
   - **Do NOT use `../` — that only goes up to `daily-briefings/`, not to `areas/`.** Count from `data/files/areas/daily-briefings/sessions/` every time.
+
+### Phase 4 — Print the saved path
+
+After all writes are done, print **exactly one final line** matching this format:
+
+```
+SAVED: <repo-relative-path-to-the-briefing-file>
+```
+
+Example:
+```
+SAVED: data/files/areas/daily-briefings/sessions/2026-04-25.md
+```
+
+The v2 UI parses this line to know which file to open in the editor; REPL callers can ignore it. **The `SAVED:` line must be the last line of the response.**

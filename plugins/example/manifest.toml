@@ -1,0 +1,30 @@
+# Example plugin manifest (B7-CP23).
+#
+# Copy this directory under your app data plugins folder to register
+# a new plugin. The path is platform-specific; "Open folder" in
+# Settings → Plugins reveals it. On macOS that's:
+#
+#   ~/Library/Application Support/com.smj10j.chiefofstaff/plugins/<your-slug>/
+#
+# Required fields:
+#   name     — short display name (≤ 64 chars).
+#   version  — loose semver-ish (digits with dots/dashes/letters).
+#
+# Optional fields:
+#   description    — one-line summary, shown under the name.
+#   capabilities   — what the plugin needs at runtime. Today the
+#                    list is read-only documentation; loader
+#                    enforcement lands in a later checkpoint.
+#                    Known values: tasks.read, tasks.write,
+#                    content.read, content.write, calendar.read,
+#                    claude.skills, settings.read, audit.read.
+#                    Anything else passes through but is flagged in
+#                    the UI as unknown.
+name = "Example"
+version = "0.1.0"
+description = "Reference manifest. Cloning + renaming is a fine starting point."
+capabilities = [
+  "tasks.read",
+  "content.read",
+  "claude.skills",
+]
