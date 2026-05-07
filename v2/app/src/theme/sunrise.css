@@ -1,0 +1,60 @@
+/* Sunrise — bright energetic light theme. */
+/* Refresh: original was a tame cream with a quiet gold; this version */
+/* leans into the name. Sunny morning canvas, vivid tangerine accent, */
+/* deep teal partner. Inspired by Things 3 + Headspace warmth. */
+
+[data-theme="sunrise"] {
+  /* Surfaces — warm sunlit cream gradient. */
+  --cos-surface-canvas: #fff4e0;
+  --cos-surface-raised: #ffffff;
+  --cos-surface-sunken: #ffe2b3;
+  --cos-surface-overlay: #ffd08a;
+
+  /* Content — deep coffee ink with strong contrast. */
+  --cos-content-primary: #1a0f02;
+  --cos-content-secondary: #3a2810;
+  --cos-content-muted: #6a4e2c;
+  --cos-content-faint: #8c704e;
+  --cos-content-inverse: #fff4e0;
+
+  /* Borders */
+  --cos-outline-subtle: #f5e0b8;
+  --cos-outline-default: #e2c490;
+  --cos-outline-strong: #b89868;
+
+  /* Accents — bright tangerine leads, deep teal partners. */
+  --cos-accent: #ff7a00;
+  --cos-accent-muted: rgba(255, 122, 0, 0.18);
+  --cos-accent-contrast: #ffffff;
+  --cos-info: #0e7490;
+  --cos-success: #4f7a00;
+  --cos-warning: #c98a00;
+  --cos-critical: #d62828;
+
+  /* Time-aware tints — warmer + bolder than the rest of the light family. */
+  --cos-tint-today: rgba(255, 122, 0, 0.07);
+  --cos-tint-past: rgba(106, 78, 44, 0.05);
+  --cos-tint-future: rgba(14, 116, 144, 0.06);
+  --cos-tint-overdue: rgba(214, 40, 40, 0.07);
+  --cos-tint-warm-flash: rgba(255, 122, 0, 0.24);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #4f7a00;
+  --cos-status-at-risk: #c98a00;
+  --cos-status-blocked: #d62828;
+  --cos-status-soon-done: #0e7490;
+  --cos-status-on-track-tint: rgba(79, 122, 0, 0.08);
+  --cos-status-at-risk-tint: rgba(201, 138, 0, 0.08);
+  --cos-status-blocked-tint: rgba(214, 40, 40, 0.08);
+  --cos-status-soon-done-tint: rgba(14, 116, 144, 0.08);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(26, 15, 2, 0.05);
+
+  /* Elevation — warm sunlit shadow */
+  --cos-shadow-low: 0 1px 2px rgba(26, 15, 2, 0.10);
+  --cos-shadow-med: 0 4px 12px rgba(26, 15, 2, 0.14);
+  --cos-shadow-modal: 0 20px 60px rgba(26, 15, 2, 0.22);
+
+  color-scheme: light;
+}

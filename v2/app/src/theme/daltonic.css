@@ -1,0 +1,61 @@
+/* Daltonic — color-blind safe theme. */
+/* Palette: blue/orange/yellow only (deuteranopia + protanopia + */
+/* tritanopia safe). Semantic meaning never relies on hue alone — */
+/* the redesigned surfaces pair color with shape/icon throughout. */
+
+[data-theme="daltonic"] {
+  /* Surfaces — high-contrast neutral. */
+  --cos-surface-canvas: #141414;
+  --cos-surface-raised: #1f1f1f;
+  --cos-surface-sunken: #0a0a0a;
+  --cos-surface-overlay: #2c2c2c;
+
+  /* Content — pure-grayscale ramp with strong contrast. */
+  --cos-content-primary: #f8f8f8;
+  --cos-content-secondary: #cecece;
+  --cos-content-muted: #a4a4a4;
+  --cos-content-faint: #7e7e7e;
+  --cos-content-inverse: #141414;
+
+  /* Borders */
+  --cos-outline-subtle: #2a2a2a;
+  --cos-outline-default: #3e3e3e;
+  --cos-outline-strong: #5e5e5e;
+
+  /* Accents — orange leads (distinguishable from green for all 3
+   * common color-blindness types). Avoid red/green pairing. */
+  --cos-accent: #ff8800;
+  --cos-accent-muted: rgba(255, 136, 0, 0.20);
+  --cos-accent-contrast: #141414;
+  --cos-info: #4cb8ff;
+  --cos-success: #4cb8ff; /* blue stands in for green */
+  --cos-warning: #ffe33a;
+  --cos-critical: #ffaa00;
+
+  /* Time-aware tints */
+  --cos-tint-today: rgba(255, 227, 58, 0.07);
+  --cos-tint-past: rgba(150, 150, 150, 0.04);
+  --cos-tint-future: rgba(76, 184, 255, 0.06);
+  --cos-tint-overdue: rgba(255, 170, 0, 0.07);
+  --cos-tint-warm-flash: rgba(255, 136, 0, 0.22);
+
+  /* Status semantic tokens — paired with shape/icon in the UI. */
+  --cos-status-on-track: #4cb8ff;
+  --cos-status-at-risk: #ffe33a;
+  --cos-status-blocked: #ffaa00;
+  --cos-status-soon-done: #ff8800;
+  --cos-status-on-track-tint: rgba(76, 184, 255, 0.09);
+  --cos-status-at-risk-tint: rgba(255, 227, 58, 0.09);
+  --cos-status-blocked-tint: rgba(255, 170, 0, 0.09);
+  --cos-status-soon-done-tint: rgba(255, 136, 0, 0.09);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(248, 248, 248, 0.06);
+
+  /* Elevation */
+  --cos-shadow-low: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --cos-shadow-med: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --cos-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.7);
+
+  color-scheme: dark;
+}

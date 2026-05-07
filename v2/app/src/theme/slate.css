@@ -1,0 +1,59 @@
+/* Slate — corporate-neutral cool dark theme. */
+/* Palette: cool blue-gray canvas / sky-blue accent / restrained semantics. */
+/* Inspired by Bear's editor + GitHub Dark — serious without feeling sterile. */
+
+[data-theme="slate"] {
+  /* Surfaces */
+  --cos-surface-canvas: #18222e;
+  --cos-surface-raised: #232f42;
+  --cos-surface-sunken: #121a24;
+  --cos-surface-overlay: #2e3c54;
+
+  /* Content — full ramp with cool tint, comfortable contrast. */
+  --cos-content-primary: #e6ecf4;
+  --cos-content-secondary: #b8c4d4;
+  --cos-content-muted: #92a0b4;
+  --cos-content-faint: #6e7e94;
+  --cos-content-inverse: #18222e;
+
+  /* Borders */
+  --cos-outline-subtle: #283448;
+  --cos-outline-default: #36465c;
+  --cos-outline-strong: #506280;
+
+  /* Accents — sky-blue leads, more saturation than the prior steel tone. */
+  --cos-accent: #6ea8ff;
+  --cos-accent-muted: rgba(110, 168, 255, 0.18);
+  --cos-accent-contrast: #0e1424;
+  --cos-info: #8db4dc;
+  --cos-success: #88ccaa;
+  --cos-warning: #e0bc7a;
+  --cos-critical: #e08896;
+
+  /* Time-aware tints */
+  --cos-tint-today: rgba(224, 188, 122, 0.05);
+  --cos-tint-past: rgba(110, 126, 148, 0.04);
+  --cos-tint-future: rgba(141, 180, 220, 0.05);
+  --cos-tint-overdue: rgba(224, 136, 150, 0.06);
+  --cos-tint-warm-flash: rgba(224, 188, 122, 0.18);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #88ccaa;
+  --cos-status-at-risk: #e0bc7a;
+  --cos-status-blocked: #e08896;
+  --cos-status-soon-done: #8db4dc;
+  --cos-status-on-track-tint: rgba(136, 204, 170, 0.08);
+  --cos-status-at-risk-tint: rgba(224, 188, 122, 0.08);
+  --cos-status-blocked-tint: rgba(224, 136, 150, 0.08);
+  --cos-status-soon-done-tint: rgba(141, 180, 220, 0.08);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(230, 236, 244, 0.05);
+
+  /* Elevation */
+  --cos-shadow-low: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --cos-shadow-med: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --cos-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}

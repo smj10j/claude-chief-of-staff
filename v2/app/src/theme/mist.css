@@ -1,0 +1,59 @@
+/* Mist — sea-glass light theme. */
+/* Soft blue-green canvas with a vivid teal accent. Calming but */
+/* alive — the light-theme cousin of Calm. */
+
+[data-theme="mist"] {
+  /* Surfaces — sea-glass: faint blue + green undertone. */
+  --cos-surface-canvas: #d8e8e0;
+  --cos-surface-raised: #e8f1ec;
+  --cos-surface-sunken: #c4d8d0;
+  --cos-surface-overlay: #b0c8c0;
+
+  /* Content — full ramp with teal-leaning ink. */
+  --cos-content-primary: #0e1f1c;
+  --cos-content-secondary: #2e4540;
+  --cos-content-muted: #4e6660;
+  --cos-content-faint: #6c827c;
+  --cos-content-inverse: #d8e8e0;
+
+  /* Borders */
+  --cos-outline-subtle: #c8d8d0;
+  --cos-outline-default: #a8bcb4;
+  --cos-outline-strong: #7e948e;
+
+  /* Accents — vivid teal leads, sea-blue secondary. */
+  --cos-accent: #0e7c7b;
+  --cos-accent-muted: rgba(14, 124, 123, 0.18);
+  --cos-accent-contrast: #ffffff;
+  --cos-info: #1d6e9a;
+  --cos-success: #2d6e3e;
+  --cos-warning: #8a6614;
+  --cos-critical: #963e3e;
+
+  /* Time-aware tints — keyed to the sea-glass palette. */
+  --cos-tint-today: rgba(14, 124, 123, 0.06);
+  --cos-tint-past: rgba(78, 102, 96, 0.05);
+  --cos-tint-future: rgba(29, 110, 154, 0.06);
+  --cos-tint-overdue: rgba(150, 62, 62, 0.06);
+  --cos-tint-warm-flash: rgba(14, 124, 123, 0.20);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #2d6e3e;
+  --cos-status-at-risk: #8a6614;
+  --cos-status-blocked: #963e3e;
+  --cos-status-soon-done: #1d6e9a;
+  --cos-status-on-track-tint: rgba(45, 110, 62, 0.07);
+  --cos-status-at-risk-tint: rgba(138, 102, 20, 0.07);
+  --cos-status-blocked-tint: rgba(150, 62, 62, 0.07);
+  --cos-status-soon-done-tint: rgba(29, 110, 154, 0.07);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(14, 31, 28, 0.05);
+
+  /* Elevation — cool teal-tinted shadow */
+  --cos-shadow-low: 0 1px 2px rgba(14, 31, 28, 0.10);
+  --cos-shadow-med: 0 4px 12px rgba(14, 31, 28, 0.12);
+  --cos-shadow-modal: 0 20px 60px rgba(14, 31, 28, 0.20);
+
+  color-scheme: light;
+}

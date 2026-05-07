@@ -1,0 +1,60 @@
+/* Linen — softened light theme with warmth + personality. */
+/* Same dusty-beige canvas (less glare than Paper); paprika accent + */
+/* indigo + olive secondaries give it more life without making the */
+/* surface busy. */
+
+[data-theme="linen"] {
+  /* Surfaces — dusty beige, gently warmed. */
+  --cos-surface-canvas: #ede4d3;
+  --cos-surface-raised: #f7eedd;
+  --cos-surface-sunken: #ddd2bc;
+  --cos-surface-overlay: #cebd9e;
+
+  /* Content — generous contrast at every step on the dimmer canvas. */
+  --cos-content-primary: #1f1608;
+  --cos-content-secondary: #4a3a24;
+  --cos-content-muted: #6a553a;
+  --cos-content-faint: #8a7458;
+  --cos-content-inverse: #ede4d3;
+
+  /* Borders */
+  --cos-outline-subtle: #ddd0b6;
+  --cos-outline-default: #c4b394;
+  --cos-outline-strong: #968066;
+
+  /* Accents — rich paprika leads. */
+  --cos-accent: #b54620;
+  --cos-accent-muted: rgba(181, 70, 32, 0.18);
+  --cos-accent-contrast: #ffffff;
+  --cos-info: #2e3a78;
+  --cos-success: #5a7028;
+  --cos-warning: #a07014;
+  --cos-critical: #962614;
+
+  /* Time-aware tints — bolder, paprika-warmed. */
+  --cos-tint-today: rgba(181, 70, 32, 0.07);
+  --cos-tint-past: rgba(106, 85, 58, 0.05);
+  --cos-tint-future: rgba(46, 58, 120, 0.06);
+  --cos-tint-overdue: rgba(150, 38, 20, 0.07);
+  --cos-tint-warm-flash: rgba(181, 70, 32, 0.20);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #5a7028;
+  --cos-status-at-risk: #a07014;
+  --cos-status-blocked: #962614;
+  --cos-status-soon-done: #2e3a78;
+  --cos-status-on-track-tint: rgba(90, 112, 40, 0.08);
+  --cos-status-at-risk-tint: rgba(160, 112, 20, 0.08);
+  --cos-status-blocked-tint: rgba(150, 38, 20, 0.08);
+  --cos-status-soon-done-tint: rgba(46, 58, 120, 0.08);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(31, 22, 8, 0.05);
+
+  /* Elevation */
+  --cos-shadow-low: 0 1px 2px rgba(40, 29, 16, 0.10);
+  --cos-shadow-med: 0 4px 12px rgba(40, 29, 16, 0.12);
+  --cos-shadow-modal: 0 20px 60px rgba(40, 29, 16, 0.20);
+
+  color-scheme: light;
+}

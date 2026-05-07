@@ -1,0 +1,59 @@
+/* Coral — bold light theme. */
+/* Vibrant coral accent on a warm peach-cream canvas; deep navy + */
+/* saturated teal partners. Light theme that doesn't feel timid. */
+
+[data-theme="coral"] {
+  /* Surfaces — warm peach-cream canvas, white panels. */
+  --cos-surface-canvas: #fff5ec;
+  --cos-surface-raised: #ffffff;
+  --cos-surface-sunken: #f5e0c7;
+  --cos-surface-overlay: #eed0b0;
+
+  /* Content — confident contrast at every step. */
+  --cos-content-primary: #1a0e04;
+  --cos-content-secondary: #443120;
+  --cos-content-muted: #6e5840;
+  --cos-content-faint: #8e7a62;
+  --cos-content-inverse: #fff5ec;
+
+  /* Borders */
+  --cos-outline-subtle: #f0d9bc;
+  --cos-outline-default: #d8b890;
+  --cos-outline-strong: #a8856a;
+
+  /* Accents — coral leads, deep navy + vibrant teal pair with it. */
+  --cos-accent: #e63946;
+  --cos-accent-muted: rgba(230, 57, 70, 0.16);
+  --cos-accent-contrast: #ffffff;
+  --cos-info: #1d3557;
+  --cos-success: #2a9d8f;
+  --cos-warning: #c8741c;
+  --cos-critical: #b81825;
+
+  /* Time-aware tints — bolder than the rest of the light family. */
+  --cos-tint-today: rgba(200, 116, 28, 0.07);
+  --cos-tint-past: rgba(110, 88, 64, 0.05);
+  --cos-tint-future: rgba(29, 53, 87, 0.06);
+  --cos-tint-overdue: rgba(184, 24, 37, 0.07);
+  --cos-tint-warm-flash: rgba(230, 57, 70, 0.22);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #2a9d8f;
+  --cos-status-at-risk: #c8741c;
+  --cos-status-blocked: #b81825;
+  --cos-status-soon-done: #1d3557;
+  --cos-status-on-track-tint: rgba(42, 157, 143, 0.08);
+  --cos-status-at-risk-tint: rgba(200, 116, 28, 0.08);
+  --cos-status-blocked-tint: rgba(184, 24, 37, 0.08);
+  --cos-status-soon-done-tint: rgba(29, 53, 87, 0.08);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(26, 14, 4, 0.05);
+
+  /* Elevation — soft warm shadow */
+  --cos-shadow-low: 0 1px 2px rgba(26, 14, 4, 0.10);
+  --cos-shadow-med: 0 4px 12px rgba(26, 14, 4, 0.12);
+  --cos-shadow-modal: 0 20px 60px rgba(26, 14, 4, 0.22);
+
+  color-scheme: light;
+}

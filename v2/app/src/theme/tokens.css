@@ -1,0 +1,62 @@
+/* Design tokens per PRD-100 §5.1 + PRD-115 §7.1–7.2. */
+/* Semantic colors and theme-bound tints live in ./graphite.css (etc.). */
+/* Structural tokens (spacing, radius, motion, type scale) are theme-agnostic. */
+
+:root {
+  /* Spacing — 4px grid */
+  --cos-space-xs: 4px;
+  --cos-space-sm: 8px;
+  --cos-space-md: 12px;
+  --cos-space-lg: 16px;
+  --cos-space-xl: 24px;
+  --cos-space-2xl: 32px;
+  --cos-space-3xl: 48px;
+  --cos-space-4xl: 64px; /* PRD-115 §7.2 — surface hero → first content section */
+
+  /* Text-scale multiplier — 1.0 default. Settings → Appearance writes a */
+  /* per-user value in 0.85–1.30 range; every font-size token below is */
+  /* wrapped in calc(... * var(--cos-text-scale)) so the slider applies */
+  /* throughout the app without requiring rem-based rewrites. */
+  --cos-text-scale: 1;
+
+  /* Type scale */
+  --cos-font-caption: calc(11px * var(--cos-text-scale));
+  --cos-font-body: calc(13px * var(--cos-text-scale));
+  --cos-font-body-lg: calc(15px * var(--cos-text-scale));
+  --cos-font-h3: calc(17px * var(--cos-text-scale));
+  --cos-font-h2: calc(22px * var(--cos-text-scale));
+  --cos-font-h1: calc(28px * var(--cos-text-scale));
+  --cos-font-display: calc(36px * var(--cos-text-scale));
+  --cos-font-display-lg: calc(44px * var(--cos-text-scale));
+
+  --cos-font-family: -apple-system, BlinkMacSystemFont, "Inter",
+    "Segoe UI", system-ui, sans-serif;
+  --cos-font-family-mono: ui-monospace, "JetBrains Mono", SFMono-Regular,
+    Menlo, monospace;
+
+  /* Line heights anchored to 4px grid (also scaled). */
+  --cos-line-body: calc(22px * var(--cos-text-scale));
+  --cos-line-body-lg: calc(26px * var(--cos-text-scale));
+  --cos-line-h1: calc(36px * var(--cos-text-scale));
+  --cos-line-h2: calc(28px * var(--cos-text-scale));
+  --cos-line-display: calc(44px * var(--cos-text-scale));
+  --cos-line-display-lg: calc(52px * var(--cos-text-scale));
+
+  /* Radius */
+  --cos-radius-sm: 4px;
+  --cos-radius-md: 6px;
+  --cos-radius-lg: 10px;
+  --cos-radius-pill: 999px;
+
+  /* Motion */
+  --cos-motion-quick: 120ms;
+  --cos-motion-base: 200ms;
+  --cos-motion-slow: 320ms;
+  --cos-motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --cos-sidebar-width: 220px;
+  --cos-sidebar-collapsed: 56px;
+  --cos-header-height: 48px;
+  --cos-side-width: 380px;
+}

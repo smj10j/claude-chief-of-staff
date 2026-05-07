@@ -1,0 +1,59 @@
+/* Midnight — calm dark with personality. Loona-inspired. */
+/* Lighter than Graphite, more character than Slate; soft violet-tinted */
+/* ink with a lavender accent that glows against deep navy-violet. */
+
+[data-theme="midnight"] {
+  /* Surfaces — deep navy-violet, never pure black. */
+  --cos-surface-canvas: #1a1d2e;
+  --cos-surface-raised: #252a44;
+  --cos-surface-sunken: #14172a;
+  --cos-surface-overlay: #2f365a;
+
+  /* Content — full ramp with violet warmth, comfortable contrast. */
+  --cos-content-primary: #ece8f8;
+  --cos-content-secondary: #c4bee0;
+  --cos-content-muted: #9c97c0;
+  --cos-content-faint: #7872a0;
+  --cos-content-inverse: #1a1d2e;
+
+  /* Borders */
+  --cos-outline-subtle: #2a2e48;
+  --cos-outline-default: #3a3e62;
+  --cos-outline-strong: #545a88;
+
+  /* Accents — lavender leads, cyan secondary. */
+  --cos-accent: #c2a4ff;
+  --cos-accent-muted: rgba(194, 164, 255, 0.20);
+  --cos-accent-contrast: #14172a;
+  --cos-info: #8dd9ff;
+  --cos-success: #94f0b8;
+  --cos-warning: #ffe580;
+  --cos-critical: #ff8888;
+
+  /* Time-aware tints — keyed to the violet/cyan palette. */
+  --cos-tint-today: rgba(255, 229, 128, 0.06);
+  --cos-tint-past: rgba(156, 151, 192, 0.04);
+  --cos-tint-future: rgba(141, 217, 255, 0.05);
+  --cos-tint-overdue: rgba(255, 136, 136, 0.06);
+  --cos-tint-warm-flash: rgba(194, 164, 255, 0.24);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #94f0b8;
+  --cos-status-at-risk: #ffe580;
+  --cos-status-blocked: #ff8888;
+  --cos-status-soon-done: #8dd9ff;
+  --cos-status-on-track-tint: rgba(148, 240, 184, 0.09);
+  --cos-status-at-risk-tint: rgba(255, 229, 128, 0.09);
+  --cos-status-blocked-tint: rgba(255, 136, 136, 0.09);
+  --cos-status-soon-done-tint: rgba(141, 217, 255, 0.09);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(236, 232, 248, 0.06);
+
+  /* Elevation — soft violet glow */
+  --cos-shadow-low: 0 1px 3px rgba(20, 23, 42, 0.5);
+  --cos-shadow-med: 0 4px 16px rgba(20, 23, 42, 0.6);
+  --cos-shadow-modal: 0 20px 60px rgba(20, 23, 42, 0.75);
+
+  color-scheme: dark;
+}

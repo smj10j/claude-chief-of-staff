@@ -1,0 +1,60 @@
+/* Paper — light theme per PRD-115 §7.8. */
+/* Palette: ivory canvas / deep ink / terra-cotta accent. */
+/* Inspired by Things 3 + classic editorial layouts — warm, classical, */
+/* invites long reading without glare. */
+
+[data-theme="paper"] {
+  /* Surfaces */
+  --cos-surface-canvas: #faf8f3;
+  --cos-surface-raised: #ffffff;
+  --cos-surface-sunken: #f1ede4;
+  --cos-surface-overlay: #ebe6db;
+
+  /* Content — ramp keeps every step comfortably readable. */
+  --cos-content-primary: #1a1612;
+  --cos-content-secondary: #45402f;
+  --cos-content-muted: #6a5e48;
+  --cos-content-faint: #8a7e64;
+  --cos-content-inverse: #faf8f3;
+
+  /* Borders */
+  --cos-outline-subtle: #e8e2d4;
+  --cos-outline-default: #d4ccb8;
+  --cos-outline-strong: #a89e85;
+
+  /* Accents — terra-cotta primary. */
+  --cos-accent: #b85328;
+  --cos-accent-muted: rgba(184, 83, 40, 0.16);
+  --cos-accent-contrast: #ffffff;
+  --cos-info: #2a4a8b;
+  --cos-success: #3e6e44;
+  --cos-warning: #8a6a14;
+  --cos-critical: #a82820;
+
+  /* Time-aware tints — warmed for the light canvas. */
+  --cos-tint-today: rgba(184, 83, 40, 0.05);
+  --cos-tint-past: rgba(72, 88, 110, 0.04);
+  --cos-tint-future: rgba(42, 74, 139, 0.05);
+  --cos-tint-overdue: rgba(168, 40, 32, 0.06);
+  --cos-tint-warm-flash: rgba(184, 83, 40, 0.18);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #3e6e44;
+  --cos-status-at-risk: #8a6a14;
+  --cos-status-blocked: #a82820;
+  --cos-status-soon-done: #2a4a8b;
+  --cos-status-on-track-tint: rgba(62, 110, 68, 0.06);
+  --cos-status-at-risk-tint: rgba(138, 106, 20, 0.06);
+  --cos-status-blocked-tint: rgba(168, 40, 32, 0.06);
+  --cos-status-soon-done-tint: rgba(42, 74, 139, 0.06);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(26, 22, 18, 0.04);
+
+  /* Elevation — softer shadow on light canvas */
+  --cos-shadow-low: 0 1px 2px rgba(28, 25, 22, 0.08);
+  --cos-shadow-med: 0 4px 12px rgba(28, 25, 22, 0.10);
+  --cos-shadow-modal: 0 20px 60px rgba(28, 25, 22, 0.18);
+
+  color-scheme: light;
+}

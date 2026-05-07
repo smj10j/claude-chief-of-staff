@@ -1,0 +1,80 @@
+[package]
+name = "cos-app"
+version = "0.0.1"
+description = "Chief of Staff — built by Stephen Johnson with Claude Code."
+authors = ["Stephen Johnson"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "cos_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# M8 — SQLCipher at-rest encryption for the v2 app DB. Vendored OpenSSL
+# avoids needing OpenSSL installed on the build host; the trade-off is a
+# 5–10 minute first-time compile of the OpenSSL crate (cached afterwards).
+# The v1 task DB at `data/cos.db` is opened without PRAGMA key from
+# v1_tasks.rs — SQLCipher operates on plaintext when no key is set, so
+# the bash task-cli.sh interop is preserved.
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"] }
+keyring = { version = "3", features = ["apple-native"] }
+thiserror = "2"
+sha2 = "0.10"
+hex = "0.4"
+# ICS subscription fetcher (PRD-111). rustls-tls keeps the macOS build
+# cross-target and avoids OpenSSL on the dev machine.
+ureq = { version = "2", default-features = false, features = ["tls"] }
+# Plugin manifest reader (PRD-104 / M10a). Pure rust + minimal deps —
+# `toml` pulls in `serde` (already on) and `toml_edit` only at compile.
+toml = { version = "0.8", default-features = false, features = ["parse"] }
+# M8b — BIP-39 recovery phrase generation + key derivation. `std` for
+# Mnemonic::parse; we drop `rand` (entropy comes from /dev/urandom in
+# secrets.rs) and `serde` (no on-disk serialization).
+bip39 = { version = "2", default-features = false, features = ["std"] }
+# Key derivation for the recovery wrapping key. PBKDF2-HMAC-SHA256 over the
+# 24-word phrase + a stable salt.
+pbkdf2 = { version = "0.12", default-features = false }
+hmac = "0.12"
+# AEAD for wrapping the workspace key under the recovery-derived key.
+# `aes` for the cipher itself; `alloc` for the Aead/AeadCore traits we use
+# via the `aead` re-export.
+aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
+# Local network HTTP bridge (PRD-local-net). axum serves read-only IPC commands
+# over HTTP on port 1423 so the app can be used from a phone/tablet on the LAN.
+axum = { version = "0.7", features = ["json", "macros"] }
+tokio = { version = "1", features = ["net", "rt", "sync", "macros"] }
+# QR-code generation for the setup link (printed to terminal / shown in Settings).
+qrcode = { version = "0.14", default-features = false }
+# PRD-116 Console — pseudoterminal for the embedded `claude` session.
+# Cross-platform (macOS/Linux/Windows). Solo-dev cut ships raw mode only;
+# stream-json chat mode lands in a follow-up.
+portable-pty = "0.8"
+
+[features]
+# On by default — `bundled-sqlcipher-vendored-openssl` is wired in
+# unconditionally above, so the runtime cfg!(feature = "sqlcipher_linked")
+# check reflects reality. To skip the OpenSSL build cost during a one-off
+# debug session, override with --no-default-features (you'll lose
+# encryption — only useful for chasing a non-encryption bug).
+default = ["sqlcipher_linked"]
+sqlcipher_linked = []
+
+[dev-dependencies]
+tempfile = "3"
+

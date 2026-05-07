@@ -1,0 +1,59 @@
+/* Graphite — dark theme per PRD-100 §5.2. */
+/* Palette: warm black / off-white / brand-green accent. */
+/* Linear-inspired: focused, professional, near-monochrome with vivid pops. */
+
+[data-theme="graphite"] {
+  /* Surfaces */
+  --cos-surface-canvas: #0e1014;
+  --cos-surface-raised: #181b22;
+  --cos-surface-sunken: #0a0c10;
+  --cos-surface-overlay: #1f2330;
+
+  /* Content — full ramp with comfortable contrast at every step. */
+  --cos-content-primary: #e8eaee;
+  --cos-content-secondary: #c2c8d2;
+  --cos-content-muted: #98a0ae;
+  --cos-content-faint: #75808f;
+  --cos-content-inverse: #0e1014;
+
+  /* Borders */
+  --cos-outline-subtle: #1e2330;
+  --cos-outline-default: #2a3142;
+  --cos-outline-strong: #3a4258;
+
+  /* Accents — brand green leads, blue secondary */
+  --cos-accent: #4dd68a;
+  --cos-accent-muted: rgba(77, 214, 138, 0.18);
+  --cos-accent-contrast: #0c1610;
+  --cos-info: #7aa2f7;
+  --cos-success: #8ee0a1;
+  --cos-warning: #f0c674;
+  --cos-critical: #ff6b6b;
+
+  /* Time-aware tints — PRD-115 §7.3. */
+  --cos-tint-today: rgba(244, 198, 116, 0.06);
+  --cos-tint-past: rgba(150, 158, 174, 0.04);
+  --cos-tint-future: rgba(122, 162, 247, 0.04);
+  --cos-tint-overdue: rgba(255, 107, 107, 0.06);
+  --cos-tint-warm-flash: rgba(244, 198, 116, 0.16);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #8ee0a1;
+  --cos-status-at-risk: #f0c674;
+  --cos-status-blocked: #ff6b6b;
+  --cos-status-soon-done: #7aa2f7;
+  --cos-status-on-track-tint: rgba(142, 224, 161, 0.08);
+  --cos-status-at-risk-tint: rgba(240, 198, 116, 0.08);
+  --cos-status-blocked-tint: rgba(255, 107, 107, 0.08);
+  --cos-status-soon-done-tint: rgba(122, 162, 247, 0.08);
+
+  /* Hover surface — PRD-115 §7.4 replacement for list-row borders. */
+  --cos-surface-hover: rgba(232, 234, 238, 0.05);
+
+  /* Elevation */
+  --cos-shadow-low: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --cos-shadow-med: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --cos-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
