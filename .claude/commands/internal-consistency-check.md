@@ -12,7 +12,7 @@ Audit the local work-agent repo for internal inconsistencies. Fix anything found
 
 **Call 1 — Bash: full repo structure + task data in one shot**
 ```bash
-echo "=== TREE ===" && find data/files/ .claude/commands/ -type f -o -type d | sort && echo "=== ROOT_FILES ===" && ls *.md 2>/dev/null && echo "=== TASK_LIST ===" && bash bin/db/task-cli.sh list --format json 2>/dev/null && echo "=== TASK_RECURRING ===" && bash bin/db/task-cli.sh recurring --format json 2>/dev/null
+echo "=== TREE ===" && find data/files/ .claude/commands/ -type f -o -type d | sort && echo "=== ROOT_FILES ===" && ls *.md 2>/dev/null && echo "=== TASK_LIST ===" && bash bin/cos task list --format json 2>/dev/null && echo "=== TASK_RECURRING ===" && bash bin/cos task recurring --format json 2>/dev/null
 ```
 
 **Calls 2-6 — Read (in parallel): the 5 reference docs**

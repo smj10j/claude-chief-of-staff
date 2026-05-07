@@ -119,12 +119,12 @@ If Slack messages were found via Glean, analyze them and seed `data/files/style-
 - Run `git add -A && git status` to show what was created
 - Offer to make an initial commit
 
-### 8. Web UI Setup
+### 8. Desktop app setup
 
-After the commit, offer to set up the visual editor:
-> "Everything's committed. There's also a web UI that gives you a Google Docs-like editor for all these files — makes browsing and editing much nicer than raw markdown. Want me to get that running? It just takes a minute. (Requires Node.js 22+)"
+After the commit, mention the optional native app:
+> "Everything's committed. There's also a native desktop app under `v2/app/` that gives you a Google Docs-like editor with a tabbed workspace, command palette, and ops/velocity dashboards on top of all these files — much nicer than raw markdown. Build it with `cd v2/app && npm install && npm run tauri build` (requires Rust + Node.js 22+), or run `npm run tauri dev` for hot-reload dev mode."
 
-If they say yes, run `/ui`. If they decline or don't have Node.js, no problem — move on.
+If they're not ready, no problem — the CLI workflows below work without the app.
 
 ### 9. Next Steps
 

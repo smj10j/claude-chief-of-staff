@@ -51,4 +51,14 @@ Rules for unattended execution:
 
 EXIT_CODE=$?
 echo "$(date '+%Y-%m-%d %H:%M:%S') Weekly review finished with exit code $EXIT_CODE"
+
+# B9-CP14 — also run /velocity-diagnose so the weekly diagnostic
+# lands in data/files/areas/work/ alongside the review. Best-effort:
+# a non-zero exit here doesn't fail the wrapper, since the review
+# itself already succeeded (or failed) above.
+DIAGNOSE_PROMPT="Run /velocity-diagnose in unattended mode. Write the synthesis to data/files/areas/work/velocity-diagnose-\$(date +%Y-%m-%d).md and print the SAVED:<path> line. If gh or the Atlassian MCP is unavailable, write a stub explaining what was missing."
+echo "$(date '+%Y-%m-%d %H:%M:%S') Running velocity-diagnose..."
+"$CLAUDE_BIN" -p "$DIAGNOSE_PROMPT" --allowedTools 'Bash(gh:*)' 'Read' 'Write' 2>&1 || true
+echo "$(date '+%Y-%m-%d %H:%M:%S') velocity-diagnose finished"
+
 exit $EXIT_CODE

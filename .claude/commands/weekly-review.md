@@ -13,12 +13,12 @@ After the Agent returns, combine its findings with the calendar preview, present
 ## Steps (run data gathering in parallel)
 
 ### 1. What Got Done
-- Run `bash bin/db/task-cli.sh list --archived --since $(date -v-monday +%Y-%m-%d) --format json` for tasks completed this week
+- Run `bash bin/cos task list --archived --since $(date -v-monday +%Y-%m-%d) --format json` for tasks completed this week
 - Run `git log --oneline --since="last monday"` to see what changed
 - Summarize accomplishments — group by project/area
 
 ### 2. Task Triage
-- Run `bash bin/db/task-cli.sh list --format json` — identify all overdue tasks
+- Run `bash bin/cos task list --format json` — identify all overdue tasks
 - For each overdue task: recommend re-date, drop, or escalate
 - Flag any tasks that have been overdue for more than a week — these need a decision, not another re-date
 - Present the list and ask for confirmation before making changes
@@ -38,7 +38,7 @@ After the Agent returns, combine its findings with the calendar preview, present
 - Flag any days that are packed vs. have space for deep work
 
 ### 6. Recurring Items
-- Run `bash bin/db/task-cli.sh recurring --format json` — anything that needs updating or adding?
+- Run `bash bin/cos task recurring --format json` — anything that needs updating or adding?
 
 ## Output Format
 
@@ -85,6 +85,14 @@ Save the complete weekly review output as a dated artifact.
 2. Write the full review to `data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md`
 3. The output should include ALL sections from above: Wins, Task Triage, Project Health, 1:1 Housekeeping, Next Week Preview, Compaction Report, Recurring Items, and Housekeeping Actions
 4. Commit: `weekly review: YYYY-MM-DD`
+
+After writing the file, print **exactly one final line**:
+
+```
+SAVED: data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md
+```
+
+The v2 UI parses this to open the review in the editor. The `SAVED:` line must be the LAST line of the response.
 
 ## Rules
 - Don't make changes to tasks without confirmation. Present recommendations, then execute.

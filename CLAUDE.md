@@ -61,23 +61,48 @@ Examples:
      ============================================================ -->
 
 ## Custom Commands
-Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`.
-- `/init` — Interactive onboarding: populates CLAUDE.md, creates 1:1 and meeting folders, seeds style guide
-- `/morning-briefing` — Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones
+
+Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. Each command file is self-describing — open it for full behavior. Grouped for scanning:
+
+**Daily / weekly cadence**
+- `/morning-briefing` — Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones. Pulls in `/ops-*` and `/planning-*` snapshots and `/review-reminders`.
 - `/weekly-review` — Friday GTD review: archive done tasks, triage overdue, check project health, preview next week, compact old sessions, persist output to `data/files/areas/weekly-reviews/`. Runs automatically every Friday at 8 PM via scheduled launchd agent.
-- `/compact-sessions` — Compact old session files: creates structured summaries, archives originals. Keeps last 3 sessions full-fidelity per person/meeting, compacts older ones. Preserves coaching signals for direct reports. Run standalone or automatically as part of `/weekly-review`.
-- `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file
-- `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation
-- `/digest-meeting [name]` — Digest notes from a completed 1:1 or meeting: reads shared Google Doc + raw notes, structures session file, updates READMEs, proposes task updates
-- `/level-candidate [name]` — IC leveling assessment against your engineering leveling framework
-- `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches
-- `/ui` — Start the Chief of Staff web UI (WYSIWYG markdown editor at localhost:3737)
-- `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc for mobile reading. Optionally pass a doc URL to update in-place.
-- `/process-ui-annotations [file]` — Process annotations left in the Chief of Staff UI. Reads highlighted text + instructions, applies changes, clears annotations. Triggered by the "Process with Claude" button in the UI, or run manually from terminal.
-- `/review-reminders` — Import pending items from Apple Reminders into the task database. Reads from a configured list, lets you selectively import with tag/date enrichment.
-- `/task-export` — Export the task database to YAML files for backup or debugging
-- `/internal-consistency-check` — Audit repo for internal inconsistencies: missing READMEs, mismatched listings, orphaned folders, stale sessions
-- `/upstream-review` — Diff personal instance against the template repo, identify generalizable changes, and open a PR
+- `/compact-sessions` — Compact old session files: creates structured summaries, archives originals. Keeps last 3 sessions full-fidelity per person/meeting. Run standalone or as part of `/weekly-review`.
+- `/task-triage` — Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation.
+- `/review-reminders` — Import pending items from Apple Reminders into the task database.
+
+**1:1s and meetings**
+- `/prep-1on1 [name]` — Full 1:1 prep workflow: reads README + last session, gathers context, generates session file.
+- `/digest-meeting [name]` — Digest notes from a completed 1:1 or meeting: structures session file, updates READMEs, proposes task updates.
+
+**Org / People**
+- `/org-generate` — Rebuild the canonical `data/files/areas/org/org.json` plus every `person.json`. Same outcome as the v2 UI's "Regenerate" button.
+- `/person-refresh [name]` — Refresh one person's `person.json` (Slack/email/title metadata).
+- `/level-candidate [name|pdf]` — IC leveling assessment against your engineering leveling framework.
+
+**Ops / Service Health**
+- `/ops-incidents` — Snapshot active incidents from your incidents Slack channel.
+- `/ops-datadog-monitors` — Snapshot failing Datadog monitors.
+- `/ops-rollbar-top` — Snapshot top Rollbar error items across your projects.
+- `/ops-my-jira` — Snapshot Jira issues currently assigned to you.
+- `/ops-team-jira` — Snapshot Jira issues assigned across your team.
+- `/velocity-diagnose` — Diagnose week-over-week PR + Jira velocity dips over the last 14 days.
+
+**Planning / Roadmap**
+- `/planning-team-epics` — Snapshot open epics owned by your team (Roadmap tab).
+- `/planning-jpd` — Snapshot Jira Product Discovery items (Roadmap → Discovery sub-tab).
+- `/planning-epic-update <epic-key>` — Draft a weekly plan-update narrative for one epic.
+- `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches.
+
+**Comms / docs**
+- `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc. Optionally pass a doc URL to update in-place.
+- `/process-ui-annotations [file]` — Process annotations from `<file>.annotations.json` sidecar. Triggered by the v2 desktop app's "Process with Claude" button or run manually.
+
+**Repo hygiene**
+- `/init` — Interactive onboarding: populates CLAUDE.md, creates 1:1 and meeting folders, seeds style guide.
+- `/internal-consistency-check` — Audit repo for missing READMEs, mismatched listings, orphaned folders, stale sessions.
+- `/upstream-review` — Review local changes and port generalizable ones back to the template repo.
+- `/task-export` — Export the task database to YAML files for backup or debugging.
 
 ## Git Workflow
 - Commit periodically and after significant changes (new 1:1 READMEs, session notes, major task updates, new project docs)
@@ -150,13 +175,14 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/daily-briefings/` - daily morning briefing history. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/morning-briefing`.
       - `data/files/areas/weekly-reviews/` - Friday weekly review artifacts. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/weekly-review`.
       - `data/files/areas/task-triage/` - working directory for `/task-triage` output (triage.md)
+      - `data/files/areas/console-sessions/` - per-tab Console transcripts from the v2 desktop app's multi-tab Console. Naming pattern `YYYY-MM-DD-HHMM-c#.{md,jsonl}` where `c#` is the tab number. Auto-written by the app, not edited by hand.
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
-- `cos-dev/` - Chief of Staff UI development documentation
-  - `cos-dev/TDD.md` - Technical design document (current architecture)
+- `cos-dev/` - Chief of Staff app development documentation
+  - `cos-dev/TDD.md` - Technical design document
   - `cos-dev/DESIGN.md` - Design principles guiding UI decisions
   - `cos-dev/SECURITY.md` - Threat model, current controls, security checklist
   - `cos-dev/implementation-loop.md` - Process for implementing PRDs (follow this when building features)
-  - `cos-dev/PRDs/` - Product requirement documents for UI features
+  - `cos-dev/PRDs/` - Product requirement documents
     - `cos-dev/PRDs/INDEX.md` - PRD registry (status, dates, links). Always update this when creating or completing a PRD.
   - `cos-dev/implementations/` - Implementation trackers for completed PRDs (audit trail, soak logs, cleanup checklists)
 
@@ -165,11 +191,13 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
 2. **Complete**: mark done in INDEX.md with completion date, move folder to `data/files/archive/`
 3. **Areas** never complete — they persist in `data/files/areas/` indefinitely
 
-### Chief of Staff UI
-- Local web UI at `http://localhost:3737` — WYSIWYG markdown editor powered by Tiptap
-- Start with `/ui` command. First run installs Node dependencies and builds automatically (requires Node.js 22+)
-- Source lives in `ui/` directory: `src/` (ES modules), `build.js` (esbuild bundler), `server.js` (Express), `start.sh` (launcher)
-- Edits in the UI auto-save back to the markdown files on disk. Changes from Claude or the filesystem trigger a live reload in the browser via SSE.
+### Chief of Staff app (v2)
+
+- Native desktop app built on Tauri 2 (Rust + React/TypeScript). Source lives in `v2/app/`.
+- Run in dev with `cd v2/app && npm run tauri dev`. A signed `.dmg` is produced by `npm run tauri build` (lands at `v2/app/src-tauri/target/release/bundle/dmg/`).
+- The app reads/writes the same on-disk content tree (`data/files/`) and SQLite task DB (`data/cos.db`) the CLI uses, so v2 and `bash bin/cos …` share state.
+- Edits in the editor auto-save (2s debounce + flush on close); annotations land as `<file>.annotations.json` sidecars next to the markdown — `/process-ui-annotations` reads them.
+- v2 design + architecture docs: `cos-dev/PRDs/v2/` (numbered PRDs starting at 100), `cos-dev/TDD.md`, `cos-dev/DESIGN.md`, `cos-dev/SECURITY.md`.
 
 ## Daily Briefing
 
@@ -246,13 +274,27 @@ REVIEW_HOUR=19 bash bin/weekly-review/weekly-review-setup.sh install  # Change t
 ```
 Output is saved to `data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md`.
 
-### 4. Chief of Staff UI
+### 4. Morning Briefing Automation (Daily, 7 AM)
+Installs a macOS launchd agent that runs `/morning-briefing` daily and writes to `data/files/areas/daily-briefings/sessions/YYYY-MM-DD.md`.
 ```bash
-/ui    # First run auto-installs Node dependencies and builds
+bash bin/cos schedule install                             # Enable (daily at 7 AM)
+bash bin/cos schedule status                              # Verify it's running
+bash bin/cos schedule uninstall                           # Disable
+bash bin/schedule/morning-briefing.sh                     # Test run now
 ```
-Opens at http://localhost:3737. WYSIWYG markdown editor with live reload.
+The plist label is `com.chief-of-staff.morning-briefing` and logs to `data/logs/morning-briefing.{log,err}`.
 
-### 5. MCP Server Integrations (Optional)
+### 5. Chief of Staff app (v2 Tauri)
+```bash
+cd v2/app
+npm install
+npm run tauri dev   # dev mode with hot reload
+# or:
+npm run tauri build # produces a signed .dmg
+```
+Opens as a native desktop app. WYSIWYG editor (Tiptap), tabbed workspace, native macOS chrome.
+
+### 6. MCP Server Integrations (Optional)
 Each integration requires a one-time setup. The system works without any of them — features degrade gracefully to local-only context.
 - **Slack** — bidirectional search, read, send
 - **Google Workspace** — Calendar, Sheets, Slides, Docs
