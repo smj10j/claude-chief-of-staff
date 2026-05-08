@@ -54,7 +54,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/smj10j/chief-of-staff/releases/latest/download/latest.json"
+        "https://github.com/smj10j/claude-chief-of-staff/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg4RTVBOEVCNjRFM0IzM0YKUldRL3MrTms2NmpsaUZQQXZ5U1NRNFVPQWxsdnVsbHY4WSsxMjBhVDk3NE5HUkYwSms2NkI4Z00K",
       "windows": {
