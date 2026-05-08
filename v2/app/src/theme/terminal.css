@@ -1,0 +1,59 @@
+/* Terminal — high-contrast playful dark. */
+/* Palette: true black canvas / phosphor green accent / off-white text. */
+/* Inspired by classic CRT terminals + modern hacker aesthetics. */
+
+[data-theme="terminal"] {
+  /* Surfaces */
+  --cos-surface-canvas: #000000;
+  --cos-surface-raised: #0e1010;
+  --cos-surface-sunken: #050505;
+  --cos-surface-overlay: #181c18;
+
+  /* Content — slight green tint, generous contrast at every step. */
+  --cos-content-primary: #e8f5e8;
+  --cos-content-secondary: #b0c8b0;
+  --cos-content-muted: #88a088;
+  --cos-content-faint: #607860;
+  --cos-content-inverse: #000000;
+
+  /* Borders */
+  --cos-outline-subtle: #1a221a;
+  --cos-outline-default: #283028;
+  --cos-outline-strong: #3e503c;
+
+  /* Accents — phosphor green leads. */
+  --cos-accent: #44ff77;
+  --cos-accent-muted: rgba(68, 255, 119, 0.18);
+  --cos-accent-contrast: #000000;
+  --cos-info: #7ce0ff;
+  --cos-success: #94ffb4;
+  --cos-warning: #ffd450;
+  --cos-critical: #ff6c80;
+
+  /* Time-aware tints */
+  --cos-tint-today: rgba(255, 212, 80, 0.05);
+  --cos-tint-past: rgba(150, 150, 150, 0.03);
+  --cos-tint-future: rgba(124, 224, 255, 0.05);
+  --cos-tint-overdue: rgba(255, 108, 128, 0.06);
+  --cos-tint-warm-flash: rgba(68, 255, 119, 0.22);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #94ffb4;
+  --cos-status-at-risk: #ffd450;
+  --cos-status-blocked: #ff6c80;
+  --cos-status-soon-done: #7ce0ff;
+  --cos-status-on-track-tint: rgba(148, 255, 180, 0.08);
+  --cos-status-at-risk-tint: rgba(255, 212, 80, 0.08);
+  --cos-status-blocked-tint: rgba(255, 108, 128, 0.08);
+  --cos-status-soon-done-tint: rgba(124, 224, 255, 0.08);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(232, 245, 232, 0.06);
+
+  /* Elevation */
+  --cos-shadow-low: 0 1px 2px rgba(68, 255, 119, 0.10);
+  --cos-shadow-med: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --cos-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.8);
+
+  color-scheme: dark;
+}

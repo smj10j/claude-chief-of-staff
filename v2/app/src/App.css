@@ -1,0 +1,7907 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--cos-surface-canvas);
+  color: var(--cos-content-primary);
+  font-family: var(--cos-font-family);
+  font-size: var(--cos-font-body);
+  line-height: var(--cos-line-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Visually-hidden utility — keeps content reachable to screen
+ * readers but invisible to sighted users. Used for ARIA
+ * live-region announcements (PRD §4.11). */
+.cos-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============ App shell layout ============ */
+
+/* PRD-v2-117 §4.2 — workspace shell wrapper. The tab strip sits at
+ * the top of the window above the sidebar, full-width. The existing
+ * sidebar+main 2-column layout stays in `.cos-app`, now nested
+ * inside `.cos-shell`. */
+.cos-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cos-app {
+  display: grid;
+  grid-template-columns: var(--cos-sidebar-width) 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  /* anchor for the absolutely-positioned resize handle on the
+   * sidebar / side-panel column boundaries */
+  position: relative;
+  transition: grid-template-columns var(--cos-motion-base) var(--cos-motion-ease);
+}
+
+.cos-app.sidebar-collapsed {
+  grid-template-columns: var(--cos-sidebar-collapsed) 1fr;
+}
+
+.cos-sidebar {
+  min-height: 0;
+}
+
+.cos-main-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cos-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cos-app.side-open .cos-content {
+  grid-template-columns: 1fr var(--cos-side-width);
+}
+
+.cos-main-zone {
+  overflow: auto;
+  /* Tighter top padding so the surface H1 sits close to the header
+   * bar — the hero already establishes its own visual presence; an
+   * extra full 2xl above it just looks like a void. */
+  padding: var(--cos-space-lg) var(--cos-space-2xl) var(--cos-space-2xl);
+}
+
+.cos-side-zone {
+  border-left: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-sunken);
+  overflow: auto;
+  padding: var(--cos-space-xl);
+  /* anchor for the resize handle pinned to its left edge */
+  position: relative;
+}
+
+/* ============ Resize handles ============ */
+
+.cos-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+  /* No padding/border — the visible bar is the background; the
+   * 8px width gives a generous click target. */
+}
+
+.cos-resize-handle:hover,
+.cos-resize-handle:focus-visible,
+.cos-resize-handle:active {
+  background: var(--cos-accent-muted);
+  outline: none;
+}
+
+/* Sidebar handle — sibling of Sidebar inside .cos-app. Pinned to the
+ * right edge of the sidebar column; centered on the boundary so it
+ * straddles both columns visually. */
+.cos-resize-handle--right {
+  left: var(--cos-sidebar-width);
+  transform: translateX(-50%);
+}
+
+.cos-app.sidebar-collapsed .cos-resize-handle--right {
+  display: none;
+}
+
+/* Side-panel handle — child of the .cos-side-zone aside. Centered on
+ * the aside's left edge, which is the boundary with the main zone. */
+.cos-side-zone .cos-resize-handle--left {
+  left: 0;
+  transform: translateX(-50%);
+}
+
+.cos-side-placeholder {
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+}
+
+.cos-side-placeholder code {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  background: var(--cos-surface-raised);
+  padding: 1px 5px;
+  border-radius: var(--cos-radius-sm);
+}
+
+/* ============ Sidebar ============ */
+
+.cos-sidebar {
+  background: var(--cos-surface-sunken);
+  border-right: 1px solid var(--cos-outline-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: var(--cos-space-lg) var(--cos-space-sm);
+  gap: var(--cos-space-lg);
+}
+
+.cos-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  padding: 0 var(--cos-space-sm);
+  height: 28px;
+}
+
+.cos-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-accent);
+  box-shadow: 0 0 8px var(--cos-accent-muted);
+}
+
+.cos-sidebar-title {
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.cos-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.cos-sidebar-item {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  width: 100%;
+  padding: 6px var(--cos-space-sm);
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-secondary);
+  border-radius: var(--cos-radius-md);
+  cursor: pointer;
+  font-size: var(--cos-font-body);
+  text-align: left;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-sidebar.is-collapsed .cos-sidebar-item {
+  grid-template-columns: 20px;
+  justify-content: center;
+}
+
+.cos-sidebar-item:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-sidebar-item.is-active {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+}
+
+.cos-sidebar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-sidebar-shortcut {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-sidebar-item.is-active .cos-sidebar-shortcut {
+  color: var(--cos-accent);
+  opacity: 0.7;
+}
+
+.cos-sidebar-toggle {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  padding: var(--cos-space-xs);
+  border-radius: var(--cos-radius-sm);
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+}
+
+.cos-sidebar-toggle:hover {
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-raised);
+}
+
+.cos-sidebar.is-collapsed .cos-sidebar-toggle {
+  align-self: center;
+}
+
+/* ============ Header ============ */
+
+.cos-header-bar {
+  height: var(--cos-header-height);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--cos-space-xl);
+  background: var(--cos-surface-canvas);
+}
+
+.cos-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-md);
+  min-width: 0;
+}
+
+.cos-nav-history {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cos-nav-history-btn:disabled {
+  color: var(--cos-content-faint);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.cos-nav-history-btn:disabled:hover {
+  color: var(--cos-content-faint);
+  background: transparent;
+}
+
+.cos-breadcrumb {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-muted);
+}
+
+.cos-breadcrumb-current {
+  color: var(--cos-content-primary);
+  font-weight: 500;
+}
+
+.cos-breadcrumb-parent {
+  color: var(--cos-content-muted);
+}
+
+.cos-breadcrumb-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.cos-breadcrumb-link:hover {
+  color: var(--cos-content-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--cos-outline-strong);
+  text-underline-offset: 2px;
+}
+
+.cos-breadcrumb-sep {
+  color: var(--cos-content-faint);
+  margin: 0 var(--cos-space-xs);
+  vertical-align: middle;
+}
+
+.cos-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+}
+
+.cos-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  height: 30px;
+  padding: 0 var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  color: var(--cos-content-secondary);
+  font-size: var(--cos-font-body);
+  cursor: pointer;
+  transition: border-color var(--cos-motion-quick) var(--cos-motion-ease);
+  min-width: 280px;
+}
+
+.cos-pill:hover {
+  border-color: var(--cos-outline-strong);
+  color: var(--cos-content-primary);
+}
+
+.cos-pill span {
+  flex: 1;
+  text-align: left;
+  color: var(--cos-content-muted);
+}
+
+.cos-icon-btn {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  padding: var(--cos-space-xs);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+}
+
+.cos-icon-btn:hover {
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-raised);
+}
+
+.cos-kbd {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-sm);
+  padding: 1px 6px;
+  background: var(--cos-surface-canvas);
+}
+
+/* ============ Home ============ */
+
+.cos-home {
+  display: grid;
+  gap: var(--cos-space-xl);
+  max-width: 920px;
+}
+
+/* PRD-115 §6.1 — redesigned Home: greeting hero, top-3 priorities,
+ * calendar strip, single-line briefings, optional inbox strip.
+ * No bordered stacks; sections separate via spacing + tints. */
+
+.cos-home-redesigned {
+  gap: var(--cos-space-2xl);
+  max-width: 1040px;
+}
+
+.cos-home-priorities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--cos-space-md);
+}
+
+.cos-priority-card {
+  display: grid;
+  grid-template-columns: auto 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--cos-font-body);
+  line-height: var(--cos-line-body);
+  border: 0;
+  cursor: default;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-priority-card:is(button) {
+  cursor: pointer;
+}
+
+.cos-priority-card:is(button):hover {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-priority-card.source-overdue {
+  background: var(--cos-tint-overdue);
+}
+
+.cos-priority-card.source-briefing {
+  background: var(--cos-tint-today);
+}
+
+.cos-priority-card-index {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-priority-card-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cos-content-faint);
+  align-self: center;
+}
+
+.cos-priority-card.source-overdue .cos-priority-card-dot {
+  background: var(--cos-critical);
+}
+
+.cos-priority-card.source-briefing .cos-priority-card-dot {
+  background: var(--cos-warning);
+}
+
+.cos-priority-card-text {
+  min-width: 0;
+  white-space: normal;
+  font-weight: 500;
+  /* Long URLs / unbroken tokens shouldn't push past the card and into
+   * the neighboring tile. anywhere allows mid-token wrapping as a
+   * last resort while preferring whitespace breaks. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cos-priority-card-text strong {
+  font-weight: 700;
+}
+
+.cos-priority-card-text code {
+  font-family: var(--cos-font-family-mono);
+  font-size: 0.92em;
+  background: var(--cos-surface-overlay);
+  padding: 1px 5px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-priority-card-link {
+  color: var(--cos-content-muted);
+  flex-shrink: 0;
+}
+
+.cos-home-calendar {
+  display: block;
+}
+
+.cos-home-agenda {
+  list-style: none;
+  margin: 0;
+  padding: var(--cos-space-sm) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-md);
+}
+
+.cos-home-agenda-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--cos-space-md);
+  padding: 6px var(--cos-space-md);
+  font-size: var(--cos-font-body);
+  line-height: 1.35;
+}
+
+.cos-home-agenda-row.is-clickable {
+  display: block;
+  padding: 0;
+}
+
+.cos-home-agenda-button {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--cos-space-md);
+  width: 100%;
+  padding: 6px var(--cos-space-md);
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--cos-font-body);
+  line-height: 1.35;
+  color: inherit;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-home-agenda-button:hover {
+  background: var(--cos-accent-muted);
+}
+
+.cos-home-agenda-button:focus-visible {
+  outline: 2px solid var(--cos-accent);
+  outline-offset: -2px;
+}
+
+.cos-home-agenda-time {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cos-home-agenda-title {
+  color: var(--cos-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-home-briefings-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-md);
+  flex-wrap: wrap;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-home-briefings-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.cos-home-briefings-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--cos-space-xs);
+  flex-wrap: wrap;
+}
+
+.cos-home-briefings-chip {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  background: transparent;
+  border: 0;
+  padding: 2px 8px;
+  border-radius: var(--cos-radius-pill);
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-home-briefings-chip:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-home-briefings-chip.is-today {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+}
+
+.cos-home-briefings-empty,
+.cos-home-briefings-error {
+  color: var(--cos-content-muted);
+}
+
+.cos-home-briefings-error {
+  color: var(--cos-critical);
+}
+
+.cos-home-inbox-strip {
+  display: flex;
+  gap: var(--cos-space-sm);
+  flex-wrap: wrap;
+}
+
+.cos-home-inbox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cos-font-caption);
+  font-family: inherit;
+  background: var(--cos-surface-raised);
+  border: 0;
+  border-radius: var(--cos-radius-pill);
+  padding: 4px 10px;
+  color: var(--cos-content-secondary);
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-home-inbox-chip:hover {
+  background: var(--cos-surface-overlay);
+  color: var(--cos-content-primary);
+}
+
+.cos-home-inbox-chip svg {
+  color: var(--cos-content-muted);
+}
+
+.cos-home-inbox-chip.is-open {
+  background: var(--cos-surface-overlay);
+  color: var(--cos-content-primary);
+}
+
+.cos-home-inbox {
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-home-inbox-detail {
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-md);
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-home-inbox-lede {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  line-height: 1.5;
+}
+
+.cos-home-inbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.cos-home-inbox-item {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  gap: var(--cos-space-md);
+  align-items: center;
+  padding: 6px var(--cos-space-sm);
+  border-radius: var(--cos-radius-sm);
+  background: transparent;
+  font-size: var(--cos-font-body);
+  border: 0;
+  color: var(--cos-content-primary);
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+}
+
+.cos-home-inbox-item.is-clickable {
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-home-inbox-item.is-clickable:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-home-inbox-item svg {
+  color: var(--cos-content-muted);
+}
+
+.cos-home-inbox-item-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-home-inbox-item-meta {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.cos-home-inbox-item-date {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-home-inbox-overflow {
+  padding: 6px var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-style: italic;
+}
+
+/* PRD-115 §6.1 — Recent prep docs (last 3 sessions across people/meetings). */
+.cos-home-prep {
+  display: grid;
+  gap: var(--cos-space-md);
+}
+
+.cos-home-prep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--cos-space-sm);
+}
+
+.cos-home-prep-card {
+  display: grid;
+  gap: 4px;
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  text-align: left;
+  font-family: inherit;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-home-prep-card:hover {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-home-prep-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+}
+
+.cos-home-prep-card-head svg {
+  color: var(--cos-content-muted);
+  flex-shrink: 0;
+}
+
+.cos-home-prep-card-owner {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-home-prep-card-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-home-prep-card-kind {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cos-home-prep-card-date {
+  font-family: var(--cos-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* PRD-115 §6.1 — Recently opened MRU strip below the fold. */
+.cos-home-recent {
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+/* PRD-115 §7.7 — motion moments. All ≤ 320ms; reduced-motion safe. */
+
+@keyframes cos-task-complete {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 60px;
+  }
+  40% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+}
+
+.cos-task-row.is-completing {
+  animation: cos-task-complete var(--cos-motion-slow)
+    var(--cos-motion-ease) forwards;
+  pointer-events: none;
+}
+
+@keyframes cos-warm-flash {
+  0% {
+    background: var(--cos-tint-warm-flash);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.cos-warm-flash {
+  animation: cos-warm-flash var(--cos-motion-slow) var(--cos-motion-ease);
+}
+
+@keyframes cos-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cos-surface-hero {
+  animation: cos-hero-rise var(--cos-motion-base) var(--cos-motion-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cos-task-row.is-completing,
+  .cos-warm-flash,
+  .cos-surface-hero {
+    animation-duration: 1ms;
+  }
+}
+
+/* PRD-115 §6.6 — Projects status grid. */
+.cos-projects {
+  display: grid;
+  gap: var(--cos-space-xl);
+  max-width: 1100px;
+}
+
+.cos-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--cos-space-lg);
+}
+
+.cos-projects-col {
+  display: grid;
+  gap: var(--cos-space-sm);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+}
+
+.cos-projects-col.tone-blocked {
+  background: var(--cos-status-blocked-tint);
+}
+
+.cos-projects-col.tone-at-risk {
+  background: var(--cos-status-at-risk-tint);
+}
+
+.cos-projects-col.tone-on-track {
+  background: var(--cos-status-on-track-tint);
+}
+
+.cos-projects-col.tone-soon-done {
+  background: var(--cos-status-soon-done-tint);
+}
+
+.cos-projects-col-list {
+  display: grid;
+  gap: var(--cos-space-xs);
+}
+
+.cos-project-card {
+  display: grid;
+  gap: 4px;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-surface-canvas);
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-project-card.is-clickable {
+  cursor: pointer;
+}
+
+.cos-project-card.is-clickable:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-project-card.is-clickable:focus-visible {
+  outline: 2px solid var(--cos-accent);
+  outline-offset: 2px;
+}
+
+.cos-project-card.is-open {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-project-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cos-space-sm);
+}
+
+.cos-project-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--cos-content-primary);
+  min-width: 0;
+}
+
+.cos-project-card-title:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.cos-project-card.is-clickable:hover .cos-project-card-title {
+  color: var(--cos-info);
+}
+
+.cos-project-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cos-content-faint);
+  flex-shrink: 0;
+}
+
+.cos-project-dot.tone-blocked {
+  background: var(--cos-status-blocked);
+}
+
+.cos-project-dot.tone-at-risk {
+  background: var(--cos-status-at-risk);
+}
+
+.cos-project-dot.tone-on-track {
+  background: var(--cos-status-on-track);
+}
+
+.cos-project-dot.tone-soon-done {
+  background: var(--cos-status-soon-done);
+}
+
+.cos-project-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-project-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.cos-project-touched {
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-project-toggle {
+  font-size: var(--cos-font-caption);
+}
+
+.cos-project-note {
+  margin: 0;
+  padding-left: 16px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+.cos-project-files {
+  list-style: none;
+  margin: var(--cos-space-xs) 0 0;
+  padding: var(--cos-space-xs) 0 0 16px;
+  display: grid;
+  gap: 2px;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-project-files-row {
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  padding: 4px var(--cos-space-sm);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  color: var(--cos-content-secondary);
+  width: 100%;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-project-files-row:hover {
+  background: var(--cos-surface-hover);
+  color: var(--cos-info);
+}
+
+.cos-projects-archived {
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-projects-archived-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--cos-space-xs);
+}
+
+/* PRD-115 §6.3 — People surface "Needs your attention" hero + grid. */
+.cos-people-attention {
+  display: grid;
+  gap: var(--cos-space-md);
+}
+
+.cos-people-attention-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--cos-space-sm);
+}
+
+/* PRD-115 §6.4 — Person Profile editorial layout: snippet grid for sessions. */
+.cos-profile-snippet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--cos-space-sm);
+}
+
+.cos-profile-session-list-overflow {
+  grid-column: 1 / -1;
+  margin-top: var(--cos-space-sm);
+  padding-top: var(--cos-space-sm);
+}
+
+/* PRD-115 §6.2 — Work surface time-bucket layout. */
+.cos-work-buckets {
+  display: grid;
+  gap: var(--cos-space-lg);
+}
+
+/* Time-bucket task list inside a TimeBucket primitive — borderless,
+ * tight-row variant of cos-task-list (the old chrome is already gone
+ * from CP10's border audit; this just tightens spacing). */
+.cos-work-buckets .cos-task-list {
+  display: grid;
+  gap: 2px;
+}
+
+.cos-stack {
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-lg);
+  overflow: hidden;
+}
+
+.cos-stack-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--cos-space-md) var(--cos-space-lg);
+}
+
+.cos-stack-header h2 {
+  margin: 0;
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+}
+
+.cos-stack-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+}
+
+.cos-stack-header-actions .cos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cos-doc-digest {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cos-font-caption);
+  padding: 4px 10px;
+}
+
+.cos-running-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cos-font-caption);
+  padding: 3px 10px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+  border: 1px solid var(--cos-accent);
+  white-space: nowrap;
+  cursor: help;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-mount {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  background: var(--cos-surface-canvas);
+  padding: 2px 6px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-stack-body {
+  padding: var(--cos-space-lg);
+}
+
+.cos-placeholder p {
+  margin: 0 0 var(--cos-space-xs);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+.cos-placeholder-muted {
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-stack-lede {
+  margin: 0 0 var(--cos-space-md);
+}
+
+.cos-today-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cos-today-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto auto;
+  align-items: center;
+  gap: var(--cos-space-md);
+  width: 100%;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  border: 0;
+  border-radius: var(--cos-radius-md);
+  background: transparent;
+  color: var(--cos-content-primary);
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--cos-font-body);
+  font-family: inherit;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-today-row:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-today-row svg {
+  color: var(--cos-content-muted);
+}
+
+.cos-today-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-sm);
+  min-width: 0;
+}
+
+.cos-today-label {
+  font-weight: 500;
+}
+
+.cos-today-kind {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cos-today-date {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-today-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-accent);
+  padding: 2px 8px;
+  border: 1px solid var(--cos-accent-muted);
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-today-row:hover .cos-today-open {
+  background: var(--cos-accent-muted);
+}
+
+/* ============ Surface placeholder ============ */
+
+.cos-surface-placeholder {
+  max-width: 560px;
+}
+
+.cos-surface-placeholder h1 {
+  margin: 0 0 var(--cos-space-sm);
+  font-size: var(--cos-font-h1);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cos-surface-placeholder p {
+  margin: 0 0 var(--cos-space-sm);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+/* ============ People ============ */
+
+.cos-people {
+  display: grid;
+  gap: var(--cos-space-xl);
+  max-width: 720px;
+}
+
+.cos-people-head h1 {
+  margin: 0 0 var(--cos-space-xs);
+  font-size: var(--cos-font-h2);
+  font-weight: 600;
+}
+
+.cos-people-group h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  margin: 0 0 var(--cos-space-sm);
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-people-count {
+  font-family: var(--cos-font-family-mono);
+  font-size: 11px;
+  color: var(--cos-content-faint);
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-pill);
+  padding: 0 6px;
+}
+
+.cos-people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--cos-radius-md);
+  overflow: hidden;
+}
+
+.cos-person-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--cos-space-md);
+  align-items: center;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-person-row:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-person-main {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  min-width: 0;
+}
+
+.cos-person-label {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-person-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-md);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.cos-person-staleness {
+  min-width: 64px;
+  text-align: right;
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-person-staleness-stale {
+  color: var(--cos-warning);
+}
+
+/* ============ Audit filter row (Settings → Activity) ============ */
+
+.cos-audit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--cos-space-md);
+  margin-bottom: var(--cos-space-sm);
+}
+
+.cos-audit-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-audit-filter span {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+
+.cos-audit-filter input,
+.cos-audit-filter select {
+  background: var(--cos-surface);
+  color: var(--cos-content);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 4px 8px;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  min-width: 140px;
+}
+
+.cos-audit-actions {
+  margin-bottom: var(--cos-space-sm);
+}
+
+/* ============ Diagnostics panel shell ============
+ *
+ * .cos-panel is the shared container for sub-panels inside the
+ * Diagnostics tab (Setup readiness / Encryption / Disk health /
+ * Performance). One head pattern, one body, consistent spacing. */
+
+.cos-panel {
+  margin-top: var(--cos-space-xl);
+}
+
+.cos-panel:first-of-type,
+.cos-section > .cos-panel:first-child {
+  margin-top: 0;
+}
+
+.cos-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  margin-bottom: var(--cos-space-sm);
+}
+
+.cos-panel-head h3 {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+}
+
+.cos-panel-actions {
+  display: flex;
+  gap: var(--cos-space-sm);
+}
+
+/* ============ Install readiness (Settings → Diagnostics) ============ */
+
+.cos-install-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cos-install-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  padding: 6px 8px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-install-row.is-ok {
+  background: rgba(74, 124, 79, 0.08);
+}
+
+.cos-install-row.is-fail {
+  background: rgba(184, 50, 28, 0.08);
+}
+
+.cos-install-mark {
+  font-family: var(--cos-font-family-mono);
+  font-weight: 600;
+}
+
+.cos-install-row.is-ok .cos-install-mark {
+  color: var(--cos-success, #4a7c4f);
+}
+
+.cos-install-row.is-fail .cos-install-mark {
+  color: var(--cos-critical, #b8321c);
+}
+
+.cos-install-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cos-install-label {
+  font-size: var(--cos-font-body);
+  font-weight: 500;
+}
+
+.cos-install-detail {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+/* ============ Perf panel table (Settings → Diagnostics) ============ */
+
+.cos-perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-perf-table th,
+.cos-perf-table td {
+  padding: 4px var(--cos-space-sm);
+  text-align: right;
+}
+
+.cos-perf-table th:first-child,
+.cos-perf-table td:first-child {
+  text-align: left;
+}
+
+.cos-perf-table th {
+  color: var(--cos-content-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+/* ============ Install wizard (first-run modal) ============ */
+
+.cos-wizard-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  /* Center vertically when the wizard fits, otherwise pin to top
+   * with a small breathing-room margin so the user never hits a
+   * situation where the wizard extends below the viewport
+   * (which is what was hiding the sticky CTA). */
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 150;
+  animation: cos-fade var(--cos-motion-quick) var(--cos-motion-ease);
+  overflow: auto;
+}
+
+.cos-wizard {
+  width: min(560px, 92vw);
+  /* Cap height so the step body scrolls inside the wizard rather
+   * than the wizard itself overflowing the viewport. The 48px
+   * matches the 24px scrim padding on top + bottom. */
+  max-height: calc(100vh - 48px);
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border-radius: var(--cos-radius-lg);
+  box-shadow: var(--cos-shadow-modal);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The step body — single rule, consolidated from the duplicate
+ * pair that used to exist at lines 1574 and 1717. Notable
+ * non-obvious choices:
+ *   - NOT display: flex. The actions row uses position: sticky
+ *     to pin to the bottom of the scroll container, and sticky
+ *     positioning on flex children is unreliable across browsers
+ *     (the element sometimes lays out at its natural position and
+ *     refuses to stick). Block layout makes sticky behave.
+ *   - flex: 1 1 auto + min-height: 0 — needed because the parent
+ *     .cos-wizard is a flex column with a max-height, and the step
+ *     has to absorb the leftover height + be allowed to shrink so
+ *     overflow can kick in.
+ *   - padding-bottom: 0 — the .cos-wizard-actions row has its own
+ *     padding-bottom that extends to the modal edge; doubling here
+ *     would leave dead space below the action row. */
+.cos-wizard-step {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--cos-space-lg) var(--cos-space-xl) 0;
+}
+
+/* Children inside the step body get a default vertical gap so we
+ * don't have to slap margins on every paragraph + input. Doesn't
+ * affect the sticky actions row (which has its own margin-top). */
+.cos-wizard-step > * + * {
+  margin-top: var(--cos-space-sm);
+}
+
+.cos-wizard-step > .cos-wizard-actions {
+  margin-top: var(--cos-space-md);
+}
+
+.cos-wizard-head {
+  padding: var(--cos-space-xl) var(--cos-space-xl) var(--cos-space-md);
+}
+
+.cos-wizard-head h1 {
+  margin: 0 0 4px;
+  font-size: var(--cos-font-h2);
+  font-weight: 600;
+}
+
+/* Wizard stepper (PRD-103 / Phase 0.5) — numbered + clearly
+ * progress-aware so users can see what's coming and where they are.
+ * Compact: only the active step shows its label inline; the others
+ * are number-only pills with a tooltip. This keeps all 6 steps
+ * visible without horizontal scroll at the wizard's 560px width. */
+.cos-wizard-stepper {
+  list-style: none;
+  margin: 0;
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-sunken, transparent);
+  flex-shrink: 0;
+}
+
+.cos-wizard-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  position: relative;
+  padding: 0;
+}
+
+.cos-wizard-step-pill:not(:last-child)::after {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background: var(--cos-outline-subtle);
+  margin-left: 2px;
+}
+
+.cos-wizard-step-content,
+.cos-wizard-step-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  color: inherit;
+}
+
+.cos-wizard-step-button {
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-wizard-step-button:hover,
+.cos-wizard-step-button:focus-visible {
+  background: var(--cos-surface-raised);
+  outline: none;
+}
+
+.cos-wizard-step-button:focus-visible {
+  outline: 2px solid var(--cos-focus-ring, var(--cos-accent));
+  outline-offset: 1px;
+}
+
+.cos-wizard-step-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  background: var(--cos-surface-raised);
+  border: 1.5px solid var(--cos-outline-subtle);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    border-color var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-wizard-step-label {
+  color: var(--cos-content-primary);
+  font-weight: 600;
+  /* Limit so a long label doesn't push the stepper to overflow. */
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Upcoming step: muted dot + label (default state above) */
+
+/* Active step: filled accent marker, dark label */
+.cos-wizard-step-pill.is-active .cos-wizard-step-marker {
+  background: var(--cos-accent);
+  border-color: var(--cos-accent);
+  color: var(--cos-accent-contrast, #fff);
+}
+
+.cos-wizard-step-pill.is-active .cos-wizard-step-label {
+  color: var(--cos-content-primary);
+  font-weight: 600;
+}
+
+/* Completed step: filled-but-muted marker with check, label muted */
+.cos-wizard-step-pill.is-complete .cos-wizard-step-marker {
+  background: var(--cos-accent-muted);
+  border-color: var(--cos-accent);
+  color: var(--cos-accent);
+}
+
+.cos-wizard-step-pill.is-complete .cos-wizard-step-label {
+  color: var(--cos-content-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cos-wizard-step-marker {
+    transition: none;
+  }
+}
+
+/* Pin the action row to the bottom of the modal so the primary CTA
+ * is always visible, even when the step body is taller than the
+ * viewport. position: sticky inside the scroll container; the
+ * negative horizontal margin bleeds to the modal edge so the
+ * background + top border read as a separate footer band. */
+.cos-wizard-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  padding: var(--cos-space-md) var(--cos-space-xl) var(--cos-space-lg);
+  margin-left: calc(var(--cos-space-xl) * -1);
+  margin-right: calc(var(--cos-space-xl) * -1);
+  border-top: 1px solid var(--cos-outline-subtle);
+  z-index: 1;
+}
+
+.cos-wizard-step h2 {
+  margin: 0;
+  font-size: var(--cos-font-h3, var(--cos-font-body-lg));
+}
+
+.cos-wizard-input {
+  font: inherit;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  padding: 8px 10px;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-surface);
+  color: var(--cos-content);
+}
+
+.cos-wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cos-space-sm);
+  margin-top: var(--cos-space-md);
+  flex-wrap: wrap;
+}
+
+/* PRD-103 / Phase 0.5 — magical onboarding chrome. */
+.cos-wizard-welcome {
+  padding-top: var(--cos-space-xl);
+}
+
+.cos-wizard-hero {
+  margin: 0;
+  font-size: var(--cos-font-body-lg, 18px);
+  line-height: 1.45;
+  color: var(--cos-content-primary);
+}
+
+.cos-wizard-bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cos-space-md);
+}
+
+.cos-wizard-bullets li {
+  position: relative;
+  padding-left: var(--cos-space-lg);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+.cos-wizard-bullets li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--cos-accent);
+}
+
+.cos-wizard-bullets strong {
+  color: var(--cos-content-primary);
+  font-weight: 600;
+}
+
+.cos-wizard-done {
+  padding-top: var(--cos-space-md);
+}
+
+.cos-wizard-recap {
+  list-style: none;
+  margin: var(--cos-space-md) 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-wizard-recap li {
+  color: var(--cos-content-primary);
+  line-height: 1.5;
+}
+
+.cos-wizard-subhead {
+  margin: var(--cos-space-md) 0 var(--cos-space-sm);
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+  color: var(--cos-content-primary);
+}
+
+.cos-wizard-tries {
+  margin: 0;
+  padding-left: var(--cos-space-lg);
+  display: grid;
+  gap: var(--cos-space-sm);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+.cos-wizard-tries li {
+  padding-left: var(--cos-space-xs);
+}
+
+/* Power-user pointer at the foot of the outro. Subtle, footnote-y;
+ * the goal is "you can also drive everything from the CLI" without
+ * making that the primary path. */
+.cos-wizard-power-user {
+  margin-top: var(--cos-space-md);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border-left: 3px solid var(--cos-outline-default);
+  border-radius: 0 var(--cos-radius-sm) var(--cos-radius-sm) 0;
+  line-height: 1.5;
+}
+
+/* Bootstrap step (Phase 0.5 #5) — opt-in pre-load checkboxes with
+ * estimated time + status chips. */
+.cos-wizard-bootstrap {
+  list-style: none;
+  margin: var(--cos-space-md) 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-wizard-bootstrap-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--cos-space-sm);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  cursor: pointer;
+  transition: border-color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-wizard-bootstrap-row:hover {
+  border-color: var(--cos-accent);
+}
+
+.cos-wizard-bootstrap-row.is-coming-soon {
+  opacity: 0.85;
+}
+
+.cos-wizard-bootstrap-row > input[type="checkbox"] {
+  margin-top: 4px;
+}
+
+.cos-wizard-bootstrap-body {
+  display: grid;
+  gap: 2px;
+  line-height: 1.4;
+}
+
+.cos-wizard-bootstrap-meta {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-wizard-bootstrap-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-pill);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: 1px;
+}
+
+.cos-wizard-bootstrap-sublist {
+  display: grid;
+  gap: 6px;
+  margin-top: var(--cos-space-xs);
+  padding: var(--cos-space-xs) var(--cos-space-sm);
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-wizard-bootstrap-subrow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--cos-space-xs);
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+  line-height: 1.4;
+}
+
+.cos-wizard-bootstrap-subrow > input[type="checkbox"] {
+  margin-top: 3px;
+}
+
+.cos-wizard-bootstrap-subrow strong {
+  font-weight: 600;
+  display: block;
+}
+
+.cos-wizard-bootstrap-subdesc {
+  display: block;
+  color: var(--cos-content-muted);
+  font-size: 11px;
+}
+
+.cos-wizard-bootstrap-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--cos-radius-pill);
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.cos-wizard-bootstrap-chip.is-running {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+}
+
+.cos-wizard-bootstrap-chip.is-ok {
+  background: rgba(142, 224, 161, 0.12);
+  color: var(--cos-success, #4a7c4f);
+}
+
+.cos-wizard-bootstrap-chip.is-skipped {
+  background: var(--cos-surface-base);
+  color: var(--cos-content-muted);
+}
+
+.cos-wizard-bootstrap-chip.is-error {
+  background: rgba(255, 107, 107, 0.12);
+  color: var(--cos-critical);
+}
+
+.cos-btn-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--cos-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cos-btn-link:hover {
+  text-decoration: none;
+}
+
+/* Identity step form (PRD-103 / Phase 0.5.2) */
+.cos-wizard-form {
+  display: grid;
+  gap: var(--cos-space-md);
+  margin-top: var(--cos-space-xs);
+}
+
+.cos-wizard-field {
+  display: grid;
+  gap: 4px;
+}
+
+.cos-wizard-field-label {
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  color: var(--cos-content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Live probe (Phase 0.5.3 + 0.5.4) — small section under the
+ * primary inputs that fires a real round-trip and shows the
+ * result inline. */
+.cos-wizard-probe {
+  margin-top: var(--cos-space-md);
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+  align-items: flex-start;
+}
+
+.cos-wizard-probe-result {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  line-height: 1.5;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cos-wizard-probe-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--cos-outline-subtle);
+  border-top-color: var(--cos-accent);
+  animation: cos-wizard-probe-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes cos-wizard-probe-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cos-wizard-probe-spinner {
+    animation: none;
+  }
+}
+
+.cos-wizard-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.cos-wizard-events li {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: var(--cos-space-sm);
+  align-items: baseline;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-wizard-event-time {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content-muted);
+}
+
+.cos-wizard-event-summary {
+  color: var(--cos-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* First-person scaffold list (Phase 0.5.5) */
+.cos-wizard-people {
+  list-style: none;
+  margin: var(--cos-space-md) 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.cos-wizard-people li {
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+}
+
+.cos-wizard-people label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-sm);
+  cursor: pointer;
+}
+
+.cos-wizard-people-rel {
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+  font-family: var(--cos-font-family-mono);
+}
+
+/* PRD-103 Phase 1B — silent updater banner. Floats above the
+ * toast region (which lives at z=80); urgent variant uses the
+ * critical color tokens. */
+.cos-update-banner {
+  position: fixed;
+  right: var(--cos-space-md);
+  bottom: 64px;
+  z-index: 85;
+  width: min(360px, calc(100vw - 32px));
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  box-shadow: var(--cos-shadow-modal, 0 8px 24px rgba(0, 0, 0, 0.2));
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-xs);
+}
+
+.cos-update-banner.is-urgent {
+  border-color: var(--cos-critical, var(--cos-accent));
+}
+
+.cos-update-banner-headline {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+  color: var(--cos-content-primary);
+  line-height: 1.4;
+}
+
+.cos-update-banner.is-urgent .cos-update-banner-headline {
+  color: var(--cos-critical, var(--cos-content-primary));
+}
+
+.cos-update-banner-body {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-secondary);
+  line-height: 1.4;
+  /* Cap rendered notes so a verbose changelog doesn't blow out
+   * the banner. The full notes live in Settings → Updates. */
+  max-height: 4.5em;
+  overflow: hidden;
+}
+
+.cos-update-banner-progress {
+  width: 100%;
+  height: 6px;
+  margin: 4px 0;
+}
+
+.cos-update-banner-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cos-space-sm);
+  margin-top: var(--cos-space-xs);
+}
+
+.cos-update-notes {
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-secondary);
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ============ Recovery phrase (M8b) ============ */
+
+.cos-recovery-words {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 14px;
+  list-style: none;
+  margin: var(--cos-space-md) 0;
+  padding: 14px 16px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-strong);
+  border-radius: var(--cos-radius-md);
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-recovery-words li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-recovery-num {
+  color: var(--cos-content-muted);
+  min-width: 22px;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.cos-recovery-word {
+  color: var(--cos-content);
+  font-weight: 500;
+  user-select: text;
+}
+
+.cos-recovery-challenge {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: var(--cos-space-md) 0;
+}
+
+.cos-recovery-challenge label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ============ Toast host (bottom-right stack) ============ */
+
+.cos-toast-host {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 200;
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.cos-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-md);
+  padding: 10px 12px;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  color: var(--cos-content);
+  border: 1px solid var(--cos-outline-strong);
+  border-radius: var(--cos-radius-md);
+  box-shadow: var(--cos-shadow-modal);
+  font-size: var(--cos-font-caption);
+  pointer-events: auto;
+  animation: cos-toast-slide var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-toast-success {
+  border-color: var(--cos-success, #4a7c4f);
+}
+.cos-toast-error {
+  border-color: var(--cos-critical, #b8321c);
+}
+
+.cos-toast-text {
+  flex: 1;
+}
+
+.cos-toast-action {
+  background: transparent;
+  border: 0;
+  color: var(--cos-info, #7aa2f7);
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 2px 6px;
+}
+
+.cos-toast-dismiss {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+@keyframes cos-toast-slide {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ============ Recent docs strip ============ */
+
+.cos-recent-strip {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cos-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-pill);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content);
+  cursor: pointer;
+  max-width: 220px;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-recent-chip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-recent-chip:hover {
+  background: var(--cos-surface-overlay);
+  color: var(--cos-info);
+}
+
+/* ============ Tabs (Meetings / Calendar) ============ */
+
+.cos-meetings-surface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+  max-width: 820px;
+}
+
+.cos-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  cursor: pointer;
+  color: var(--cos-content-muted);
+  margin-bottom: -1px;
+}
+
+.cos-tab:hover {
+  color: var(--cos-content);
+}
+
+.cos-tab.is-active {
+  color: var(--cos-content);
+  border-bottom-color: var(--cos-accent);
+}
+
+/* ============ Calendar ============ */
+
+.cos-calendar {
+  display: grid;
+  gap: var(--cos-space-lg);
+}
+
+.cos-calendar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+}
+
+.cos-calendar-head h1 {
+  margin: 0 0 var(--cos-space-xs);
+  font-size: var(--cos-font-h2);
+  font-weight: 600;
+}
+
+.cos-calendar-actions {
+  display: flex;
+  gap: var(--cos-space-sm);
+  flex-shrink: 0;
+}
+
+.cos-calendar-config {
+  display: grid;
+  gap: var(--cos-space-sm);
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-md);
+}
+
+.cos-calendar-config label {
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+}
+
+.cos-calendar-config input[type="url"] {
+  font: inherit;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  padding: var(--cos-space-sm);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-surface);
+  color: var(--cos-content);
+}
+
+.cos-calendar-config-actions {
+  display: flex;
+  gap: var(--cos-space-sm);
+}
+
+.cos-calendar-transport {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cos-calendar-transport legend {
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.cos-calendar-transport label {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-helper-text {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  line-height: 1.45;
+}
+
+.cos-calendar-days {
+  display: grid;
+  gap: var(--cos-space-lg);
+}
+
+.cos-calendar-day-head {
+  margin: 0 0 var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cos-content-muted);
+}
+
+.cos-calendar-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cos-calendar-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-surface-raised);
+  align-items: center;
+}
+
+.cos-calendar-event.is-cancelled {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.cos-calendar-event.is-expanded {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.cos-calendar-event-main {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: var(--cos-space-md);
+  align-items: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  min-width: 0;
+}
+
+.cos-calendar-event-main:disabled {
+  cursor: default;
+}
+
+.cos-calendar-event-time {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-calendar-event-body {
+  min-width: 0;
+}
+
+.cos-calendar-event-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-calendar-event-meta {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-calendar-event-actions {
+  display: flex;
+  gap: var(--cos-space-sm);
+  flex-shrink: 0;
+}
+
+.cos-calendar-event-detail {
+  grid-column: 1 / -1;
+  padding-top: var(--cos-space-sm);
+  border-top: 1px dashed var(--cos-outline-subtle);
+  margin-top: var(--cos-space-sm);
+  display: grid;
+  gap: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-calendar-event-description {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: var(--cos-font-family);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+  max-height: 320px;
+  overflow-y: auto;
+  background: transparent;
+  padding: 0;
+}
+
+.cos-calendar-event-attendees {
+  color: var(--cos-content-muted);
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.cos-calendar-event-attendees-label {
+  font-weight: 500;
+  color: var(--cos-content);
+}
+
+/* ============ Meetings ============ */
+
+.cos-meetings {
+  display: grid;
+  gap: var(--cos-space-xl);
+  max-width: 760px;
+}
+
+.cos-meetings-head h1 {
+  margin: 0 0 var(--cos-space-xs);
+  font-size: var(--cos-font-h2);
+  font-weight: 600;
+}
+
+.cos-meetings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-meeting-card {
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  overflow: hidden;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-meeting-card.is-clickable {
+  cursor: pointer;
+}
+
+.cos-meeting-card.is-clickable:hover {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-meeting-card.is-clickable:focus-visible {
+  outline: 2px solid var(--cos-accent);
+  outline-offset: 2px;
+}
+
+.cos-meeting-card.is-clickable:hover .cos-meeting-main {
+  color: var(--cos-info);
+}
+
+.cos-meeting-card.is-open {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-meeting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--cos-space-md);
+  align-items: center;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+}
+
+.cos-meeting-main {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  padding: 4px 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.cos-meeting-main:hover:not(:disabled) {
+  color: var(--cos-info);
+}
+
+.cos-meeting-main:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.cos-meeting-label {
+  font-weight: 500;
+  font-size: var(--cos-font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-meeting-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-md);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.cos-meeting-staleness {
+  min-width: 64px;
+  text-align: right;
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-meeting-staleness-stale {
+  color: var(--cos-warning);
+}
+
+.cos-meeting-toggle {
+  font-size: var(--cos-font-caption);
+}
+
+.cos-meeting-sessions-block {
+  list-style: none;
+  margin: 0;
+  padding: var(--cos-space-sm) var(--cos-space-md) var(--cos-space-md);
+  border-top: 1px dashed var(--cos-outline-subtle);
+  display: grid;
+  gap: 2px;
+  background: var(--cos-surface-raised);
+}
+
+.cos-meeting-session-row {
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  padding: 4px var(--cos-space-sm);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  color: var(--cos-content);
+  width: 100%;
+}
+
+.cos-meeting-session-row:hover {
+  background: var(--cos-surface);
+  color: var(--cos-info);
+}
+
+.cos-meeting-session-date {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+}
+
+/* Person profile (People surface) */
+
+.cos-profile {
+  display: grid;
+  gap: var(--cos-space-xl);
+  max-width: 820px;
+}
+
+/* ProjectDetail surface — same skeleton as cos-profile so the back
+ * button + section spacing match. The hero is simpler (no avatar). */
+.cos-project-detail {
+  display: grid;
+  gap: var(--cos-space-xl);
+  max-width: 820px;
+}
+
+.cos-project-detail-hero {
+  display: grid;
+  gap: 6px;
+  padding: var(--cos-space-xl);
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-lg);
+}
+
+.cos-project-detail-hero h1 {
+  margin: 0;
+  font-size: var(--cos-font-display-lg);
+  line-height: var(--cos-line-display-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--cos-content-primary);
+}
+
+.cos-project-detail-path {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-project-detail-files {
+  display: grid;
+  gap: var(--cos-space-md);
+}
+
+.cos-profile-back {
+  justify-self: start;
+  font-size: var(--cos-font-caption);
+  padding: 4px 10px;
+}
+
+.cos-profile-hero {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--cos-space-xl);
+  align-items: center;
+  padding: var(--cos-space-xl);
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-lg);
+}
+
+.cos-profile-hero-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cos-profile-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  min-width: 0;
+}
+
+.cos-profile-hero-main h1 {
+  margin: 0;
+  font-size: var(--cos-font-display);
+  line-height: var(--cos-line-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.cos-profile-refresh {
+  flex-shrink: 0;
+  font-size: var(--cos-font-caption);
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cos-profile-hero-actions {
+  display: flex;
+  gap: var(--cos-space-xs);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cos-profile-hero-actions .cos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Prep modal */
+
+.cos-prep-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cos-space-xl);
+}
+
+.cos-prep-modal {
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 760px;
+  width: 100%;
+  max-height: calc(100vh - 80px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.cos-prep-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-raised);
+}
+
+.cos-prep-head h2 {
+  margin: 0;
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+}
+
+.cos-prep-actions {
+  display: flex;
+  gap: var(--cos-space-xs);
+}
+
+.cos-prep-body {
+  padding: var(--cos-space-lg);
+  overflow-y: auto;
+}
+
+.cos-prep-body .ProseMirror {
+  outline: none;
+}
+
+.cos-profile-hero-title {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-muted);
+}
+
+.cos-profile-hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cos-space-sm);
+  align-items: center;
+  margin-top: 2px;
+}
+
+.cos-profile-hero-hint {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-info);
+  background: var(--cos-surface-canvas);
+  border-radius: var(--cos-radius-pill);
+  padding: 2px 10px;
+  text-decoration: none;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-profile-link:hover {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-profile-link-icon {
+  font-family: var(--cos-font-family-mono);
+  font-weight: 700;
+  color: var(--cos-info);
+}
+
+.cos-profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cos-accent-muted);
+  border: 2px solid var(--cos-accent);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.cos-profile-avatar-initials {
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--cos-accent);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.cos-profile-avatar-img {
+  object-fit: cover;
+}
+
+.cos-profile-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  margin-bottom: var(--cos-space-sm);
+}
+
+.cos-profile-section-head h2 {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cos-profile-count {
+  font-family: var(--cos-font-family-mono);
+  font-size: 11px;
+  color: var(--cos-content-faint);
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-pill);
+  padding: 0 6px;
+}
+
+.cos-profile-readme-body {
+  background: var(--cos-surface-raised);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md) var(--cos-space-lg);
+}
+
+.cos-profile-readme-body .ProseMirror {
+  outline: none;
+  min-height: auto;
+}
+
+.cos-profile-session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--cos-radius-md);
+  overflow: hidden;
+}
+
+.cos-profile-session-list > li {
+  list-style: none;
+}
+
+.cos-profile-session-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--cos-content-primary);
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-profile-session-row:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-profile-session-date {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-body);
+}
+
+.cos-profile-session-stale {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-markdown-view {
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-body);
+  line-height: 1.55;
+}
+
+/* Org view (People surface) */
+
+.cos-org-view {
+  display: grid;
+  gap: var(--cos-space-lg);
+}
+
+.cos-org-hierarchy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cos-org-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cos-org-children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+}
+
+.cos-org-entry {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  padding: 6px var(--cos-space-md);
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-body);
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  color: var(--cos-content-primary);
+}
+
+.cos-org-entry-clickable {
+  cursor: pointer;
+  border-color: var(--cos-outline-subtle);
+  background: var(--cos-surface-raised);
+}
+
+.cos-org-entry-clickable:hover {
+  background: var(--cos-accent-muted);
+  border-color: var(--cos-accent);
+}
+
+.cos-org-entry-static {
+  color: var(--cos-content-muted);
+  cursor: default;
+}
+
+.cos-org-entry-missing {
+  opacity: 0.55;
+}
+
+.cos-org-entry-self {
+  border-left: 2px solid var(--cos-accent);
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+  font-weight: 500;
+}
+
+.cos-org-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-org-title {
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-org-session {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  justify-self: end;
+  min-width: 88px;
+  text-align: right;
+}
+
+.cos-org-no-folder {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+  justify-self: end;
+  font-style: italic;
+}
+
+.cos-org-partners h3 {
+  margin: 0 0 var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cos-org-partner-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cos-org-partner-list > li {
+  list-style: none;
+}
+
+.cos-orphan-section {
+  margin-top: var(--cos-space-lg);
+}
+
+.cos-orphan-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+  padding: 4px 0;
+  margin-bottom: 6px;
+  font-family: inherit;
+}
+
+.cos-orphan-toggle:hover {
+  color: var(--cos-content-primary);
+}
+
+.cos-org-generator {
+  margin-top: var(--cos-space-lg);
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  border: 1px dashed var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-sunken);
+}
+
+.cos-org-generator-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  margin-bottom: var(--cos-space-xs);
+}
+
+.cos-org-generator-head h3 {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+}
+
+.cos-org-generator .cos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+}
+
+/* ============ Settings ============ */
+
+.cos-settings {
+  max-width: 720px;
+  display: grid;
+  gap: var(--cos-space-2xl);
+}
+
+.cos-section h2 {
+  margin: 0;
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+}
+
+/* Section header: h2 + one-line lede stacked tight, with breathing room
+ * before the first field. Using <header> + this class instead of bare
+ * h2 + p siblings keeps margin-collapse predictable across browsers. */
+.cos-section-head {
+  display: grid;
+  gap: var(--cos-space-xs);
+  margin-bottom: var(--cos-space-lg);
+}
+
+.cos-section-lede {
+  margin: 0;
+  color: var(--cos-content-muted);
+  max-width: 64ch;
+  line-height: 1.5;
+}
+
+/* Hint paragraph used in Settings sections under the action row;
+ * smaller than the lede, picks up muted styling. */
+.cos-section-note {
+  margin: var(--cos-space-md) 0 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  max-width: 64ch;
+  line-height: 1.5;
+}
+
+.cos-section-note-error {
+  color: var(--cos-critical);
+}
+
+/* Data-folder picker (PRD-103 / installation-rollout 0.1) */
+.cos-data-folder-actions {
+  display: flex;
+  gap: var(--cos-space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--cos-space-md);
+}
+
+.cos-data-folder-pending {
+  margin-top: var(--cos-space-md);
+  padding: var(--cos-space-md);
+  background: var(--cos-accent-muted);
+  border: 1px solid var(--cos-accent);
+  border-radius: var(--cos-radius-md);
+}
+
+.cos-data-folder-pending p {
+  margin: 0 0 var(--cos-space-sm);
+}
+
+/* Vertical-stack field: small-caps label above, control below. Replaces
+ * the older 140px-label grid which squeezed wide pickers (themes,
+ * sliders) into a too-narrow right column. */
+.cos-field {
+  display: grid;
+  gap: var(--cos-space-xs);
+  margin-bottom: var(--cos-space-lg);
+}
+
+.cos-field:last-child {
+  margin-bottom: 0;
+}
+
+.cos-field-label {
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cos-content-muted);
+}
+
+.cos-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cos-space-sm);
+}
+
+.cos-field-status {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  line-height: 1.45;
+}
+
+/* Inline checkbox + label row. Used by the Notifications toggle and any
+ * future Settings boolean — keeps the checkbox vertically aligned with
+ * its label without inline flex styles on every <label>. */
+.cos-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  cursor: pointer;
+}
+
+.cos-toggle-row input[type="checkbox"] {
+  margin: 0;
+}
+
+.cos-theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--cos-space-md);
+  row-gap: var(--cos-space-md);
+}
+
+.cos-theme-chip {
+  padding: 6px var(--cos-space-lg);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-secondary);
+  border-radius: var(--cos-radius-md);
+  font-size: var(--cos-font-body);
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    border-color var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-theme-chip:hover:not(.is-disabled) {
+  border-color: var(--cos-outline-strong);
+  color: var(--cos-content-primary);
+}
+
+.cos-theme-chip.is-active {
+  border-color: var(--cos-accent);
+  color: var(--cos-accent);
+  background: var(--cos-accent-muted);
+}
+
+.cos-theme-chip.is-disabled {
+  color: var(--cos-content-faint);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+/* Text-scale slider — small/large "A" markers flanking a range slider,
+ * with readout + optional reset trailing. Flex (not grid) so the
+ * conditionally-rendered reset button slots in cleanly without holes. */
+.cos-text-scale-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cos-space-md);
+  max-width: 720px;
+}
+
+.cos-text-scale-edge {
+  font-weight: 600;
+  color: var(--cos-content-muted);
+  user-select: none;
+  font-family: var(--cos-font-family);
+}
+
+.cos-text-scale-edge-small {
+  font-size: 11px;
+}
+
+.cos-text-scale-edge-large {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.cos-text-scale-slider {
+  flex: 1 1 280px;
+  margin: 0;
+  accent-color: var(--cos-accent);
+  height: 20px;
+}
+
+.cos-text-scale-readout {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 11ch;
+}
+
+.cos-text-scale-preview {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-secondary);
+  line-height: var(--cos-line-body);
+  max-width: 480px;
+}
+
+/* ============ Work / Tasks ============ */
+
+.cos-work {
+  max-width: 980px;
+  display: grid;
+  gap: var(--cos-space-lg);
+}
+
+/* The Work surface arranges its sections via the parent grid's gap.
+ * Zero the NewTaskRow's legacy margin-bottom so we don't double-space
+ * (margin + gap). The SurfaceHero margin is zeroed globally in ui.css. */
+.cos-work > .cos-newtask {
+  margin-bottom: 0;
+}
+
+.cos-tabs {
+  display: flex;
+  gap: var(--cos-space-md);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-body);
+  padding: var(--cos-space-sm) var(--cos-space-xs);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.cos-tab.is-active {
+  color: var(--cos-content-primary);
+  border-bottom-color: var(--cos-accent);
+}
+
+.cos-tab.is-disabled {
+  color: var(--cos-content-faint);
+  cursor: not-allowed;
+}
+
+.cos-source-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-pill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  padding: 2px 8px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-pill);
+}
+
+.cos-dot-info {
+  background: var(--cos-info);
+  box-shadow: 0 0 6px rgba(122, 162, 247, 0.5);
+}
+
+.cos-dot-warn {
+  background: var(--cos-warning);
+  box-shadow: 0 0 6px rgba(240, 198, 116, 0.5);
+}
+
+.cos-pill-chip.is-warn {
+  color: var(--cos-warning);
+  background: rgba(240, 198, 116, 0.08);
+  border-color: rgba(240, 198, 116, 0.35);
+}
+
+.cos-source-path {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-metrics {
+  display: flex;
+  gap: var(--cos-space-lg);
+}
+
+.cos-metric {
+  min-width: 96px;
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+}
+
+.cos-metric.tone-critical {
+  border-color: rgba(255, 107, 107, 0.35);
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.cos-metric-value {
+  font-size: var(--cos-font-h2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cos-metric-label {
+  margin-top: 4px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cos-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--cos-radius-md);
+  overflow: hidden;
+}
+
+.cos-newtask {
+  margin-bottom: var(--cos-space-md);
+}
+
+.cos-newtask-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--cos-space-sm);
+  padding: 6px var(--cos-space-md);
+  border: 1px dashed var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  background: transparent;
+  transition: border-color var(--cos-motion-quick) var(--cos-motion-ease),
+    background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-newtask-row:focus-within {
+  border-color: var(--cos-accent);
+  border-style: solid;
+  background: var(--cos-surface-base);
+}
+
+.cos-newtask-plus {
+  font-size: 16px;
+  color: var(--cos-content-muted);
+  text-align: center;
+  user-select: none;
+}
+
+.cos-newtask-input {
+  font-family: inherit;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  background: transparent;
+  border: 0;
+  padding: 4px 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.cos-newtask-input::placeholder {
+  color: var(--cos-content-muted);
+}
+
+.cos-newtask-input:focus {
+  outline: none;
+}
+
+.cos-newtask-error {
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-critical);
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.25);
+  border-radius: var(--cos-radius-sm);
+}
+
+/* In-progress hint for long-running skills (PRD-103). Used by the
+ * morning-briefing button on Home; same shape works for any skill
+ * that takes minutes rather than seconds. */
+.cos-running-hint {
+  padding: 10px 14px;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-secondary);
+  background: var(--cos-accent-muted);
+  border: 1px solid var(--cos-accent);
+  border-radius: var(--cos-radius-sm);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cos-newtask-row {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+
+.cos-newtask-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--cos-radius-pill);
+  padding: 2px 10px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-newtask-badge:hover {
+  filter: brightness(1.2);
+}
+
+.cos-newtask-badge-ok {
+  color: var(--cos-success);
+  background: rgba(105, 176, 122, 0.15);
+  border: 1px solid rgba(105, 176, 122, 0.4);
+}
+
+.cos-newtask-badge-off {
+  color: var(--cos-critical);
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.cos-newtask-status {
+  margin-top: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-accent);
+  background: var(--cos-accent-muted);
+  border: 1px solid var(--cos-accent);
+  border-radius: var(--cos-radius-md);
+  font-weight: 500;
+}
+
+.cos-newtask-status::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--cos-accent-muted);
+  border-top-color: var(--cos-accent);
+  border-radius: 50%;
+  display: inline-block;
+  animation: cos-spin 700ms linear infinite;
+}
+
+.cos-newtask-row.is-busy {
+  border-color: var(--cos-accent);
+  border-style: solid;
+  animation: cos-pulse 1400ms ease-in-out infinite;
+}
+
+.cos-newtask-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--cos-outline-subtle);
+  border-top-color: var(--cos-accent);
+  border-radius: 50%;
+  animation: cos-spin 700ms linear infinite;
+}
+
+@keyframes cos-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cos-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--cos-accent-muted); }
+  50% { box-shadow: 0 0 0 4px rgba(122, 162, 247, 0.12); }
+}
+
+.cos-task-row.is-just-created,
+.cos-scroll-flash {
+  animation: cos-flash 1600ms ease-out 1;
+}
+
+@keyframes cos-flash {
+  0% { background: var(--cos-accent-muted); }
+  100% { background: transparent; }
+}
+
+.cos-claude-key-row {
+  display: flex;
+  gap: var(--cos-space-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cos-claude-key-row .cos-text-input {
+  flex: 1;
+  min-width: 180px;
+  max-width: 360px;
+  border: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-base);
+  padding: 4px 8px;
+}
+
+.cos-claude-ping-result {
+  margin-left: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-claude-args {
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 6px 8px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.cos-claude-args:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+.cos-args-hint {
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-args-hint code {
+  font-size: 11px;
+}
+
+.cos-mcp-block {
+  margin-top: var(--cos-space-2xl);
+}
+
+.cos-mcp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--cos-space-xs);
+}
+
+.cos-mcp-head h3 {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+}
+
+.cos-mcp-subhead {
+  margin: var(--cos-space-md) 0 var(--cos-space-xs);
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cos-mcp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--cos-radius-md);
+  overflow: hidden;
+}
+
+.cos-mcp-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, auto) minmax(0, 1fr) auto;
+  gap: var(--cos-space-md);
+  align-items: center;
+  padding: 8px var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-mcp-row:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-mcp-dot {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content-muted);
+  line-height: 1;
+  font-size: 14px;
+}
+
+.cos-mcp-connected .cos-mcp-dot,
+.cos-mcp-connected .cos-mcp-state {
+  color: var(--cos-success);
+}
+
+.cos-mcp-configured .cos-mcp-dot,
+.cos-mcp-configured .cos-mcp-state {
+  color: var(--cos-warning);
+}
+
+.cos-mcp-missing .cos-mcp-dot,
+.cos-mcp-missing .cos-mcp-state {
+  color: var(--cos-content-faint);
+}
+
+.cos-mcp-missing .cos-mcp-name {
+  color: var(--cos-content-muted);
+}
+
+.cos-mcp-name {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content-primary);
+  font-weight: 500;
+}
+
+.cos-mcp-purpose {
+  color: var(--cos-content-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-mcp-state {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cos-task-row {
+  display: grid;
+  grid-template-columns: 18px 24px minmax(0, 1fr) auto auto;
+  gap: var(--cos-space-md);
+  align-items: center;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-task-row.is-busy {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.cos-task-check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--cos-accent);
+  cursor: pointer;
+}
+
+.cos-task-check:disabled {
+  cursor: progress;
+}
+
+.cos-task-row:hover {
+  background: var(--cos-surface-hover);
+}
+
+.cos-task-row.is-selected {
+  background: var(--cos-accent-muted);
+}
+
+.cos-prio {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-prio-high {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--cos-critical);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+}
+.cos-prio-medium {
+  background: rgba(240, 198, 116, 0.15);
+  color: var(--cos-warning);
+  border: 1px solid rgba(240, 198, 116, 0.3);
+}
+.cos-prio-low {
+  background: rgba(122, 162, 247, 0.12);
+  color: var(--cos-info);
+  border: 1px solid rgba(122, 162, 247, 0.25);
+}
+
+.cos-task-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-sm);
+  min-width: 0;
+}
+
+.cos-task-title > span:first-child {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-task-project {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-family: var(--cos-font-family-mono);
+  flex-shrink: 0;
+}
+
+.cos-task-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cos-chip {
+  font-size: var(--cos-font-caption);
+  padding: 1px 6px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+  white-space: nowrap;
+}
+
+.cos-chip-info {
+  color: var(--cos-info);
+  border-color: rgba(122, 162, 247, 0.3);
+}
+
+.cos-chip-muted {
+  color: var(--cos-content-faint);
+}
+
+/* B8-CP3 — Settings → GitHub: stack scope chips on a single dd row,
+   wrap as needed. The "missing" variant uses the warn token so it
+   stands out from the regular ✓ scopes without adding a new chip
+   tier. */
+.cos-gh-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cos-gh-scope-missing {
+  color: var(--cos-warn, var(--cos-content-strong));
+  background: var(--cos-surface-sunken);
+  border: 1px solid rgba(232, 175, 95, 0.4);
+}
+
+.cos-link-marker {
+  color: var(--cos-content-muted);
+  display: inline-flex;
+  align-items: center;
+}
+
+.cos-task-due {
+  font-size: var(--cos-font-caption);
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content-muted);
+  text-align: right;
+  min-width: 88px;
+}
+
+.cos-task-due-overdue {
+  color: var(--cos-critical);
+}
+
+.cos-task-due-soon {
+  color: var(--cos-warning);
+}
+
+.cos-empty {
+  padding: var(--cos-space-2xl);
+  text-align: center;
+  color: var(--cos-content-muted);
+  border: 1px dashed var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+}
+
+/* B8-CP4 — Work surface tabs (Tasks / PRs / Review). The strip
+   uses the existing cos-tabs primitive but indents to the surface
+   gutter so it lines up with the SurfaceHero below. */
+.cos-work-tabs {
+  margin-bottom: var(--cos-space-md);
+}
+
+/* B8-CP14 — Ops surface scaffold. Same tab pattern as Work; the
+   surface is otherwise just three siblings each rendering their
+   own empty state for now. */
+.cos-ops {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+.cos-ops-tabs {
+  margin-bottom: var(--cos-space-md);
+}
+
+.cos-ops-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+/* B8-CP15 — MCP status line on each Ops tab. The dot inherits the
+   cos-ci-* tokens (B8-CP11) so green/yellow/unknown share the same
+   semantic colour across surfaces. */
+.cos-ops-mcp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  margin: 0;
+}
+
+/* B8-CP17 — Incident rows. Severity drives the left-edge colour bar
+   (sev-1 = critical / red, sev-2 = warn / amber, others muted) so a
+   manager can scan the list at a glance. */
+.cos-incident-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+}
+
+.cos-incident-row {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  background: var(--cos-surface-default);
+  border: 1px solid var(--cos-outline-default);
+  border-left: 3px solid var(--cos-content-faint);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+
+.cos-incident-row:hover {
+  background: var(--cos-surface-hover, var(--cos-surface-sunken));
+}
+
+.cos-incident-row:disabled {
+  cursor: default;
+}
+
+.cos-incident-sev-1,
+.cos-incident-sev-0,
+.cos-incident-sev-p0 {
+  border-left-color: var(--cos-status-bad, #ff6b6b);
+}
+
+.cos-incident-sev-2,
+.cos-incident-sev-p1 {
+  border-left-color: var(--cos-status-warn, #e8af5f);
+}
+
+.cos-incident-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-incident-sev {
+  font-family: var(--cos-font-mono);
+  color: var(--cos-content-strong);
+}
+
+.cos-incident-state {
+  color: var(--cos-content-muted);
+}
+
+.cos-incident-title {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-strong);
+  line-height: 1.35;
+}
+
+.cos-incident-meta {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+/* B9-CP11 — Status subtitle pulled from the latest thread reply.
+   Sits between the title and the opened/updated/commander meta line
+   so a manager can read "what is this incident doing right now?"
+   without clicking into Slack. */
+.cos-incident-summary {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  line-height: 1.4;
+}
+
+/* B9-CP11 — Relevance tint. Severity drives the left-edge colour bar
+   (existing behaviour), and relevance drives a soft background tint —
+   two orthogonal signals on the same row. A SEV-1 on my team gets
+   the strongest possible visual weight; an unrelated SEV-3 fades. */
+.cos-incident-rel-mine {
+  background: var(--cos-accent-surface, rgba(80, 130, 200, 0.08));
+  border-color: var(--cos-accent-outline, var(--cos-outline-default));
+}
+
+.cos-incident-rel-mine:hover {
+  background: var(--cos-accent-surface-hover, rgba(80, 130, 200, 0.14));
+}
+
+.cos-incident-rel-unrelated {
+  opacity: 0.72;
+}
+
+.cos-incident-rel-unrelated:hover {
+  opacity: 1;
+}
+
+/* Relevance chip — distinct from generic tag chips so the user can
+   tell "this row is about me" at a glance without parsing tags. */
+.cos-incident-rel-chip {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+
+.cos-incident-rel-chip-mine {
+  background: var(--cos-accent-soft, rgba(80, 130, 200, 0.18));
+  color: var(--cos-accent-strong, var(--cos-content-strong));
+}
+
+.cos-incident-rel-chip-adjacent {
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+}
+
+/* Plain tags from the skill ("payments", "@alice", "core"). Quieter
+   than the relevance chip — these explain the *why*, not the *what*. */
+.cos-incident-tag {
+  font-size: 11px;
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+}
+
+/* B8-CP18 — Rollbar items list. Compact rows; level drives a small
+   tonal accent on the count chip. */
+.cos-ops-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+}
+
+.cos-rollbar-list,
+.cos-monitor-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cos-rollbar-row,
+.cos-monitor-row {
+  width: 100%;
+  text-align: left;
+  background: var(--cos-surface-default);
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+  padding: 10px 12px;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cos-rollbar-row:hover,
+.cos-monitor-row:hover {
+  background: var(--cos-surface-hover, var(--cos-surface-sunken));
+}
+
+.cos-rollbar-head,
+.cos-monitor-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-rollbar-count {
+  font-family: var(--cos-font-mono);
+  color: var(--cos-content-strong);
+}
+
+.cos-rollbar-project,
+.cos-monitor-name {
+  color: var(--cos-content-muted);
+}
+
+.cos-rollbar-title {
+  color: var(--cos-content-strong);
+  font-size: var(--cos-font-body);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.cos-rollbar-critical {
+  border-left: 3px solid var(--cos-status-bad, #ff6b6b);
+}
+
+.cos-rollbar-warning {
+  border-left: 3px solid var(--cos-status-warn, #e8af5f);
+}
+
+.cos-monitor-state {
+  font-family: var(--cos-font-mono);
+  color: var(--cos-content-strong);
+}
+
+.cos-monitor-alert {
+  border-left: 3px solid var(--cos-status-bad, #ff6b6b);
+}
+
+.cos-monitor-warn {
+  border-left: 3px solid var(--cos-status-warn, #e8af5f);
+}
+
+.cos-monitor-no-data {
+  border-left: 3px solid var(--cos-content-faint);
+}
+
+.cos-monitor-tags {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+  margin-top: 2px;
+}
+
+/* B9-CP5 / B9-CP41 — On-call list. Two sections (My teams / Other),
+   each grouped by escalation policy with per-user rows sorted by
+   level (L1 = primary, L2 = secondary). The row container is a flex
+   <li> with multiple sibling buttons (main, schedule link, PD link)
+   so we don't end up with nested interactives. */
+
+.cos-oncall-controls {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cos-space-sm);
+}
+
+.cos-oncall-search {
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+}
+
+.cos-oncall-keywords-hint {
+  flex-basis: 100%;
+}
+
+/* Section headers split "My teams" from "Other teams". The mine
+   section gets a soft accent tint so it's the first thing the eye
+   lands on; "other" stays neutral. */
+.cos-oncall-section {
+  margin-top: var(--cos-space-md);
+}
+
+.cos-oncall-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--cos-space-sm);
+}
+
+.cos-oncall-section-head h3 {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-strong);
+  margin: 0;
+}
+
+.cos-oncall-section-toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--cos-space-sm);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--cos-content-muted);
+}
+
+.cos-oncall-section-toggle:hover h3 {
+  color: var(--cos-content-strong);
+}
+
+.cos-oncall-section-mine .cos-oncall-policy {
+  background: var(--cos-accent-surface, rgba(80, 130, 200, 0.06));
+  border-color: var(--cos-accent-outline, var(--cos-outline-default));
+}
+
+.cos-oncall-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+.cos-oncall-policy {
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-default);
+}
+
+.cos-oncall-policy-head {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-strong);
+  margin-bottom: 6px;
+}
+
+.cos-oncall-policy-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--cos-content-strong);
+  cursor: pointer;
+}
+
+.cos-oncall-policy-link:hover {
+  color: var(--cos-accent-strong, var(--cos-content-strong));
+  text-decoration: underline;
+}
+
+.cos-oncall-users {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cos-oncall-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.cos-oncall-row-main {
+  flex: 1;
+  min-width: 200px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cos-oncall-row-main:hover {
+  background: var(--cos-surface-sunken);
+}
+
+.cos-oncall-level {
+  font-family: var(--cos-font-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+  min-width: 24px;
+}
+
+.cos-oncall-level-1 {
+  color: var(--cos-status-bad, #ff6b6b);
+}
+
+.cos-oncall-level-2 {
+  color: var(--cos-status-warn, #e8af5f);
+}
+
+.cos-oncall-user {
+  flex: 1;
+  color: var(--cos-content-strong);
+}
+
+/* Subtle "profile" chip on rows where we have a Person Profile match.
+   Tells the user the row click navigates internally rather than out
+   to PagerDuty. */
+.cos-oncall-profile-hint {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+/* Schedule chip rendered as a button when we can deep-link into PD;
+   otherwise it stays a static chip (handled by .cos-chip). */
+.cos-oncall-schedule-link {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cos-oncall-schedule-link:hover {
+  filter: brightness(1.1);
+}
+
+/* "ends in 4h" countdown — neutral chip, just provides context. */
+.cos-oncall-until {
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+  font-size: 11px;
+}
+
+/* Tiny "PD ↗" escape hatch — shows when the row's primary action is
+   the in-app profile, so the user can still jump to PagerDuty when
+   they specifically want the paging surface. */
+.cos-oncall-pd-link {
+  background: transparent;
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-sm);
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--cos-content-muted);
+  cursor: pointer;
+}
+
+.cos-oncall-pd-link:hover {
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-strong);
+}
+
+/* B8-CP24 — Roadmap tab. Three-column layout. */
+.cos-projects-tabs {
+  margin-bottom: var(--cos-space-md);
+}
+
+.cos-roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+.cos-roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--cos-space-md);
+}
+
+@media (max-width: 1100px) {
+  .cos-roadmap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cos-roadmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+  background: var(--cos-surface-sunken);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md);
+}
+
+.cos-roadmap-col-head {
+  margin: 0 0 4px 0;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-strong);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.cos-roadmap-col-count {
+  color: var(--cos-content-faint);
+  font-size: var(--cos-font-caption);
+  font-family: var(--cos-font-mono);
+}
+
+.cos-roadmap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cos-epic-card {
+  width: 100%;
+  text-align: left;
+  background: var(--cos-surface-default);
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+  padding: 10px 12px;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cos-epic-card:hover {
+  background: var(--cos-surface-hover, var(--cos-surface-sunken));
+}
+
+.cos-epic-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-epic-key {
+  font-family: var(--cos-font-mono);
+}
+
+.cos-epic-title {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-strong);
+  line-height: 1.3;
+}
+
+.cos-epic-meta {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-epic-red {
+  border-left: 3px solid var(--cos-status-bad, #ff6b6b);
+}
+
+.cos-epic-amber {
+  border-left: 3px solid var(--cos-status-warn, #e8af5f);
+}
+
+.cos-epic-green {
+  border-left: 3px solid var(--cos-status-good, #6fc28e);
+}
+
+.cos-epic-detail {
+  background: var(--cos-surface-default);
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md);
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+}
+
+/* B8-CP29 / CP30 — Home strips. Compact rows, no card chrome. */
+.cos-home-needs-review,
+.cos-home-incidents {
+  margin-top: var(--cos-space-md);
+}
+
+.cos-home-pr-list,
+.cos-home-incidents-list {
+  list-style: none;
+  margin: var(--cos-space-sm) 0 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cos-home-pr-row,
+.cos-home-incident-row {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  color: var(--cos-content-strong);
+  cursor: pointer;
+}
+
+.cos-home-pr-row:hover,
+.cos-home-incident-row:hover {
+  background: var(--cos-surface-sunken);
+}
+
+.cos-home-pr-repo {
+  color: var(--cos-content-faint);
+  font-family: var(--cos-font-mono);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-home-pr-num {
+  color: var(--cos-content-faint);
+  font-size: var(--cos-font-caption);
+  font-family: var(--cos-font-mono);
+}
+
+.cos-home-pr-title,
+.cos-home-incident-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-home-incident-sev {
+  font-family: var(--cos-font-mono);
+  color: var(--cos-status-bad, #ff6b6b);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-prs-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+.cos-prs-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+}
+
+.cos-prs-count {
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-prs-fetched {
+  color: var(--cos-content-faint);
+  font-size: var(--cos-font-caption);
+  font-style: italic;
+}
+
+.cos-pr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+}
+
+.cos-pr-row {
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-default);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 100ms ease, border-color 100ms ease;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  color: inherit;
+}
+
+.cos-pr-row:hover {
+  background: var(--cos-surface-hover, var(--cos-surface-sunken));
+  border-color: var(--cos-outline-strong, var(--cos-outline-default));
+}
+
+.cos-pr-row:focus-visible {
+  outline: 2px solid var(--cos-accent-default);
+  outline-offset: 2px;
+}
+
+.cos-pr-extlink {
+  color: var(--cos-content-faint);
+}
+
+/* B8-CP9 — score chip + info-toggle live in the same row head as the
+   external-link glyph. Score chip uses `auto` margin so the
+   external-link + info button group sits flush with the right edge. */
+.cos-pr-score {
+  margin-left: auto;
+  font-family: var(--cos-font-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  padding: 1px 6px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-surface-sunken);
+}
+
+/* B8-CP11 — CI dot. A 8px round indicator on the left of the head
+   row. Uses semantic status tokens that exist across all 12
+   themes; falls back to neutral for "unknown". */
+.cos-ci-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--cos-content-faint);
+}
+
+.cos-ci-green {
+  background: var(--cos-status-good, #6fc28e);
+}
+
+.cos-ci-yellow {
+  background: var(--cos-status-warn, #e8af5f);
+}
+
+.cos-ci-red {
+  background: var(--cos-status-bad, #ff6b6b);
+}
+
+.cos-ci-unknown {
+  background: transparent;
+  border: 1px dashed var(--cos-outline-default);
+}
+
+/* B8-CP10 — stale chip uses the warn token (matches the GitHub
+   missing-scope chip) so the visual language is consistent across
+   "this needs your attention" affordances. */
+.cos-chip-stale {
+  color: var(--cos-warn, var(--cos-content-strong));
+  border: 1px solid rgba(232, 175, 95, 0.4);
+}
+
+.cos-pr-card:has(.cos-chip-stale) .cos-pr-row {
+  border-color: rgba(232, 175, 95, 0.35);
+}
+
+.cos-pr-card {
+  position: relative;
+}
+
+.cos-pr-info {
+  position: absolute;
+  top: var(--cos-space-md);
+  right: calc(var(--cos-space-md) + 24px);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  color: var(--cos-content-faint);
+  padding: 2px;
+  cursor: pointer;
+}
+
+.cos-pr-info:hover {
+  color: var(--cos-content-strong);
+  border-color: var(--cos-outline-default);
+}
+
+.cos-pr-info:focus-visible {
+  outline: 2px solid var(--cos-accent-default);
+  outline-offset: 2px;
+}
+
+.cos-pr-score-breakdown {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 6px 0 var(--cos-space-md) var(--cos-space-md);
+  padding: var(--cos-space-md);
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-sunken);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-pr-score-breakdown dt {
+  color: var(--cos-content-faint);
+}
+
+.cos-pr-score-breakdown dd {
+  margin: 0;
+  font-family: var(--cos-font-mono);
+}
+
+.cos-pr-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-pr-repo {
+  font-family: var(--cos-font-mono);
+}
+
+.cos-pr-num {
+  color: var(--cos-content-faint);
+}
+
+.cos-pr-title {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-strong);
+  line-height: 1.35;
+}
+
+.cos-pr-meta {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-empty-error {
+  color: var(--cos-critical);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+/* ============ Task detail (side panel) ============ */
+
+.cos-detail-empty {
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+}
+
+.cos-detail {
+  display: grid;
+  gap: var(--cos-space-lg);
+  min-width: 0;
+}
+
+.cos-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  min-width: 0;
+}
+
+.cos-detail-head h2 {
+  margin: 0;
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cos-detail-meta {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px var(--cos-space-md);
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  align-items: center;
+}
+
+.cos-detail-meta dt {
+  color: var(--cos-content-muted);
+  align-self: center;
+}
+
+.cos-detail-meta dd {
+  margin: 0;
+  color: var(--cos-content-primary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cos-detail-meta dd > code {
+  word-break: break-all;
+}
+
+.cos-detail-meta dd .cos-chip {
+  margin-right: 4px;
+}
+
+.cos-detail-notes h3,
+.cos-detail-links h3 {
+  margin: 0 0 var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.cos-detail-notes pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--cos-font-family);
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+  color: var(--cos-content-secondary);
+  margin: 0;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-md);
+}
+
+.cos-detail-links ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.cos-detail-links a {
+  color: var(--cos-info);
+  word-break: break-all;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-detail-muted {
+  color: var(--cos-content-muted);
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-detail-actions {
+  display: flex;
+  gap: var(--cos-space-sm);
+  padding-top: var(--cos-space-lg);
+}
+
+.cos-btn-done {
+  flex: 1;
+  color: var(--cos-success);
+  border-color: rgba(105, 176, 122, 0.4);
+  background: rgba(105, 176, 122, 0.08);
+  font-weight: 500;
+}
+
+.cos-btn-done:hover:not(:disabled) {
+  background: rgba(105, 176, 122, 0.18);
+  border-color: var(--cos-success);
+}
+
+/* Editable fields (M1b) */
+
+.cos-title-input {
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--cos-content-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  padding: 4px 6px;
+  margin: 0;
+  font-family: inherit;
+  order: 2;
+}
+
+.cos-detail-head .cos-prio-picker {
+  order: 1;
+}
+
+.cos-detail-head .cos-save-pill {
+  order: 3;
+  margin-left: auto;
+}
+
+.cos-title-input:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-title-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+  background: var(--cos-surface-base);
+}
+
+.cos-text-input,
+.cos-date-input,
+.cos-tag-input,
+.cos-project-select {
+  font-family: inherit;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  padding: 2px 6px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cos-project-select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.cos-project-select:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-text-input:hover,
+.cos-date-input:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-text-input:focus,
+.cos-date-input:focus,
+.cos-tag-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+  background: var(--cos-surface-base);
+}
+
+.cos-date-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cos-date-field .cos-date-input {
+  flex: 1;
+}
+
+.cos-field-clear {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-field-clear:hover {
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-raised);
+}
+
+.cos-tag-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.cos-tag-input {
+  flex: 1;
+  min-width: 80px;
+  width: auto;
+}
+
+.cos-chip-removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 2px;
+}
+
+.cos-chip-x {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-chip-x:hover {
+  color: var(--cos-content-primary);
+}
+
+.cos-detail-notes {
+  display: grid;
+  gap: var(--cos-space-sm);
+  min-width: 0;
+}
+
+.cos-notes-input {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: var(--cos-font-body);
+  line-height: 1.55;
+  color: var(--cos-content-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-md);
+  padding: var(--cos-space-sm) 0;
+  box-sizing: border-box;
+}
+
+.cos-notes-input:hover {
+  background: var(--cos-surface-base);
+  border-color: var(--cos-outline-subtle);
+  padding: var(--cos-space-sm);
+}
+
+.cos-notes-input:focus {
+  outline: none;
+  background: var(--cos-surface-base);
+  border-color: var(--cos-accent);
+  padding: var(--cos-space-sm);
+}
+
+.cos-prio-picker {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.cos-prio-picker .cos-prio {
+  cursor: pointer;
+  border-color: transparent;
+  background: transparent;
+  color: var(--cos-content-muted);
+}
+
+.cos-prio-picker .cos-prio.is-active.cos-prio-high {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--cos-critical);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+}
+
+.cos-prio-picker .cos-prio.is-active.cos-prio-medium {
+  background: rgba(240, 198, 116, 0.15);
+  color: var(--cos-warning);
+  border: 1px solid rgba(240, 198, 116, 0.3);
+}
+
+.cos-prio-picker .cos-prio.is-active.cos-prio-low {
+  background: rgba(122, 162, 247, 0.12);
+  color: var(--cos-info);
+  border: 1px solid rgba(122, 162, 247, 0.25);
+}
+
+.cos-prio-picker .cos-prio.is-muted:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-secondary);
+}
+
+.cos-status-picker {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cos-status-chip {
+  font-size: var(--cos-font-caption);
+  padding: 1px 8px;
+  border-radius: var(--cos-radius-pill);
+  background: transparent;
+  color: var(--cos-content-muted);
+  border: 1px solid var(--cos-outline-subtle);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cos-status-chip:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-status-chip.is-active {
+  color: var(--cos-accent);
+  border-color: var(--cos-accent);
+  background: var(--cos-accent-muted);
+}
+
+.cos-status-chip.is-disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.cos-save-pill {
+  align-self: center;
+  font-size: var(--cos-font-caption);
+  padding: 1px 8px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+  border: 1px solid var(--cos-outline-subtle);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cos-save-pill-ok {
+  color: var(--cos-success);
+  border-color: rgba(105, 176, 122, 0.35);
+}
+
+.cos-save-pill-err {
+  color: var(--cos-critical);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+/* ============ Diagnostics (re-used from CP2) ============ */
+
+.cos-status {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--cos-space-sm) var(--cos-space-lg);
+  margin: 0;
+}
+
+.cos-status dt {
+  color: var(--cos-content-muted);
+}
+
+.cos-status dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-good {
+  color: var(--cos-success);
+}
+.cos-bad {
+  color: var(--cos-critical);
+}
+.cos-pending {
+  color: var(--cos-warning);
+}
+
+.cos-path {
+  background: var(--cos-surface-raised);
+  padding: 1px 6px;
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  font-family: var(--cos-font-family-mono);
+  word-break: break-all;
+}
+
+.cos-btn {
+  background: transparent;
+  border: 1px solid var(--cos-outline-default);
+  color: var(--cos-content-secondary);
+  padding: 3px var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+  margin-right: var(--cos-space-sm);
+}
+
+.cos-btn:hover {
+  border-color: var(--cos-accent);
+  color: var(--cos-accent);
+}
+
+.cos-btn-ghost {
+  color: var(--cos-content-muted);
+  border-style: dashed;
+}
+
+.cos-btn-primary {
+  background: var(--cos-accent-muted);
+  border-color: var(--cos-accent);
+  color: var(--cos-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cos-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cos-btn-primary:not(:disabled):hover {
+  background: var(--cos-accent);
+  color: var(--cos-accent-contrast);
+}
+
+.cos-pill-chip.is-bad {
+  color: var(--cos-critical);
+  background: rgba(255, 107, 107, 0.08);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+.cos-pill-chip.is-ok {
+  color: var(--cos-success);
+  background: rgba(142, 224, 161, 0.1);
+  border-color: rgba(142, 224, 161, 0.35);
+}
+
+.cos-dot-bad {
+  background: var(--cos-critical);
+  box-shadow: 0 0 6px rgba(255, 107, 107, 0.5);
+}
+
+.cos-dot-ok {
+  background: var(--cos-success);
+  box-shadow: 0 0 6px rgba(142, 224, 161, 0.5);
+}
+
+.cos-dot-muted {
+  background: var(--cos-content-faint);
+}
+
+/* ============ Save dialog ============ */
+
+.cos-dialog {
+  width: min(480px, 90vw);
+  background: var(--cos-surface-overlay);
+  border: 1px solid var(--cos-outline-strong);
+  border-radius: var(--cos-radius-lg);
+  box-shadow: var(--cos-shadow-modal);
+  padding: var(--cos-space-xl);
+}
+
+.cos-dialog h2 {
+  margin: 0 0 var(--cos-space-md);
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+}
+
+.cos-dialog-body {
+  margin: 0 0 var(--cos-space-sm);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+.cos-dialog-path {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  background: var(--cos-surface-raised);
+  padding: 1px 6px;
+  border-radius: var(--cos-radius-sm);
+  word-break: break-all;
+}
+
+.cos-dialog-delta {
+  margin: 0 0 var(--cos-space-lg);
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-dialog-error {
+  margin: 0 0 var(--cos-space-md);
+  color: var(--cos-critical);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cos-space-sm);
+  margin-top: var(--cos-space-lg);
+}
+
+/* ============ Audit log ============ */
+
+.cos-audit-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  margin-bottom: var(--cos-space-md);
+}
+
+.cos-audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--cos-radius-md);
+  overflow: hidden;
+}
+
+.cos-audit-head {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 180px 80px;
+  gap: var(--cos-space-md);
+  width: 100%;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-body);
+}
+
+.cos-audit-head:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-audit-action {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-accent);
+}
+
+.cos-audit-target {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-audit-at,
+.cos-audit-actor {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-audit-detail {
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  background: var(--cos-surface-sunken);
+  border-top: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-audit-detail dl {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 4px var(--cos-space-md);
+  margin: 0;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-audit-detail dt {
+  color: var(--cos-content-muted);
+}
+
+.cos-audit-detail dd {
+  margin: 0;
+}
+
+.cos-audit-detail code {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content-primary);
+  word-break: break-all;
+}
+
+.cos-audit-json {
+  margin: 0;
+  padding: var(--cos-space-xs) var(--cos-space-sm);
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.cos-audit-json code {
+  word-break: normal;
+  white-space: pre-wrap;
+}
+
+.cos-calendar-view-toggle {
+  display: inline-flex;
+  gap: 2px;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 2px;
+  background: var(--cos-surface-base);
+}
+
+.cos-calendar-view-toggle .cos-btn.is-active {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--cos-space-sm);
+}
+
+.cos-calendar-grid-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-xs);
+  padding: var(--cos-space-sm);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  min-height: 160px;
+}
+
+.cos-calendar-grid-col.is-today {
+  border-color: var(--cos-accent);
+}
+
+.cos-calendar-grid-head {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cos-calendar-grid-col.is-today .cos-calendar-grid-head {
+  color: var(--cos-accent);
+}
+
+.cos-calendar-grid-empty {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-calendar-grid-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cos-calendar-grid-cell-wrap {
+  display: contents;
+}
+
+.cos-calendar-grid-cell {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  text-align: left;
+  font: inherit;
+  color: var(--cos-content-primary);
+  width: 100%;
+}
+
+.cos-calendar-grid-cell.is-clickable {
+  cursor: pointer;
+}
+
+.cos-calendar-grid-cell.is-clickable:hover {
+  background: var(--cos-surface-hover, var(--cos-surface-raised));
+}
+
+.cos-calendar-grid-cell-time {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-calendar-grid-cell-title {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.cos-sidebar-recents {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: var(--cos-space-sm);
+  border-top: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-sidebar-section-head {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cos-content-muted);
+  padding: 2px var(--cos-space-sm);
+}
+
+.cos-sidebar-recents-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cos-sidebar-recent {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  width: 100%;
+  padding: 4px var(--cos-space-sm);
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-secondary);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+  text-align: left;
+}
+
+.cos-sidebar-recent:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-sidebar-recent-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-plugin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-plugin-row {
+  display: grid;
+  gap: 4px;
+  padding: var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-plugin-row.is-broken {
+  border-color: var(--cos-critical, var(--cos-outline-subtle));
+}
+
+.cos-plugin-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-sm);
+  flex-wrap: wrap;
+}
+
+.cos-plugin-name {
+  font-weight: 600;
+  color: var(--cos-content-primary);
+}
+
+.cos-plugin-version {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-plugin-slug {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+  margin-left: auto;
+}
+
+.cos-plugin-desc {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-secondary);
+}
+
+.cos-plugin-error {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-critical, var(--cos-content-muted));
+}
+
+.cos-shortcuts-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+}
+
+.cos-shortcuts {
+  /* Same surface-overlay pattern the InstallWizard uses. surface-base
+   * was leaking through on themes whose base is partly transparent
+   * (Paper, Linen, Mist) and rendering the modal hard to read. */
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  width: min(560px, calc(100vw - 2 * var(--cos-space-xl)));
+  max-height: calc(100vh - 2 * var(--cos-space-xl));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--cos-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.3));
+}
+
+.cos-shortcuts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-shortcuts-head h2 {
+  margin: 0;
+  font-size: var(--cos-font-h3, var(--cos-font-body));
+  color: var(--cos-content-primary);
+}
+
+.cos-shortcuts-close {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-muted);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: var(--cos-radius-sm);
+  display: inline-flex;
+}
+
+.cos-shortcuts-close:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-shortcuts-body {
+  padding: var(--cos-space-lg);
+  display: grid;
+  gap: var(--cos-space-lg);
+  overflow-y: auto;
+}
+
+.cos-shortcuts-section-head {
+  margin: 0 0 var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cos-content-muted);
+  font-weight: 600;
+}
+
+.cos-shortcuts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Two-column grid that sizes the keys column to the widest kbd
+   * within the section, then gives the action the rest. Each row's
+   * children sit as direct grid children via `display: contents`. */
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--cos-space-md);
+  row-gap: 6px;
+  align-items: center;
+}
+
+.cos-shortcuts-row {
+  display: contents;
+}
+
+.cos-shortcuts-keys {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 2px 8px;
+  text-align: center;
+  color: var(--cos-content-primary);
+  white-space: nowrap;
+  /* Hard limit so a pathological row can't push the column past the
+   * modal width; the column auto-sizes within this cap. */
+  max-width: 240px;
+}
+
+.cos-shortcuts-action {
+  color: var(--cos-content-secondary);
+  font-size: var(--cos-font-body);
+}
+
+.cos-audit-copy-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--cos-space-xs);
+}
+
+.cos-task-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--cos-space-md);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-task-filter-chip {
+  background: transparent;
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-muted);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+}
+
+.cos-task-filter-chip:hover {
+  color: var(--cos-content-primary);
+  border-color: var(--cos-outline-strong, var(--cos-outline-subtle));
+}
+
+.cos-task-filter-chip.is-active {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+  border-color: var(--cos-accent);
+}
+
+.cos-task-filter-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--cos-outline-subtle);
+  margin: 0 4px;
+}
+
+.cos-task-filter-clear {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-faint);
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-task-filter-clear:hover {
+  color: var(--cos-content-primary);
+  text-decoration: underline;
+}
+
+.cos-people-search {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  margin-bottom: var(--cos-space-md);
+}
+
+.cos-people-search-input {
+  flex: 1;
+  max-width: 360px;
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-people-search-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+.cos-sidebar-recent-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0;
+  color: var(--cos-content-faint);
+  border-top: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-profile-email-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cos-profile-link-copy {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-faint);
+  font-size: var(--cos-font-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.cos-profile-link-copy:hover {
+  color: var(--cos-accent);
+}
+
+.cos-quickcapture-due-chips {
+  display: flex;
+  gap: 4px;
+  padding: 6px 0 0;
+}
+
+.cos-quickcapture-due-chip {
+  background: transparent;
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-muted);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+}
+
+.cos-quickcapture-due-chip:hover:not(:disabled) {
+  border-color: var(--cos-accent);
+  color: var(--cos-content-primary);
+}
+
+.cos-quickcapture-due-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cos-people-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cos-space-xs);
+}
+
+.cos-people-search-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--cos-space-md);
+  align-items: center;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  text-align: left;
+  font: inherit;
+  color: var(--cos-content-primary);
+  cursor: pointer;
+}
+
+.cos-people-search-row:hover {
+  background: var(--cos-surface-raised);
+  border-color: var(--cos-outline-strong, var(--cos-outline-subtle));
+}
+
+.cos-people-search-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cos-people-search-avatar-mono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.cos-people-search-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cos-people-search-name {
+  font-weight: 500;
+  color: var(--cos-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-people-search-sub {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-detail-snooze {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.cos-detail-snooze .cos-btn {
+  padding: 2px 8px;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-notes-preview {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px dashed transparent;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  cursor: pointer;
+  font: inherit;
+  color: var(--cos-content-primary);
+  border-radius: var(--cos-radius-sm);
+  min-height: 60px;
+}
+
+.cos-notes-preview:hover {
+  border-color: var(--cos-outline-subtle);
+}
+
+.cos-notes-preview-empty {
+  color: var(--cos-content-faint);
+  font-style: italic;
+}
+
+.cos-block-md p,
+.cos-block-md ul,
+.cos-block-md ol {
+  margin: 0 0 var(--cos-space-xs);
+}
+
+.cos-block-md ul,
+.cos-block-md ol {
+  padding-left: var(--cos-space-lg);
+}
+
+.cos-block-md-h1,
+.cos-block-md-h2,
+.cos-block-md-h3 {
+  margin: var(--cos-space-sm) 0 4px;
+  font-weight: 600;
+}
+
+.cos-block-md-h1 { font-size: var(--cos-font-h3, 1.1em); }
+.cos-block-md-h2 { font-size: 1.05em; }
+.cos-block-md-h3 { font-size: 1em; color: var(--cos-content-secondary); }
+
+.cos-detail-due-rel {
+  display: inline-block;
+  margin-left: var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-detail-due-rel-overdue { color: var(--cos-critical, #ef5350); }
+.cos-detail-due-rel-soon { color: var(--cos-warning, #e0af68); }
+.cos-detail-due-rel-later { color: var(--cos-content-muted); }
+
+.cos-chip-clickable {
+  background: transparent;
+  border: 1px solid var(--cos-outline-subtle);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cos-chip-clickable:hover {
+  border-color: var(--cos-accent);
+  color: var(--cos-accent);
+}
+
+.cos-calendar-grid-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  margin-bottom: var(--cos-space-sm);
+}
+
+.cos-calendar-grid-nav-label {
+  flex: 1;
+  text-align: center;
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cos-people-search-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-people-search-sort-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cos-people-search-sort select {
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-settings-search {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  margin-bottom: var(--cos-space-md);
+}
+
+.cos-settings-search-input {
+  flex: 1;
+  max-width: 480px;
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-settings-search-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+.cos-tab.is-search-match {
+  background: var(--cos-accent-muted);
+}
+
+.cos-tab.is-search-dim {
+  opacity: 0.45;
+}
+
+.cos-plugin-caps {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cos-plugin-cap {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.cos-plugin-cap.is-unknown {
+  border-color: var(--cos-warning, #e0af68);
+  color: var(--cos-warning, #e0af68);
+}
+
+.cos-audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-sm) 0;
+  border-top: 1px solid var(--cos-outline-subtle);
+  margin-top: var(--cos-space-sm);
+}
+
+.cos-audit-pagination-count {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-sidebar-recent-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px;
+  align-items: center;
+}
+
+.cos-sidebar-recent-pin {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-faint);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: var(--cos-radius-sm);
+  display: inline-flex;
+  visibility: hidden;
+}
+
+.cos-sidebar-recent-item:hover .cos-sidebar-recent-pin,
+.cos-sidebar-recent-item:focus-within .cos-sidebar-recent-pin {
+  visibility: visible;
+}
+
+.cos-sidebar-recent-pin:hover {
+  color: var(--cos-accent);
+  background: var(--cos-surface-raised);
+}
+
+.cos-sidebar-recent-pinned {
+  color: var(--cos-accent);
+}
+
+.cos-sidebar-trailing {
+  /* Single grid cell that holds badge + shortcut. Keeps both on the
+   * same line as the label even when the badge is wide ("99+"). */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  flex-shrink: 0;
+}
+
+.cos-sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cos-accent);
+  color: var(--cos-content-on-accent, white);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+}
+
+.cos-sidebar.is-collapsed .cos-sidebar-item {
+  position: relative;
+}
+
+.cos-sidebar-badge-collapsed {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--cos-accent);
+}
+
+.cos-accent-control {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  flex-wrap: wrap;
+}
+
+.cos-accent-input {
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  font-family: var(--cos-font-family-mono);
+  padding: 6px 10px;
+  border-radius: var(--cos-radius-sm);
+  width: 140px;
+}
+
+.cos-accent-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+.cos-accent-input[aria-invalid="true"] {
+  border-color: var(--cos-critical, #ef5350);
+}
+
+.cos-accent-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--cos-outline-subtle);
+  flex-shrink: 0;
+}
+
+.cos-density-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cos-density-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-density-option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.cos-density-option.is-active {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+  border-color: var(--cos-accent);
+}
+
+.cos-settings-select {
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-settings-select:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+/* ============ PRD-v2-117 — Workspace tab strip ============ */
+
+.cos-workspace-tabs {
+  /* Defined as a token in tokens.css would be cleaner, but Stage 2
+   * keeps the surface area small. PRD §4.2 spec: ≈ 36px height.
+   *
+   * Chrome-style: the strip is the *darker* surface (sunken). The
+   * active tab uses the page canvas color so it visually "pops" as
+   * the lighter chip and reads as continuous with the content area
+   * below. Inactive tabs stay dark with the strip. */
+  height: 36px;
+  display: flex;
+  align-items: stretch;
+  padding: 0 6px 0 6px;
+  background: var(--cos-surface-sunken);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  flex-shrink: 0;
+  /* The strip itself never scrolls; only the inner scroller does. */
+  overflow: hidden;
+  user-select: none;
+}
+
+.cos-workspace-tabs-scroller {
+  /* Tabs flex-grow uniformly down to the 100px floor before the
+   * scroller starts horizontal-scrolling. */
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  /* Hide the scrollbar in normal use; it appears on overflow only.
+   * PRD §4.2 — the chevron menu (Stage 4) supersedes the scrollbar
+   * for the user; the scrollbar is the fallback for now. */
+  scrollbar-width: thin;
+}
+
+.cos-workspace-tabs-scroller::-webkit-scrollbar {
+  height: 4px;
+}
+
+.cos-workspace-tabs-scroller::-webkit-scrollbar-thumb {
+  background: var(--cos-outline-subtle);
+  border-radius: 2px;
+}
+
+.cos-workspace-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 200px;
+  min-width: 100px;
+  max-width: 240px;
+  height: 100%;
+  padding: 0 6px 0 10px;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  border-top-left-radius: var(--cos-radius-sm);
+  border-top-right-radius: var(--cos-radius-sm);
+  /* Active-state border replaces this one; keep height stable. */
+  margin-bottom: -1px;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+  outline: none;
+  /* iOS-style: only show close button on hover/focus. */
+  position: relative;
+}
+
+.cos-workspace-tab:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-workspace-tab:focus-visible {
+  outline: 2px solid var(--cos-focus-ring, var(--cos-accent));
+  outline-offset: -2px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-workspace-tab.is-active {
+  /* Chrome-style: the active tab uses the page canvas (the same
+   * color as the content area below) so it reads as the lighter
+   * "selected" chip vs. the darker strip. Border-bottom is
+   * transparent — the chip *replaces* the strip border at its
+   * bottom, visually merging into the content. */
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-canvas);
+  border-bottom: 1px solid var(--cos-surface-canvas);
+  border-top: 2px solid var(--cos-accent);
+  /* Compensate the 2px top border with a slightly tighter top
+   * padding so the icon stays centered. */
+  padding-top: 0;
+  font-weight: 500;
+}
+
+.cos-workspace-tab-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.cos-workspace-tab.is-active .cos-workspace-tab-icon {
+  opacity: 1;
+}
+
+/* In-flight skill pip (PRD §4.7 / criterion #14) — replaces the
+ * surface icon in the tab's icon slot while a matching run is
+ * running. The accent color tracks the active-tab treatment so the
+ * pip reads as "this tab has work happening for it." */
+.cos-workspace-tab-spinner {
+  color: var(--cos-accent);
+  opacity: 1 !important;
+  animation: cos-workspace-tab-spin 1s linear infinite;
+}
+
+@keyframes cos-workspace-tab-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cos-workspace-tab-spinner {
+    animation: none;
+  }
+}
+
+.cos-workspace-tab-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-workspace-tab-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: 2px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  /* Hidden by default; shown on tab hover/focus. The button is in
+   * the DOM at all times so keyboard users can reach it. */
+  opacity: 0;
+  transition: opacity var(--cos-motion-quick) var(--cos-motion-ease),
+    background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-workspace-tab:hover .cos-workspace-tab-close,
+.cos-workspace-tab:focus-within .cos-workspace-tab-close,
+.cos-workspace-tab.is-active .cos-workspace-tab-close {
+  opacity: 1;
+}
+
+.cos-workspace-tab-close:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-workspace-tabs-add,
+.cos-workspace-tabs-overflow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 4px 2px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-workspace-tabs-add {
+  margin-left: 6px;
+}
+
+.cos-workspace-tabs-overflow {
+  margin-right: 4px;
+}
+
+.cos-workspace-tabs-add:hover,
+.cos-workspace-tabs-overflow:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-workspace-tabs-add:focus-visible,
+.cos-workspace-tabs-overflow:focus-visible {
+  outline: 2px solid var(--cos-focus-ring, var(--cos-accent));
+  outline-offset: 2px;
+}
+
+/* Overflow popover (PRD §4.2 / criterion #11) — vertical list of
+ * every tab with a type-ahead filter; chevron-anchored at the top
+ * right end of the strip. */
+.cos-workspace-tabs-overflow-popover {
+  position: fixed;
+  top: 40px;
+  right: 6px;
+  z-index: 95;
+  width: min(320px, calc(100vw - 16px));
+  max-height: 60vh;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  box-shadow: var(--cos-shadow-modal, 0 8px 24px rgba(0, 0, 0, 0.2));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cos-workspace-tabs-overflow-filter {
+  margin: 6px;
+  padding: 4px 8px;
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  font: inherit;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  outline: none;
+}
+
+.cos-workspace-tabs-overflow-filter:focus {
+  border-color: var(--cos-accent);
+}
+
+.cos-workspace-tabs-overflow-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.cos-workspace-tabs-overflow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  font: inherit;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cos-workspace-tabs-overflow-item:hover {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+}
+
+.cos-workspace-tabs-overflow-item.is-active {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+  font-weight: 500;
+}
+
+.cos-workspace-tabs-overflow-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-workspace-tabs-overflow-pinned {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-style: italic;
+}
+
+.cos-workspace-tabs-overflow-empty {
+  padding: 12px;
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cos-workspace-tab,
+  .cos-workspace-tab-close,
+  .cos-workspace-tabs-add {
+    transition: none;
+  }
+}
+
+/* Pinned tabs (PRD §4.10): icon-only 36×36 chips at the leftmost
+ * end of the strip. No close glyph; close via right-click or
+ * Cmd+Backspace. */
+.cos-workspace-tab.is-pinned {
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Drag-reorder insertion indicator (PRD §4.2 / criterion #12).
+ * `drop-before` paints a 2px accent bar at the leading edge of the
+ * hovered chip; `drop-after` paints it at the trailing edge. The
+ * bars run the full strip height and use position: absolute so they
+ * don't shift the layout while dragging. */
+.cos-workspace-tab.drop-before::before,
+.cos-workspace-tab.drop-after::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--cos-accent);
+  pointer-events: none;
+}
+
+.cos-workspace-tab.drop-before::before {
+  left: -1px;
+}
+
+.cos-workspace-tab.drop-after::after {
+  right: -1px;
+}
+
+/* Drag lift (PRD §4.2 / criterion #12). The source tab translates
+ * with the cursor (inline style sets transform) and gets a slight
+ * dim + drop shadow so it reads as "lifted off" the strip while
+ * the user holds it. The transform/transition pair keeps the
+ * release feel (snap into the new slot) crisp. z-index keeps the
+ * lifted tab above its neighbors, including the insertion bar. */
+.cos-workspace-tab.is-dragging {
+  z-index: 10;
+  cursor: grabbing;
+  opacity: 0.85;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  background: var(--cos-surface-canvas);
+  color: var(--cos-content-primary);
+  /* Disable the hover/transition while the user is actively dragging
+   * so the translate isn't fought by other transitions. */
+  transition: none;
+}
+
+.cos-workspace-tab.is-pinned .cos-workspace-tab-icon {
+  /* Icon stays 14px but the chip is 36px square; no label means we
+   * have plenty of room. */
+  size: 14px;
+}
+
+/* Inline rename input (PRD §4.3 / §4.10). */
+.cos-workspace-tab-rename-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-accent);
+  border-radius: var(--cos-radius-sm);
+  padding: 1px 4px;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-primary);
+  outline: none;
+}
+
+/* Right-click context menu (PRD §4.10). */
+.cos-tab-menu {
+  position: fixed;
+  z-index: 95;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  box-shadow: var(--cos-shadow-modal, 0 8px 24px rgba(0, 0, 0, 0.2));
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cos-tab-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  color: var(--cos-content-primary);
+  font: inherit;
+  font-size: var(--cos-font-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cos-tab-menu-item:hover:not(:disabled),
+.cos-tab-menu-item:focus-visible:not(:disabled) {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+  outline: none;
+}
+
+.cos-tab-menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cos-tab-menu-shortcut {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-tab-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--cos-outline-subtle);
+}
+
+/* ============ PRD-v2-117 §4.5 — Crash recovery prompt ============ */
+
+.cos-crash-recovery-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 110;
+}
+
+.cos-crash-recovery {
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  width: min(440px, calc(100vw - 2 * var(--cos-space-xl)));
+  padding: var(--cos-space-xl);
+  box-shadow: var(--cos-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.3));
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+.cos-crash-recovery-head {
+  margin: 0;
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+  color: var(--cos-content-primary);
+}
+
+.cos-crash-recovery-body {
+  margin: 0;
+  color: var(--cos-content-secondary);
+  font-size: var(--cos-font-body);
+  line-height: var(--cos-line-body);
+}
+
+.cos-crash-recovery-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cos-space-sm);
+  margin-top: var(--cos-space-sm);
+}
+
+/* ============ PRD-116 — Console surface ============ */
+.cos-console {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--cos-surface-base);
+}
+
+.cos-console-head {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-sm) var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  flex-shrink: 0;
+}
+
+.cos-console-head-title {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+}
+
+.cos-console-head-title h1 {
+  margin: 0;
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+}
+
+.cos-console-chips {
+  display: flex;
+  gap: var(--cos-space-xs);
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.cos-console-chips .cos-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-console-chips .cos-chip-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cos-content-faint);
+}
+
+.cos-console-chips .cos-chip-value {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content);
+}
+
+.cos-console-actions {
+  display: flex;
+  gap: var(--cos-space-xs);
+  flex-shrink: 0;
+}
+
+.cos-console-status {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-style: italic;
+}
+
+.cos-console-empty {
+  padding: var(--cos-space-xl) var(--cos-space-lg);
+  max-width: 640px;
+}
+
+.cos-helper-list {
+  margin: var(--cos-space-md) 0;
+  padding-left: var(--cos-space-lg);
+  display: grid;
+  gap: var(--cos-space-xs);
+  color: var(--cos-content-secondary);
+  line-height: var(--cos-line-body);
+}
+
+.cos-console-error {
+  margin: var(--cos-space-lg);
+  padding: var(--cos-space-md);
+  border: 1px solid var(--cos-critical);
+  border-radius: var(--cos-radius-md);
+  background: rgba(255, 107, 107, 0.06);
+  display: grid;
+  gap: var(--cos-space-xs);
+  max-width: 640px;
+}
+
+.cos-console-error strong {
+  color: var(--cos-critical);
+}
+
+.cos-console-status-banner {
+  padding: 6px var(--cos-space-lg);
+  background: var(--cos-surface-sunken);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-console-term {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--cos-space-sm);
+  background: var(--cos-surface-base);
+}
+
+.cos-console-term.is-hidden {
+  /* Mounted but invisible: keeps the ResizeObserver and DOM ref
+   * stable across start/stop cycles without flashing the empty
+   * terminal background to the user. */
+  display: none;
+}
+
+/* ============ PRD-116 Phase 2.5 — Chat mode + mode toggle ============ */
+.cos-console-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--cos-surface-base);
+}
+
+.cos-console-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-xs) var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-base);
+  flex-shrink: 0;
+}
+
+.cos-console-mode-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--cos-font-caption);
+  font-weight: 600;
+  color: var(--cos-content);
+}
+
+.cos-console-mode-toggle {
+  display: inline-flex;
+  background: var(--cos-surface-sunken);
+  border-radius: var(--cos-radius-pill);
+  padding: 2px;
+  gap: 0;
+}
+
+.cos-console-mode-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-pill);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-console-mode-option:hover {
+  color: var(--cos-content);
+}
+
+.cos-console-mode-option.is-active {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content);
+  box-shadow: var(--cos-shadow-pill, 0 1px 2px rgba(0, 0, 0, 0.06));
+}
+
+.cos-console-mode-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.cos-console-mode-body > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Chat host: tab strip + active ChatView ──────────────────────── */
+.cos-chat-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cos-chat-tabstrip {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px var(--cos-space-md) 0;
+  background: var(--cos-surface-sunken);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* Chat tabs follow the same Chrome-style "active = lighter chip,
+ * inactive = sits on the darker strip" treatment as the workspace
+ * TabStrip (.cos-workspace-tab). The active tab uses the surface
+ * base (the chat body's background) and a 2px accent stripe on top;
+ * inactive tabs stay transparent on the sunken strip so the active
+ * one reads as elevated. */
+.cos-chat-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-top-left-radius: var(--cos-radius-md);
+  border-top-right-radius: var(--cos-radius-md);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  max-width: 220px;
+  position: relative;
+  /* Replaces the strip's bottom border at the active chip's bottom
+   * so the active tab visually merges into the chat body below. */
+  margin-bottom: -1px;
+  user-select: none;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease),
+    color var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-chat-tab:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-chat-tab.is-active {
+  background: var(--cos-surface-base);
+  color: var(--cos-content-primary);
+  border-bottom: 1px solid var(--cos-surface-base);
+  border-top: 2px solid var(--cos-accent);
+  /* Compensate the 2px top border so the label stays vertically
+   * aligned with inactive tabs. */
+  padding-top: 2px;
+  font-weight: 500;
+  z-index: 1;
+}
+
+.cos-chat-tab.is-exited {
+  opacity: 0.6;
+}
+
+.cos-chat-tab-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.cos-chat-tab-spin {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.cos-chat-tab-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--cos-accent, #4a9eff);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-chat-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin-left: 2px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  color: var(--cos-content-faint);
+  cursor: pointer;
+}
+
+.cos-chat-tab-close:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content);
+}
+
+.cos-chat-tabstrip-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  align-self: center;
+  margin: 0 4px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cos-radius-sm);
+  color: var(--cos-content-faint);
+  cursor: pointer;
+}
+
+.cos-chat-tabstrip-new:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content);
+}
+
+/* ── Chat mode ──────────────────────────────────────────────────── */
+.cos-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--cos-surface-base);
+  position: relative;
+}
+
+.cos-chat-chips {
+  display: flex;
+  gap: var(--cos-space-xs);
+  align-items: center;
+  padding: var(--cos-space-xs) var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  flex-wrap: wrap;
+}
+
+.cos-chat-chips .cos-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-chat-chips .cos-chip-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cos-content-faint);
+}
+
+.cos-chat-chips .cos-chip-value {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content);
+}
+
+.cos-chat-chips .cos-chip.is-warn {
+  border-color: rgba(255, 180, 0, 0.4);
+}
+.cos-chat-chips .cos-chip.is-warn .cos-chip-value {
+  color: rgb(204, 130, 0);
+}
+.cos-chat-chips .cos-chip.is-critical {
+  border-color: var(--cos-critical);
+}
+.cos-chat-chips .cos-chip.is-critical .cos-chip-value {
+  color: var(--cos-critical);
+}
+
+.cos-chat-inflight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  background: var(--cos-accent-muted, rgba(122, 162, 247, 0.16));
+  border: 1px solid var(--cos-accent);
+  color: var(--cos-accent);
+  border-radius: var(--cos-radius-pill);
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+}
+
+.cos-spin {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  animation: cos-spin 0.8s linear infinite;
+}
+
+@keyframes cos-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cos-chat-find-btn {
+  margin-left: auto;
+}
+
+.cos-chat-find-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-raised);
+  font-size: var(--cos-font-caption);
+}
+
+.cos-chat-find-bar input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+}
+
+.cos-chat-feed {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-md);
+}
+
+.cos-chat-empty {
+  padding: var(--cos-space-xl);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.cos-chat-status {
+  padding: var(--cos-space-md) 0;
+  text-align: center;
+  color: var(--cos-content-muted);
+  font-style: italic;
+}
+
+.cos-chat-error {
+  padding: var(--cos-space-md);
+  border: 1px solid var(--cos-critical);
+  border-radius: var(--cos-radius-md);
+  background: rgba(255, 107, 107, 0.06);
+}
+
+.cos-chat-status-banner {
+  padding: 6px var(--cos-space-md);
+  background: var(--cos-surface-sunken);
+  border-radius: var(--cos-radius-md);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  text-align: center;
+}
+
+.cos-chat-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cos-chat-turn-meta {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cos-content-faint);
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+}
+
+.cos-chat-turn-action {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--cos-content-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.cos-chat-turn:hover .cos-chat-turn-action,
+.cos-chat-turn-action:focus {
+  opacity: 1;
+}
+
+.cos-chat-turn-action:hover {
+  color: var(--cos-accent);
+}
+
+.cos-chat-turn-user .cos-chat-turn-body {
+  background: var(--cos-surface-raised);
+  border-left: 3px solid var(--cos-accent);
+  border-radius: var(--cos-radius-sm);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}
+
+.cos-chat-turn-assistant .cos-chat-turn-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-sm);
+}
+
+.cos-chat-turn.is-find-hit > .cos-chat-turn-body {
+  outline: 2px solid var(--cos-accent);
+  outline-offset: 2px;
+}
+
+.cos-chat-system {
+  padding: 6px var(--cos-space-md);
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cos-chat-system-info {
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+}
+
+.cos-chat-system-warn {
+  background: rgba(255, 180, 0, 0.08);
+  color: rgb(204, 130, 0);
+}
+
+.cos-chat-system-error {
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--cos-critical);
+  border-left: 3px solid var(--cos-critical);
+}
+
+.cos-chat-thinking {
+  background: var(--cos-surface-sunken);
+  border-radius: var(--cos-radius-sm);
+  padding: 6px var(--cos-space-sm);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+}
+
+.cos-chat-thinking summary {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+}
+
+.cos-chat-thinking > div {
+  margin-top: 4px;
+  white-space: pre-wrap;
+}
+
+.cos-chat-text-fallback {
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+.cos-chat-jump-pill {
+  position: absolute;
+  bottom: 80px;
+  right: var(--cos-space-lg);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--cos-accent);
+  color: var(--cos-content-on-accent, white);
+  border: 0;
+  border-radius: var(--cos-radius-pill);
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+  box-shadow: var(--cos-shadow-modal, 0 4px 16px rgba(0, 0, 0, 0.2));
+  z-index: 5;
+}
+
+.cos-chat-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--cos-space-sm) var(--cos-space-lg);
+  border-top: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-base);
+  flex-shrink: 0;
+}
+
+.cos-chat-input textarea {
+  width: 100%;
+  resize: none;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 8px 10px;
+  font: inherit;
+  background: var(--cos-surface-raised);
+  color: var(--cos-content);
+}
+
+.cos-chat-input textarea:focus {
+  border-color: var(--cos-accent);
+  outline: none;
+}
+
+.cos-chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  justify-content: flex-end;
+}
+
+.cos-chat-queue-chip {
+  font-size: var(--cos-font-caption);
+  padding: 2px 8px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-muted);
+}
+
+/* ── Tool-call cards ────────────────────────────────────────────── */
+.cos-tool-card {
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  overflow: hidden;
+}
+
+.cos-tool-card.is-error {
+  border-color: var(--cos-critical);
+  background: rgba(255, 107, 107, 0.04);
+}
+
+.cos-tool-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-tool-card-chevron {
+  transition: transform 0.12s ease;
+  flex-shrink: 0;
+}
+
+.cos-tool-card.is-expanded .cos-tool-card-chevron {
+  transform: rotate(90deg);
+}
+
+.cos-tool-card-name {
+  font-weight: 600;
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content);
+  flex-shrink: 0;
+}
+
+.cos-tool-card-summary {
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content-muted);
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-tool-card-counts {
+  font-family: var(--cos-font-family-mono);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.cos-tool-card-pending {
+  color: var(--cos-accent);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.cos-tool-card-flag {
+  background: var(--cos-critical);
+  color: white;
+  padding: 0 6px;
+  border-radius: var(--cos-radius-pill);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.cos-tool-card-body {
+  border-top: 1px solid var(--cos-outline-subtle);
+  padding: var(--cos-space-sm);
+}
+
+.cos-tool-card-args,
+.cos-tool-card-result pre {
+  margin: 0;
+  font-size: var(--cos-font-caption);
+  font-family: var(--cos-font-family-mono);
+  background: var(--cos-surface-sunken);
+  border-radius: var(--cos-radius-sm);
+  padding: 6px 8px;
+  overflow-x: auto;
+  max-height: 480px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cos-tool-card-result.is-error pre {
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--cos-critical);
+}
+
+/* ── Inline diffs ───────────────────────────────────────────────── */
+.cos-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cos-diff-path {
+  font-family: var(--cos-font-family-mono);
+  font-size: 11px;
+  color: var(--cos-content-muted);
+}
+
+.cos-diff-body {
+  margin: 0;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  background: var(--cos-surface-sunken);
+  border-radius: var(--cos-radius-sm);
+  padding: 6px 8px;
+  overflow-x: auto;
+  max-height: 480px;
+}
+
+.cos-diff-line {
+  display: inline-block;
+  width: 100%;
+}
+
+.cos-diff-line-add {
+  background: rgba(63, 185, 80, 0.12);
+  color: rgb(46, 122, 56);
+}
+
+.cos-diff-line-del {
+  background: rgba(255, 107, 107, 0.12);
+  color: rgb(170, 50, 50);
+}
+
+.cos-diff-marker {
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+  user-select: none;
+  opacity: 0.6;
+}
+
+.cos-diff-added {
+  color: rgb(46, 122, 56);
+  font-weight: 600;
+}
+
+.cos-diff-removed {
+  color: rgb(170, 50, 50);
+  font-weight: 600;
+}
+
+.cos-diff-line-meta {
+  color: var(--cos-content-faint);
+}
+
+/* ── Slash popover ──────────────────────────────────────────────── */
+.cos-chat-slash-popover {
+  margin: 0 var(--cos-space-lg) 4px;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  box-shadow: var(--cos-shadow-modal, 0 4px 16px rgba(0, 0, 0, 0.18));
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-chat-slash-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--cos-space-sm);
+  align-items: baseline;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-chat-slash-row.is-active {
+  background: var(--cos-accent-muted, rgba(122, 162, 247, 0.16));
+}
+
+.cos-chat-slash-name {
+  font-family: var(--cos-font-family-mono);
+  font-weight: 600;
+  color: var(--cos-content);
+}
+
+.cos-chat-slash-desc {
+  color: var(--cos-content-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-chat-slash-source {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: var(--cos-radius-pill);
+  background: var(--cos-surface-sunken);
+  color: var(--cos-content-faint);
+}
+
+.cos-chat-slash-source-builtin {
+  background: var(--cos-surface-sunken);
+}
+
+.cos-chat-slash-source-workspace {
+  background: rgba(63, 185, 80, 0.12);
+  color: rgb(46, 122, 56);
+}
+
+.cos-chat-slash-source-user {
+  background: rgba(255, 180, 0, 0.12);
+  color: rgb(204, 130, 0);
+}
+
+.cos-chat-slash-source-plugin {
+  background: rgba(122, 162, 247, 0.12);
+  color: var(--cos-accent);
+}
+
+.cos-chat-autosubmit {
+  margin: 0 var(--cos-space-lg) 4px;
+  padding: 6px 10px;
+  background: rgba(255, 180, 0, 0.12);
+  border: 1px solid rgba(255, 180, 0, 0.4);
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  color: rgb(150, 100, 0);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cos-chat-convert {
+  position: absolute;
+  top: 56px;
+  right: var(--cos-space-lg);
+  width: min(420px, 90vw);
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  box-shadow: var(--cos-shadow-modal, 0 4px 16px rgba(0, 0, 0, 0.18));
+  z-index: 10;
+  overflow: hidden;
+}
+
+.cos-chat-convert-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  font-weight: 600;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-chat-convert-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-chat-convert-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-chat-convert-row:last-child {
+  border-bottom: 0;
+}
+
+.cos-chat-convert-row:hover:not(:disabled) {
+  background: var(--cos-surface-sunken);
+}
+
+.cos-chat-convert-row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cos-chat-convert-row strong {
+  font-weight: 600;
+  color: var(--cos-content);
+}
+
+.cos-chat-convert-row span {
+  color: var(--cos-content-muted);
+}
+
+.cos-chat-convert-error {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-critical);
+  background: rgba(255, 107, 107, 0.06);
+}
+
+.cos-chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+.cos-chat-attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-pill);
+  font-size: 11px;
+  font-family: var(--cos-font-family-mono);
+  color: var(--cos-content);
+}
+
+.cos-chat-attachment-chip .cos-btn-icon {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--cos-content-muted);
+  padding: 0;
+  display: inline-flex;
+}
+
+.cos-chat-attachment-chip .cos-btn-icon:hover {
+  color: var(--cos-critical);
+}
+
+/* xterm.js puts its own .xterm wrapper inside our host. Make it
+ * fill the cell so the cursor can reach the bottom of the surface. */
+.cos-console-term .xterm,
+.cos-console-term .xterm-viewport,
+.cos-console-term .xterm-screen {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* PRD-v2-117 §4.5 — persist-rejected warning chip. Appears at the
+ * bottom-right when the state-blob exceeds the hard cap and writes
+ * are skipped; non-blocking. */
+.cos-tabs-persist-warning {
+  position: fixed;
+  right: var(--cos-space-md);
+  bottom: var(--cos-space-md);
+  padding: 6px 10px;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-critical, var(--cos-outline-strong));
+  color: var(--cos-critical, var(--cos-content-primary));
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  z-index: 90;
+  box-shadow: var(--cos-shadow-modal, 0 4px 16px rgba(0, 0, 0, 0.2));
+}

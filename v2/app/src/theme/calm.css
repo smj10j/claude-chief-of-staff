@@ -1,0 +1,60 @@
+/* Calm — meditative dark theme with personality. */
+/* Refresh: original was all-sage and felt monotonous. This version */
+/* keeps the calming intent but trades green for warm grey-purple */
+/* with a dusty rose accent. Inspired by the Calm app's evening palette. */
+
+[data-theme="calm"] {
+  /* Surfaces — warm dusk grey-purple, never green-cast. */
+  --cos-surface-canvas: #2d3140;
+  --cos-surface-raised: #393e52;
+  --cos-surface-sunken: #1f2230;
+  --cos-surface-overlay: #4a5168;
+
+  /* Content — warm cream ink for that "evening lamp" feel. */
+  --cos-content-primary: #f5ede4;
+  --cos-content-secondary: #c8bfb4;
+  --cos-content-muted: #968d80;
+  --cos-content-faint: #6e6558;
+  --cos-content-inverse: #2d3140;
+
+  /* Borders */
+  --cos-outline-subtle: #363b4e;
+  --cos-outline-default: #444a62;
+  --cos-outline-strong: #5e6680;
+
+  /* Accents — dusty rose leads, lavender-blue secondary. */
+  --cos-accent: #e89090;
+  --cos-accent-muted: rgba(232, 144, 144, 0.18);
+  --cos-accent-contrast: #1f2230;
+  --cos-info: #a8b8d8;
+  --cos-success: #88b094;
+  --cos-warning: #d4a868;
+  --cos-critical: #d47878;
+
+  /* Time-aware tints — warm-leaning, evening glow. */
+  --cos-tint-today: rgba(212, 168, 104, 0.06);
+  --cos-tint-past: rgba(150, 141, 128, 0.04);
+  --cos-tint-future: rgba(168, 184, 216, 0.05);
+  --cos-tint-overdue: rgba(212, 120, 120, 0.07);
+  --cos-tint-warm-flash: rgba(232, 144, 144, 0.22);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #88b094;
+  --cos-status-at-risk: #d4a868;
+  --cos-status-blocked: #d47878;
+  --cos-status-soon-done: #a8b8d8;
+  --cos-status-on-track-tint: rgba(136, 176, 148, 0.08);
+  --cos-status-at-risk-tint: rgba(212, 168, 104, 0.08);
+  --cos-status-blocked-tint: rgba(212, 120, 120, 0.08);
+  --cos-status-soon-done-tint: rgba(168, 184, 216, 0.08);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(245, 237, 228, 0.05);
+
+  /* Elevation — soft warm shadow */
+  --cos-shadow-low: 0 1px 3px rgba(31, 34, 48, 0.5);
+  --cos-shadow-med: 0 4px 16px rgba(31, 34, 48, 0.6);
+  --cos-shadow-modal: 0 20px 60px rgba(31, 34, 48, 0.75);
+
+  color-scheme: dark;
+}

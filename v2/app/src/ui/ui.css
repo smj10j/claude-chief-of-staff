@@ -1,0 +1,389 @@
+/* Component primitives — PRD-115 §7.5. */
+/* Opinionated, lightweight wrappers used by the redesigned surfaces. */
+/* All styles use semantic tokens so themes (graphite, paper, …) bind cleanly. */
+
+/* ============ SurfaceHero ============ */
+
+.cos-surface-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--cos-space-lg);
+  /* Spacing to the next section comes from the surrounding surface
+   * grid/flex `gap` (cos-home, cos-people, cos-work, etc.). Keeping
+   * an intrinsic margin here would double-space every surface. */
+  margin: 0;
+  min-height: 56px;
+}
+
+.cos-surface-hero-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cos-surface-hero-title {
+  margin: 0;
+  font-size: var(--cos-font-display-lg);
+  line-height: var(--cos-line-display-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--cos-content-primary);
+}
+
+.cos-surface-hero--compact .cos-surface-hero-title {
+  font-size: var(--cos-font-h1);
+  line-height: var(--cos-line-h1);
+}
+
+.cos-surface-hero-subtitle {
+  margin: 0;
+  font-size: var(--cos-font-body-lg);
+  line-height: var(--cos-line-body-lg);
+  color: var(--cos-content-secondary);
+}
+
+.cos-surface-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  flex-shrink: 0;
+}
+
+/* ============ SectionHeader ============ */
+
+.cos-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-sm);
+  margin: 0 0 var(--cos-space-md);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  color: var(--cos-content-primary);
+  cursor: default;
+}
+
+.cos-section-header.is-collapsible {
+  cursor: pointer;
+}
+
+.cos-section-header-label {
+  margin: 0;
+  font-size: var(--cos-font-h3);
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.cos-section-header-count {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cos-section-header-shortcut {
+  margin-left: auto;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+  border-radius: var(--cos-radius-sm);
+  padding: 1px 6px;
+  background: var(--cos-surface-raised);
+}
+
+.cos-section-header-chevron {
+  color: var(--cos-content-muted);
+  transition: transform var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-section-header.is-collapsed .cos-section-header-chevron {
+  transform: rotate(-90deg);
+}
+
+/* ============ TimelineStrip ============ */
+
+.cos-timeline-strip {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 56px;
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  overflow: hidden;
+}
+
+.cos-timeline-strip-empty {
+  align-items: center;
+  justify-content: center;
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+  padding: 0 var(--cos-space-lg);
+}
+
+.cos-timeline-event {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-tint-today);
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+  border: 0;
+  text-align: left;
+  font-family: inherit;
+  overflow: hidden;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-timeline-event:hover {
+  background: var(--cos-accent-muted);
+}
+
+.cos-timeline-event.tone-needs-prep {
+  background: var(--cos-tint-overdue);
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.4);
+}
+
+.cos-timeline-event.tone-maybe {
+  opacity: 0.65;
+}
+
+.cos-timeline-event.tone-declined {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.cos-timeline-event-time {
+  font-family: var(--cos-font-family-mono);
+  font-size: 10px;
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.cos-timeline-event-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* ============ PersonCard ============ */
+
+.cos-person-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  border: 0;
+  color: inherit;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-person-card:hover {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-person-card.is-attention {
+  background: var(--cos-tint-overdue);
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.25);
+}
+
+.cos-person-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--cos-accent-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--cos-accent);
+  font-weight: 600;
+  font-size: var(--cos-font-h3);
+  letter-spacing: 0.02em;
+  user-select: none;
+  overflow: hidden;
+}
+
+.cos-person-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cos-person-card-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cos-person-card-name {
+  font-size: var(--cos-font-body);
+  font-weight: 500;
+  color: var(--cos-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-person-card-role {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-person-card-touched {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-person-card-touched.is-stale {
+  color: var(--cos-warning);
+}
+
+.cos-person-card-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--cos-space-xs);
+  margin-top: var(--cos-space-xs);
+}
+
+/* ============ SnippetCard ============ */
+
+.cos-snippet-card {
+  display: grid;
+  gap: var(--cos-space-xs);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+  text-align: left;
+  font-family: inherit;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-snippet-card:hover {
+  background: var(--cos-surface-overlay);
+}
+
+.cos-snippet-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cos-space-sm);
+}
+
+.cos-snippet-card-date {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  font-weight: 500;
+}
+
+.cos-snippet-card-relative {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-faint);
+}
+
+.cos-snippet-card-followups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.cos-snippet-card-followup {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-xs);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-secondary);
+  line-height: 1.5;
+}
+
+.cos-snippet-card-followup.is-done {
+  color: var(--cos-content-muted);
+  text-decoration: line-through;
+}
+
+.cos-snippet-card-followup-marker {
+  color: var(--cos-success);
+  font-family: var(--cos-font-family-mono);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.cos-snippet-card-followup.is-open .cos-snippet-card-followup-marker {
+  color: var(--cos-content-faint);
+}
+
+/* ============ TimeBucket ============ */
+
+.cos-time-bucket {
+  display: grid;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-raised);
+}
+
+.cos-time-bucket.tone-today {
+  background: var(--cos-tint-today);
+}
+
+.cos-time-bucket.tone-overdue {
+  background: var(--cos-tint-overdue);
+}
+
+.cos-time-bucket.tone-this-week {
+  background: var(--cos-surface-raised);
+}
+
+.cos-time-bucket.tone-soon {
+  background: var(--cos-tint-future);
+}
+
+.cos-time-bucket.tone-someday {
+  background: var(--cos-tint-past);
+}
+
+.cos-time-bucket-body {
+  display: grid;
+  gap: var(--cos-space-xs);
+}
+
+.cos-time-bucket.is-collapsed .cos-time-bucket-body {
+  display: none;
+}
+
+.cos-time-bucket-empty {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  padding: var(--cos-space-sm) 0;
+  font-style: italic;
+}

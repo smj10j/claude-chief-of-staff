@@ -1,0 +1,59 @@
+/* Parchment — warm tan light theme. */
+/* Aged-paper khaki canvas / dark-walnut accent. Inspired by old */
+/* libraries: warm, classical, easy on the eye for long sessions. */
+
+[data-theme="parchment"] {
+  /* Surfaces — warm khaki, deeper than Linen, like aged parchment. */
+  --cos-surface-canvas: #e6dcc4;
+  --cos-surface-raised: #f0e8d4;
+  --cos-surface-sunken: #d8ccac;
+  --cos-surface-overlay: #cabb96;
+
+  /* Content — deep walnut ink with comfortable contrast. */
+  --cos-content-primary: #1f1808;
+  --cos-content-secondary: #4a3e24;
+  --cos-content-muted: #6c5e3e;
+  --cos-content-faint: #8c7e5a;
+  --cos-content-inverse: #e6dcc4;
+
+  /* Borders */
+  --cos-outline-subtle: #d4c8a8;
+  --cos-outline-default: #c0b48c;
+  --cos-outline-strong: #968870;
+
+  /* Accents — dark walnut. */
+  --cos-accent: #6e3818;
+  --cos-accent-muted: rgba(110, 56, 24, 0.18);
+  --cos-accent-contrast: #ffffff;
+  --cos-info: #2c4a60;
+  --cos-success: #4a6028;
+  --cos-warning: #80551a;
+  --cos-critical: #8a2818;
+
+  /* Time-aware tints — warm and aged. */
+  --cos-tint-today: rgba(110, 56, 24, 0.05);
+  --cos-tint-past: rgba(108, 94, 62, 0.05);
+  --cos-tint-future: rgba(44, 74, 96, 0.05);
+  --cos-tint-overdue: rgba(138, 40, 24, 0.06);
+  --cos-tint-warm-flash: rgba(110, 56, 24, 0.18);
+
+  /* Status semantic tokens */
+  --cos-status-on-track: #4a6028;
+  --cos-status-at-risk: #80551a;
+  --cos-status-blocked: #8a2818;
+  --cos-status-soon-done: #2c4a60;
+  --cos-status-on-track-tint: rgba(74, 96, 40, 0.07);
+  --cos-status-at-risk-tint: rgba(128, 85, 26, 0.07);
+  --cos-status-blocked-tint: rgba(138, 40, 24, 0.07);
+  --cos-status-soon-done-tint: rgba(44, 74, 96, 0.07);
+
+  /* Hover surface */
+  --cos-surface-hover: rgba(31, 24, 8, 0.05);
+
+  /* Elevation */
+  --cos-shadow-low: 0 1px 2px rgba(42, 32, 16, 0.10);
+  --cos-shadow-med: 0 4px 12px rgba(42, 32, 16, 0.12);
+  --cos-shadow-modal: 0 20px 60px rgba(42, 32, 16, 0.20);
+
+  color-scheme: light;
+}

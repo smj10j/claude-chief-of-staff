@@ -1,0 +1,831 @@
+.cos-doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cos-space-lg);
+  max-width: 880px;
+}
+
+.cos-doc-header {
+  position: sticky;
+  top: calc(var(--cos-space-xl) * -1);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-lg);
+  padding: var(--cos-space-md) 0;
+  margin-top: calc(var(--cos-space-xl) * -1);
+  background: var(--cos-surface-canvas);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-doc-crumb {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cos-space-md);
+  min-width: 0;
+}
+
+.cos-doc-label {
+  font-size: var(--cos-font-h3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--cos-content-primary);
+  white-space: nowrap;
+}
+
+.cos-doc-path {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cos-doc-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  flex-shrink: 0;
+}
+
+
+/* Tiptap content styling — tight, dense-ish, readable */
+
+.cos-tiptap {
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-body-lg);
+  line-height: 1.6;
+}
+
+.cos-editor-toolbar {
+  /* Sticky just below the (also sticky) doc-header. DocEditor measures
+   * the header via ResizeObserver and writes its current height into
+   * --cos-doc-header-height on the .cos-doc wrapper. We subtract the
+   * doc-header's negative-top offset (xl) so the toolbar pins at the
+   * actual bottom edge of the visually-stuck header. */
+  position: sticky;
+  top: calc(var(--cos-doc-header-height, 0px) - var(--cos-space-xl));
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  margin-bottom: var(--cos-space-md);
+  font-family: var(--cos-font-family-mono);
+  font-size: 12px;
+}
+
+.cos-toolbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cos-content);
+  padding: 2px 8px;
+  min-width: 26px;
+  height: 24px;
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-toolbar-btn:hover {
+  background: var(--cos-surface);
+  border-color: var(--cos-outline-subtle);
+}
+
+.cos-toolbar-btn.is-active {
+  background: var(--cos-accent-soft, rgba(122, 162, 247, 0.18));
+  border-color: var(--cos-accent);
+  color: var(--cos-content);
+}
+
+.cos-toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cos-toolbar-btn:disabled:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
+.cos-toolbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--cos-outline-subtle);
+  margin: 0 4px;
+}
+
+.cos-annotations-panel {
+  margin: 0 0 var(--cos-space-md);
+  padding: 0;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-surface);
+}
+
+.cos-annotations-panel-toggle {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 6px 10px;
+  text-align: left;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+  color: var(--cos-content-muted);
+}
+
+.cos-annotations-panel-toggle:hover {
+  color: var(--cos-content);
+}
+
+.cos-annotations-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-annotations-panel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  font: inherit;
+}
+
+.cos-annotations-panel-row:last-child {
+  border-bottom: 0;
+}
+
+.cos-annotations-panel-row:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-annotations-panel-comment {
+  font-size: var(--cos-font-body);
+  color: var(--cos-content);
+}
+
+.cos-annotations-panel-anchor {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-family: var(--cos-font-family-mono);
+}
+
+.cos-tiptap .ProseMirror {
+  outline: none;
+  min-height: 300px;
+  padding-bottom: var(--cos-space-3xl);
+}
+
+.cos-tiptap .ProseMirror h1,
+.cos-tiptap .ProseMirror h2,
+.cos-tiptap .ProseMirror h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: var(--cos-space-xl) 0 var(--cos-space-sm);
+}
+
+.cos-tiptap .ProseMirror h1 {
+  font-size: var(--cos-font-h1);
+  line-height: var(--cos-line-h1);
+}
+
+.cos-tiptap .ProseMirror h2 {
+  font-size: var(--cos-font-h2);
+  line-height: var(--cos-line-h2);
+}
+
+.cos-tiptap .ProseMirror h3 {
+  font-size: var(--cos-font-h3);
+}
+
+.cos-tiptap .ProseMirror p {
+  margin: 0 0 var(--cos-space-md);
+}
+
+.cos-tiptap .ProseMirror ul,
+.cos-tiptap .ProseMirror ol {
+  margin: 0 0 var(--cos-space-md);
+  padding-left: var(--cos-space-xl);
+}
+
+.cos-tiptap .ProseMirror li > p {
+  margin-bottom: var(--cos-space-xs);
+}
+
+.cos-tiptap .ProseMirror code {
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: 1px 5px;
+  border-radius: var(--cos-radius-sm);
+  font-family: var(--cos-font-family-mono);
+  font-size: 0.92em;
+}
+
+.cos-tiptap .ProseMirror pre {
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  overflow-x: auto;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+}
+
+.cos-tiptap .ProseMirror pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* lowlight token classes — kept minimal, theme-agnostic. The base text
+   color comes from `pre`; we just tint a few token kinds so code is
+   readable rather than syntax-coloring every token category. */
+.cos-tiptap .ProseMirror pre code .hljs-comment,
+.cos-tiptap .ProseMirror pre code .hljs-quote {
+  color: var(--cos-text-secondary);
+  font-style: italic;
+}
+.cos-tiptap .ProseMirror pre code .hljs-keyword,
+.cos-tiptap .ProseMirror pre code .hljs-built_in,
+.cos-tiptap .ProseMirror pre code .hljs-type {
+  color: var(--cos-accent);
+}
+.cos-tiptap .ProseMirror pre code .hljs-string,
+.cos-tiptap .ProseMirror pre code .hljs-attr {
+  color: var(--cos-success, #9ece6a);
+}
+.cos-tiptap .ProseMirror pre code .hljs-number,
+.cos-tiptap .ProseMirror pre code .hljs-literal {
+  color: var(--cos-warning, #e0af68);
+}
+.cos-tiptap .ProseMirror pre code .hljs-title,
+.cos-tiptap .ProseMirror pre code .hljs-name {
+  color: var(--cos-info, #7aa2f7);
+}
+
+.cos-tiptap .ProseMirror a {
+  color: var(--cos-info);
+  text-decoration: underline;
+  text-decoration-color: rgba(122, 162, 247, 0.3);
+}
+
+.cos-tiptap .ProseMirror blockquote {
+  border-left: 3px solid var(--cos-outline-strong);
+  padding-left: var(--cos-space-md);
+  color: var(--cos-content-secondary);
+  margin: var(--cos-space-md) 0;
+}
+
+.cos-tiptap .ProseMirror hr {
+  border: 0;
+  border-top: 1px solid var(--cos-outline-subtle);
+  margin: var(--cos-space-xl) 0;
+}
+
+.cos-tiptap .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.cos-tiptap .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cos-space-sm);
+}
+
+.cos-tiptap .ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.cos-tiptap .ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.cos-tiptap .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+  accent-color: var(--cos-accent);
+}
+
+.cos-tiptap .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--cos-space-md) 0;
+  font-size: 14px;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
+.cos-tiptap .ProseMirror th,
+.cos-tiptap .ProseMirror td {
+  border: 1px solid var(--cos-outline-subtle);
+  padding: var(--cos-space-sm) var(--cos-space-md);
+  text-align: left;
+  vertical-align: top;
+  min-width: 80px;
+  position: relative;
+}
+
+.cos-tiptap .ProseMirror th {
+  background: var(--cos-surface-raised);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.cos-tiptap .ProseMirror .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(98, 189, 252, 0.12);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cos-tiptap .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--cos-content-muted);
+  text-decoration: line-through;
+}
+
+/* Annotation highlights (M2a). Read-only render; M2b adds bubble menu. */
+.ProseMirror .cos-annotation {
+  background: rgba(240, 198, 116, 0.22);
+  border-bottom: 1px dashed rgba(240, 198, 116, 0.65);
+  padding: 0 1px;
+  cursor: help;
+  border-radius: 2px;
+}
+.ProseMirror .cos-annotation-processed {
+  background: rgba(105, 176, 122, 0.18);
+  border-bottom: 1px dashed rgba(105, 176, 122, 0.5);
+  opacity: 0.85;
+}
+
+/* Annotation bubble (M2b): floating action panel near selection.
+ * Fully opaque so the underlying text never bleeds through; the
+ * accent border + drop shadow lift it cleanly above the editor. */
+.cos-annotation-bubble {
+  position: fixed;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  padding: 8px 10px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-accent);
+  border-radius: var(--cos-radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  font-size: var(--cos-font-caption);
+  /* Backdrop helps when the editor's text is dark on a similar bg.
+   * Falls back gracefully on browsers that don't support it. */
+  -webkit-backdrop-filter: saturate(120%);
+  backdrop-filter: saturate(120%);
+}
+
+.cos-annotation-bubble .cos-btn {
+  font-size: var(--cos-font-caption);
+  padding: 4px 10px;
+}
+
+.cos-annotation-bubble-comment {
+  color: var(--cos-content-primary);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+.cos-annotation-bubble-input {
+  font-family: inherit;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 4px 8px;
+  min-width: 280px;
+}
+
+.cos-annotation-bubble-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+  background: var(--cos-surface-base);
+}
+
+/* ============ Link dialog ============ */
+
+.cos-link-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  z-index: 100;
+  animation: cos-fade var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-link-dialog {
+  width: min(520px, 90vw);
+  background: var(--cos-surface-overlay);
+  border: 1px solid var(--cos-outline-strong);
+  border-radius: var(--cos-radius-lg);
+  box-shadow: var(--cos-shadow-modal);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-link-dialog-head {
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-link-dialog-title {
+  font-size: var(--cos-font-body);
+  font-weight: 600;
+  color: var(--cos-content-primary);
+}
+
+.cos-link-dialog-body {
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  display: grid;
+  gap: var(--cos-space-sm);
+}
+
+.cos-link-dialog-field {
+  display: grid;
+  gap: 4px;
+}
+
+.cos-link-dialog-label {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cos-link-dialog-input {
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: var(--cos-radius-sm);
+}
+
+.cos-link-dialog-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+.cos-link-dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-sm);
+  padding: var(--cos-space-md) var(--cos-space-lg);
+  border-top: 1px solid var(--cos-outline-subtle);
+}
+
+.cos-link-dialog-spacer {
+  flex: 1;
+}
+
+.cos-link-dialog-remove {
+  color: var(--cos-critical);
+}
+
+
+.cos-findbar {
+  position: sticky;
+  top: calc(var(--cos-doc-header-height, 0px) + var(--cos-toolbar-height, 0px));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  padding: 6px 10px;
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  margin: var(--cos-space-sm) 0;
+  width: fit-content;
+  max-width: 100%;
+  align-self: flex-end;
+  margin-left: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.cos-findbar-input {
+  background: var(--cos-surface-base);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: var(--cos-radius-sm);
+  min-width: 200px;
+}
+
+.cos-findbar-input:focus {
+  outline: none;
+  border-color: var(--cos-accent);
+}
+
+.cos-findbar-count {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  min-width: 64px;
+  text-align: center;
+}
+
+.cos-findbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cos-content-muted);
+  padding: 4px;
+  border-radius: var(--cos-radius-sm);
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.cos-findbar-btn:hover:not(:disabled) {
+  background: var(--cos-surface-base);
+  color: var(--cos-content-primary);
+}
+
+.cos-findbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+.cos-doc-wordcount {
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cos-outline-panel {
+  margin: 0 0 var(--cos-space-md);
+  padding: 0;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  background: var(--cos-surface);
+}
+
+.cos-outline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  background: transparent;
+  border: 0;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  cursor: pointer;
+}
+
+.cos-outline-toggle:hover {
+  color: var(--cos-content-primary);
+}
+
+.cos-outline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--cos-outline-subtle);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.cos-outline-row {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 4px 8px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-secondary);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cos-outline-row:last-child {
+  border-bottom: 0;
+}
+
+.cos-outline-row:hover {
+  background: var(--cos-surface-raised);
+  color: var(--cos-content-primary);
+}
+
+.cos-editor-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-editor-shell.is-focus-mode {
+  /* Push the writing surface up since toolbar/outline/annotations are
+   * gone, and widen the prose column a hair for breathing room. */
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.cos-focus-exit {
+  position: absolute;
+  top: var(--cos-space-md);
+  right: var(--cos-space-md);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-muted);
+  border-radius: var(--cos-radius-sm);
+  padding: 4px 10px;
+  font-size: var(--cos-font-caption);
+  cursor: pointer;
+  z-index: 6;
+}
+
+.cos-focus-exit:hover {
+  color: var(--cos-content-primary);
+}
+
+.cos-toolbar-headingpicker {
+  position: relative;
+  display: inline-flex;
+}
+
+.cos-toolbar-headingpicker-btn {
+  min-width: 56px;
+}
+
+.cos-toolbar-headingpicker-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  z-index: 12;
+}
+
+.cos-toolbar-headingpicker-item {
+  background: transparent;
+  border: 0;
+  padding: 6px 12px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--cos-content-primary);
+}
+
+.cos-toolbar-headingpicker-item:hover {
+  background: var(--cos-surface-raised);
+}
+
+.cos-toolbar-headingpicker-item.is-active {
+  color: var(--cos-accent);
+  font-weight: 500;
+}
+
+.cos-doc-wordcount-wrap {
+  position: relative;
+}
+
+.cos-doc-wordcount {
+  background: transparent;
+  border: 0;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cos-doc-wordcount:hover {
+  color: var(--cos-content-primary);
+}
+
+.cos-doc-wordcount-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--cos-surface-overlay, var(--cos-surface-raised));
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  padding: var(--cos-space-md);
+  min-width: 220px;
+  z-index: 12;
+}
+
+.cos-doc-wordcount-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--cos-space-md);
+  margin: 0;
+  font-size: var(--cos-font-caption);
+}
+
+.cos-doc-wordcount-grid dt {
+  color: var(--cos-content-muted);
+}
+
+.cos-doc-wordcount-grid dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--cos-content-primary);
+}
+
+.cos-annotations-panel-filters {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-base);
+}
+
+.cos-annotations-panel-filter {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-caption);
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.cos-annotations-panel-filter:hover {
+  color: var(--cos-content-primary);
+}
+
+.cos-annotations-panel-filter.is-active {
+  background: var(--cos-accent-muted);
+  color: var(--cos-accent);
+}
+
+.cos-annotations-panel-empty {
+  margin: 0;
+  padding: var(--cos-space-md);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  text-align: center;
+}
+
+.cos-annotations-panel-row.is-processed {
+  opacity: 0.55;
+}
+
+/* Toolbar density (B7-CP29). Compact tightens padding and shrinks
+ * the longer-text buttons so the toolbar stays one row on narrower
+ * windows. */
+.cos-editor-toolbar-compact {
+  padding: 4px 6px;
+  gap: 2px;
+}
+
+.cos-editor-toolbar-compact .cos-toolbar-btn {
+  padding: 2px 6px;
+  height: 22px;
+  min-width: 22px;
+  font-size: 11px;
+}
+
+.cos-editor-toolbar-compact .cos-toolbar-headingpicker-btn {
+  min-width: 48px;
+}
+
+.cos-editor-toolbar-compact .cos-toolbar-sep {
+  height: 14px;
+  margin: 0 2px;
+}

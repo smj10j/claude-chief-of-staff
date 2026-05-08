@@ -1,0 +1,169 @@
+/* HTML editor — the rendered preview wants real estate, so override
+   the default 880px doc max-width and stretch to the surface width. */
+.cos-html-doc {
+  max-width: none;
+}
+
+/* The shell sets its own height so the panes inside have something to
+   fill. main-zone above us is overflow:auto, so an explicit viewport-
+   relative height keeps the editor body in the visible area without
+   relying on a flex chain back to the surface root. */
+.cos-html-shell {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 220px);
+  min-height: 480px;
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-md);
+  background: var(--cos-surface-canvas);
+  overflow: hidden;
+}
+
+.cos-html-toolbar {
+  display: flex;
+  gap: var(--cos-space-xs);
+  padding: var(--cos-space-xs) var(--cos-space-sm);
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  background: var(--cos-surface-raised, var(--cos-surface-canvas));
+}
+
+.cos-html-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cos-space-xs);
+  padding: 4px 10px;
+  font-size: var(--cos-font-caption);
+  font-weight: 500;
+  color: var(--cos-content-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--cos-radius-sm);
+  cursor: pointer;
+}
+
+.cos-html-mode-btn:hover {
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-hover, rgba(0, 0, 0, 0.04));
+}
+
+.cos-html-mode-btn.is-active {
+  color: var(--cos-content-primary);
+  background: var(--cos-surface-active, var(--cos-surface-raised));
+  border-color: var(--cos-outline-subtle);
+}
+
+.cos-html-panes {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Source pane stays mounted in both modes (display:none in preview
+   keeps CodeMirror's view alive across toggles). Split mode is a
+   user-adjustable divide via .cos-html-divider; preview-only
+   collapses the source pane and divider entirely. The width is
+   driven by --cos-html-source-width set inline on the panes wrapper. */
+.cos-html-source {
+  flex: 0 0 var(--cos-html-source-width, 50%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-html-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The drag handle. Sits as a flex sibling between source + preview
+   so its position naturally tracks the panes' shared boundary. The
+   visible bar is 1px (the source pane's right border) — the 6px hit
+   area straddles it via negative margins so the click target is
+   generous without changing layout math. */
+.cos-html-divider {
+  flex: 0 0 6px;
+  margin: 0 -3px;
+  position: relative;
+  z-index: 1;
+  cursor: col-resize;
+  background: transparent;
+  border-left: 1px solid var(--cos-outline-subtle);
+  transition: background var(--cos-motion-quick, 120ms)
+    var(--cos-motion-ease, ease);
+}
+
+.cos-html-divider:hover,
+.cos-html-divider:focus-visible,
+.cos-html-divider:active {
+  background: var(--cos-accent-muted);
+  outline: none;
+}
+
+.cos-html-shell.mode-preview .cos-html-source,
+.cos-html-shell.mode-preview .cos-html-divider {
+  display: none;
+}
+
+.cos-html-shell.mode-preview .cos-html-preview {
+  flex: 1 1 100%;
+}
+
+.cos-html-cm {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  font-family: var(--cos-font-family-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* CodeMirror's editor fills the .cos-html-cm container. */
+.cos-html-cm .cm-editor {
+  height: 100%;
+}
+
+.cos-html-cm .cm-scroller {
+  font-family: inherit;
+}
+
+.cos-html-cm .cm-gutters {
+  background: var(--cos-surface-canvas);
+  border-right: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-muted);
+}
+
+.cos-html-cm .cm-activeLine {
+  background: var(--cos-surface-hover, rgba(0, 0, 0, 0.03));
+}
+
+.cos-html-cm .cm-activeLineGutter {
+  background: var(--cos-surface-hover, rgba(0, 0, 0, 0.03));
+  color: var(--cos-content-primary);
+}
+
+/* Flash applied to the destination .cm-line when the source cursor
+   was moved by a click in the preview pane. Brighter than the active-
+   line indicator so it's obvious where the cursor jumped to, fading
+   out over ~1.2s. */
+.cos-html-cm .cm-line.cos-cm-flash {
+  animation: cosCmFlash 1.2s ease-out;
+}
+
+@keyframes cosCmFlash {
+  0% {
+    background: rgba(99, 102, 241, 0.32);
+    box-shadow: inset 2px 0 0 rgba(99, 102, 241, 0.9);
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 2px 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+.cos-html-preview iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}

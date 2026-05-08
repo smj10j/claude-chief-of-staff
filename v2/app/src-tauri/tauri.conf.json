@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Chief of Staff",
+  "version": "0.1.0",
+  "identifier": "com.smj10j.chiefofstaff",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Chief of Staff",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "copyright": "© Stephen Johnson — built with Claude Code",
+    "category": "Productivity",
+    "shortDescription": "Chief of Staff",
+    "longDescription": "Chief of Staff — built by Stephen Johnson with Claude Code.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../starter-data": "starter-data",
+      "../../../bin/calendar/eventkit.sh": "bin/calendar/eventkit.sh",
+      "../../../bin/calendar/eventkit.swift": "bin/calendar/eventkit.swift",
+      "../../../bin/reminders": "bin/reminders",
+      "../../../bin/weekly-review": "bin/weekly-review",
+      "../../../bin/schedule": "bin/schedule"
+    },
+    "macOS": {
+      "signingIdentity": "Stephen Johnson - Chief of Staff (Dev)"
+    },
+    "createUpdaterArtifacts": "v1Compatible"
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/smj10j/chief-of-staff/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg4RTVBOEVCNjRFM0IzM0YKUldRL3MrTms2NmpsaUZQQXZ5U1NRNFVPQWxsdnVsbHY4WSsxMjBhVDk3NE5HUkYwSms2NkI4Z00K",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

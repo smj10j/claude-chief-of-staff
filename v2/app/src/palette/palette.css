@@ -1,0 +1,191 @@
+.cos-palette-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 100;
+  animation: cos-fade var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-palette {
+  width: min(560px, 90vw);
+  background: var(--cos-surface-overlay);
+  border: 1px solid var(--cos-outline-strong);
+  border-radius: var(--cos-radius-lg);
+  box-shadow: var(--cos-shadow-modal);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-palette-input {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--cos-outline-subtle);
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-body-lg);
+  font-family: var(--cos-font-family);
+  padding: var(--cos-space-lg) var(--cos-space-xl);
+  outline: none;
+}
+
+.cos-palette-input::placeholder {
+  color: var(--cos-content-muted);
+}
+
+/* Quick capture reuses the palette's overlay style — same modal vocab,
+ * different content. Lives in this file so a single overlay theming
+ * token (z-index, scrim color) covers both. */
+
+.cos-quickcapture-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  z-index: 100;
+  animation: cos-fade var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-quickcapture {
+  width: min(560px, 90vw);
+  background: var(--cos-surface-overlay);
+  border: 1px solid var(--cos-outline-strong);
+  border-radius: var(--cos-radius-lg);
+  box-shadow: var(--cos-shadow-modal);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cos-quickcapture-input {
+  background: transparent;
+  border: 0;
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-body-lg);
+  font-family: var(--cos-font-family);
+  padding: var(--cos-space-lg) var(--cos-space-xl);
+  outline: none;
+}
+
+.cos-quickcapture-input::placeholder {
+  color: var(--cos-content-muted);
+}
+
+.cos-quickcapture-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cos-space-md);
+  padding: var(--cos-space-sm) var(--cos-space-xl);
+  border-top: 1px solid var(--cos-outline-subtle);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  min-height: 32px;
+}
+
+.cos-quickcapture-meta kbd {
+  font-family: var(--cos-font-family-mono);
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  border-radius: var(--cos-radius-sm);
+  padding: 0 4px;
+  font-size: 11px;
+}
+
+.cos-quickcapture-status {
+  font-style: italic;
+}
+
+.cos-quickcapture-error {
+  color: var(--cos-danger, #f7768e);
+}
+
+.cos-quickcapture-warn {
+  color: var(--cos-warning, #e0af68);
+}
+
+.cos-palette-results {
+  list-style: none;
+  margin: 0;
+  padding: var(--cos-space-xs) 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.cos-palette-row {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  column-gap: var(--cos-space-md);
+  align-items: center;
+  padding: var(--cos-space-sm) var(--cos-space-xl);
+  cursor: pointer;
+  font-size: var(--cos-font-body);
+  color: var(--cos-content-primary);
+}
+
+.cos-palette-row.is-active {
+  background: var(--cos-surface-raised);
+}
+
+.cos-palette-kind {
+  font-size: var(--cos-font-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cos-content-muted);
+}
+
+.cos-palette-row.is-active .cos-palette-kind {
+  color: var(--cos-accent);
+}
+
+.cos-palette-label {
+  font-weight: 500;
+}
+
+.cos-palette-hint {
+  grid-column: 2;
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  margin-top: 2px;
+}
+
+.cos-palette-shortcut {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-content-muted);
+  border: 1px solid var(--cos-outline-default);
+  border-radius: var(--cos-radius-sm);
+  padding: 1px 6px;
+}
+
+/* PRD-v2-117 §4.9 / criterion #15 — "Tab N" chip on palette rows
+ * that switch to an existing open tab. Same shape as the shortcut
+ * chip but tinted with the accent so it reads as "this is in your
+ * workspace, not a fresh open." */
+.cos-palette-tab-chip {
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-caption);
+  color: var(--cos-accent);
+  background: var(--cos-accent-muted);
+  border: 1px solid var(--cos-accent);
+  border-radius: var(--cos-radius-sm);
+  padding: 1px 6px;
+}
+
+.cos-palette-empty {
+  padding: var(--cos-space-xl);
+  text-align: center;
+  color: var(--cos-content-muted);
+  font-size: var(--cos-font-body);
+}
+
+@keyframes cos-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
