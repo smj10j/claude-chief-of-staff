@@ -1,7 +1,6 @@
 // Shared data access module for task database.
-// Single source of truth for all SQLite operations.
-// Both ui/server.js and bin/db/task-cli.js import this module.
-// Neither consumer writes SQL directly.
+// Used by bin/db/task-cli.js — single source of truth for SQLite ops.
+// Consumer never writes SQL directly.
 
 const { DatabaseSync } = require('node:sqlite');
 const fs = require('fs');
@@ -10,9 +9,6 @@ const path = require('path');
 let ROOT = path.resolve(__dirname, '..', '..');
 let DB_PATH = path.join(ROOT, 'data', 'cos.db');
 const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
-
-// Data migration version - tracked in schema_migrations
-const DATA_MIGRATION_VERSION = 1000;
 
 let db = null;
 
@@ -82,234 +78,12 @@ function runMigrations(database) {
   }
 }
 
-function hasDataMigration(database) {
-  ensureSchemaTable(database);
-  const row = database.prepare(
-    'SELECT version FROM schema_migrations WHERE version = ?'
-  ).get(DATA_MIGRATION_VERSION);
-  return !!row;
-}
-
-function markDataMigration(database) {
-  database.prepare(
-    'INSERT OR IGNORE INTO schema_migrations (version, description) VALUES (?, ?)'
-  ).run(DATA_MIGRATION_VERSION, 'yaml-to-sqlite data migration');
-}
-
 // --- Initialization (called on startup) ---
 
 function initialize() {
   const database = getDb();
   runMigrations(database);
-
-  // Check if YAML data migration is needed
-  const yamlExists = fs.existsSync(path.join(ROOT, 'data', 'files', 'tasks.yaml'));
-  const migrated = hasDataMigration(database);
-
-  if (yamlExists && !migrated) {
-    try {
-      migrateFromYaml(database);
-    } catch (err) {
-      console.error('[migration] YAML migration failed:', err.message);
-      console.error('[migration] Deleting database for clean retry on next startup.');
-      close();
-      try { fs.unlinkSync(DB_PATH); } catch (e) { /* ignore */ }
-      try { fs.unlinkSync(DB_PATH + '-wal'); } catch (e) { /* ignore */ }
-      try { fs.unlinkSync(DB_PATH + '-shm'); } catch (e) { /* ignore */ }
-      throw new Error('YAML migration failed: ' + err.message);
-    }
-  }
-
   return database;
-}
-
-// --- YAML migration ---
-
-function migrateFromYaml(database) {
-  // js-yaml lives in ui/node_modules (installed by start.sh)
-  const yaml = require(path.join(ROOT, 'ui', 'node_modules', 'js-yaml'));
-  const FILES_DIR = path.join(ROOT, 'data', 'files');
-  console.log('\nMigrating task data from YAML to SQLite...');
-
-  const counts = { active: 0, archived: 0, recurring: 0, tags: 0, links: 0, errors: 0 };
-
-  // Load YAML files
-  const tasksPath = path.join(FILES_DIR, 'tasks.yaml');
-  const archivePath = path.join(FILES_DIR, 'tasks-archive.yaml');
-  const recurringPath = path.join(FILES_DIR, 'recurring.yaml');
-
-  let activeTasks = [];
-  let archivedTasks = [];
-  let recurringTasks = [];
-
-  try {
-    const data = yaml.load(fs.readFileSync(tasksPath, 'utf8'));
-    activeTasks = (data?.tasks || []).filter(t => t.status !== 'done');
-    // Tasks marked done in tasks.yaml should go to archive
-    const doneTasks = (data?.tasks || []).filter(t => t.status === 'done');
-    archivedTasks = archivedTasks.concat(doneTasks.map(t => ({
-      ...t,
-      completed: t.completed || new Date().toISOString().slice(0, 10),
-    })));
-  } catch (e) { /* no tasks.yaml */ }
-
-  try {
-    const data = yaml.load(fs.readFileSync(archivePath, 'utf8'));
-    archivedTasks = archivedTasks.concat(data?.archived || []);
-  } catch (e) { /* no archive */ }
-
-  try {
-    const data = yaml.load(fs.readFileSync(recurringPath, 'utf8'));
-    recurringTasks = data?.recurring || [];
-  } catch (e) { /* no recurring */ }
-
-  // Insert in a transaction
-  const insertTask = database.prepare(`
-    INSERT OR IGNORE INTO tasks (id, title, status, priority, due, project, notes, created_at, updated_at, is_archived, completed_at, archived_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const insertTag = database.prepare('INSERT OR IGNORE INTO task_tags (task_id, tag) VALUES (?, ?)');
-  const insertLink = database.prepare('INSERT OR IGNORE INTO task_links (task_id, url) VALUES (?, ?)');
-  const insertRecurring = database.prepare(`
-    INSERT OR IGNORE INTO recurring_tasks (id, title, cadence, priority, project, notes, tags, is_archived, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const now = new Date().toISOString();
-
-  database.exec('BEGIN');
-  try {
-    // Active tasks
-    for (const task of activeTasks) {
-      const notes = task.notes ? String(task.notes).trim() : null;
-      insertTask.run(
-        task.id, task.title, task.status || 'todo', task.priority || 'medium',
-        toDateStr(task.due), task.project || null, notes,
-        now, now, 0, null, null
-      );
-      for (const tag of (task.tags || [])) {
-        insertTag.run(task.id, tag);
-        counts.tags++;
-      }
-      for (const url of (task.links || [])) {
-        insertLink.run(task.id, url);
-        counts.links++;
-      }
-      counts.active++;
-    }
-
-    // Archived tasks
-    for (const task of archivedTasks) {
-      const notes = task.notes ? String(task.notes).trim() : null;
-      // Normalize status: 'dropped' and other non-standard statuses become 'todo' (archived without completing)
-      let status = task.status || 'done';
-      let completedAt = toDateStr(task.completed);
-      if (!['todo', 'in-progress', 'done'].includes(status)) {
-        status = 'todo';
-        completedAt = null;
-      }
-      insertTask.run(
-        task.id, task.title, status, task.priority || 'medium',
-        toDateStr(task.due), task.project || null, notes,
-        now, now, 1, completedAt, now
-      );
-      for (const tag of (task.tags || [])) {
-        insertTag.run(task.id, tag);
-        counts.tags++;
-      }
-      for (const url of (task.links || [])) {
-        insertLink.run(task.id, url);
-        counts.links++;
-      }
-      counts.archived++;
-    }
-
-    // Recurring tasks
-    for (const task of recurringTasks) {
-      const notes = task.notes ? String(task.notes).trim() : null;
-      const tags = task.tags ? JSON.stringify(task.tags) : null;
-      insertRecurring.run(
-        task.id, task.title, task.cadence, task.priority || 'medium',
-        task.project || null, notes, tags, 0, now, now
-      );
-      counts.recurring++;
-    }
-
-    database.exec('COMMIT');
-  } catch (err) {
-    database.exec('ROLLBACK');
-    throw err;
-  }
-
-  // Mark data migration as complete
-  markDataMigration(database);
-
-  // Verify
-  const verification = verifyMigration(database, activeTasks, archivedTasks, recurringTasks);
-  if (!verification.ok) {
-    throw new Error('Verification failed: ' + JSON.stringify(verification.errors));
-  }
-
-  // Rename YAML files to .bak
-  const filesToRename = [
-    [tasksPath, tasksPath + '.bak'],
-    [archivePath, archivePath + '.bak'],
-    [recurringPath, recurringPath + '.bak'],
-  ];
-  for (const [src, dst] of filesToRename) {
-    if (fs.existsSync(src)) {
-      fs.renameSync(src, dst);
-    }
-  }
-
-  console.log(`  Active tasks:    ${counts.active} migrated`);
-  console.log(`  Archived tasks:  ${counts.archived} migrated`);
-  console.log(`  Recurring tasks: ${counts.recurring} migrated`);
-  console.log(`  Tags:            ${counts.tags} migrated`);
-  console.log(`  Links:            ${counts.links} migrated`);
-  console.log(`  Errors:           ${counts.errors}`);
-  console.log('  Verification: OK (all data matches)');
-  console.log('  Original files renamed to .bak\n');
-}
-
-function verifyMigration(database, activeTasks, archivedTasks, recurringTasks) {
-  const errors = [];
-
-  // Check active task count
-  const dbActive = database.prepare(
-    'SELECT COUNT(*) as count FROM tasks WHERE is_archived = 0'
-  ).get();
-  if (dbActive.count !== activeTasks.length) {
-    errors.push(`Active count mismatch: YAML=${activeTasks.length}, DB=${dbActive.count}`);
-  }
-
-  // Check archived task count
-  const dbArchived = database.prepare(
-    'SELECT COUNT(*) as count FROM tasks WHERE is_archived = 1'
-  ).get();
-  if (dbArchived.count !== archivedTasks.length) {
-    errors.push(`Archived count mismatch: YAML=${archivedTasks.length}, DB=${dbArchived.count}`);
-  }
-
-  // Check recurring task count
-  const dbRecurring = database.prepare(
-    'SELECT COUNT(*) as count FROM recurring_tasks'
-  ).get();
-  if (dbRecurring.count !== recurringTasks.length) {
-    errors.push(`Recurring count mismatch: YAML=${recurringTasks.length}, DB=${dbRecurring.count}`);
-  }
-
-  // Spot-check: verify each active task exists with correct title
-  for (const task of activeTasks) {
-    const row = database.prepare('SELECT title FROM tasks WHERE id = ?').get(task.id);
-    if (!row) {
-      errors.push(`Missing active task: ${task.id}`);
-    } else if (row.title !== task.title) {
-      errors.push(`Title mismatch for ${task.id}: YAML="${task.title}", DB="${row.title}"`);
-    }
-  }
-
-  return { ok: errors.length === 0, errors };
 }
 
 // --- Helpers ---
@@ -364,13 +138,6 @@ function isOverdue(task) {
     return task.due < today;
   }
   return task.due < `${today} ${localTimeStr(now)}`;
-}
-
-// Legacy alias kept for YAML migration code path
-function toDateStr(val) {
-  if (!val) return null;
-  if (val instanceof Date) return localDateStr(val);
-  return String(val);
 }
 
 // --- ID generation ---

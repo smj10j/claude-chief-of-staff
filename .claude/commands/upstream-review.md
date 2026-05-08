@@ -1,5 +1,7 @@
 # Upstream Review
 
+> **Status: scheduled for rework as `release-review` (rollout plan task 2.6).** The current "diff against the public template" model still works for the dev-fork pattern but doesn't fit the v2 distribution model where main → tagged release → packaged .dmg → silent updater. Until the rework lands, this skill is most useful as a quality gate before tagging a release: find changes that aren't safe to ship (personal names baked into shareable docs, hard-coded user-specific paths, etc.). See `cos-dev/implementations/installation-rollout.md` for the migration plan.
+
 Review changes in this personal instance and identify what can be generalized back to the template repository.
 
 **Upstream repo:** `https://github.com/smj10j/claude-chief-of-staff.git`
@@ -59,11 +61,10 @@ This surfaces every file that differs, including static assets (CSS, HTML), buil
 - `.gitignore` — any additions
 
 **Code files** (often generalizable — these are just as important as config/docs):
-- `ui/start.sh` — server lifecycle management (nvm, start/stop, port checking)
-- `ui/server.js` — API endpoints, task integration, server logic
-- `ui/build.js` — client bundle build script
-- `ui/src/*.js` — all frontend source files (editor, main, toolbar, search, annotations, tasks)
-- `ui/public/` — HTML shell, CSS, static assets
+- `v2/app/src/` — React/TypeScript frontend (Shell, surfaces, editor, palette, theme)
+- `v2/app/src-tauri/src/` — Rust backend (Tauri commands, content/task IPC, plugin runtime)
+- `v2/app/src-tauri/tauri.conf.json` — bundle config, capabilities
+- `v2/app/scripts/` — build / signing helpers
 - `bin/db/task-db.js` — shared data access module
 - `bin/db/task-cli.js` — CLI implementation
 - `bin/db/task-cli.sh` — nvm-aware shell wrapper

@@ -11,15 +11,15 @@ Engineering managers, tech leads, and anyone who manages people + projects and w
 ## What it does
 
 - **Task tracking** via SQLite database with a CLI — priorities, due dates, projects, and tags
-- **1:1 prep and digest** — reads persistent context about each person, researches recent activity, generates session agendas. After: digests notes, updates READMEs, proposes task updates
+- **1:1 prep and digest** — reads persistent context + past sessions + Slack activity, generates session agendas. After the meeting, digests notes into structured outcomes and follow-ups
 - **Meeting prep** — same pattern for recurring team meetings and forums
 - **Project lifecycle** — tracks active projects from start to archive
 - **Comms drafting** — learns your writing style and drafts messages in your voice
 - **Daily briefings** — cross-references your tasks, calendar, and projects to recommend what to prioritize and which meetings matter most
-- **Weekly review** — automated Friday review: task triage, project health, session compaction, next week preview. Can run unattended via launchd
-- **Session compaction** — keeps context window manageable by compacting older sessions into structured summaries while preserving all information in archives
-- **Overdue task notifications** — daily launchd agent pushes overdue tasks to Apple Reminders for phone alerts
-- **Leveling assessments** — IC leveling against your engineering competency framework
+- **Weekly review** — Friday GTD review: triage overdue tasks, check project health, compact old sessions, preview next week. Output persisted for Monday reference
+- **Session compaction** — automatically compresses old session files to structured summaries while preserving coaching signals. Originals archived for search
+- **Overdue notifications** — pushes overdue tasks to your phone via Apple Reminders
+- **Leveling assessments** — IC candidate leveling against your company's competency framework
 - **GTD workflow** — inbox capture, processing, next actions, waiting-for, someday/maybe
 
 ## Philosophy
@@ -68,6 +68,41 @@ Once you're set up, try:
 
 </details>
 
+### Set up automation
+
+Two background agents run on schedules via macOS launchd. Both are optional but recommended — they keep the system healthy without you having to remember.
+
+**Overdue task notifications** (daily at 8 AM):
+```bash
+bash bin/reminders/overdue-notifier-setup.sh install
+```
+Checks for overdue tasks every morning and creates Apple Reminders with alarms so they push to your phone. Read-only — never modifies the task database. You'll be prompted to grant Reminders access on first run. See `bin/reminders/README.md` for full docs.
+
+**Weekly review** (Fridays at 8 PM):
+```bash
+bash bin/weekly-review/weekly-review-setup.sh install
+```
+Runs Claude Code non-interactively every Friday evening. Triages overdue tasks, checks project health, compacts old session files, and saves a review artifact to `data/files/areas/weekly-reviews/sessions/`. Read the output Monday morning to orient your week.
+
+Both agents:
+```bash
+# Check status
+bash bin/reminders/overdue-notifier-setup.sh status
+bash bin/weekly-review/weekly-review-setup.sh status
+
+# Change schedule
+NOTIFIER_HOUR=9 bash bin/reminders/overdue-notifier-setup.sh install   # 9 AM
+REVIEW_HOUR=19 bash bin/weekly-review/weekly-review-setup.sh install   # 7 PM
+
+# Uninstall
+bash bin/reminders/overdue-notifier-setup.sh uninstall
+bash bin/weekly-review/weekly-review-setup.sh uninstall
+
+# Logs
+cat data/logs/overdue-notifier.log
+cat data/logs/weekly-review.log
+```
+
 ## Commands
 
 Custom slash commands live in `.claude/commands/`. These are the built-in ones:
@@ -76,132 +111,120 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 |---------|-------------|
 | `/init` | Interactive onboarding - populates CLAUDE.md with your role, people, teams, and creates folder structure |
 | `/morning-briefing` | Prioritized daily briefing: calendar, tasks, 1:1 prep, signals, project milestones |
-| `/weekly-review` | Friday GTD review: task triage, project health, session compaction, next week preview. Persists output. Runs unattended via launchd |
-| `/compact-sessions` | Compact old session files into structured summaries. Archives originals. Keeps last 3 full-fidelity per person/meeting |
-| `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last session, gathers context via integrations, generates session file with source links |
-| `/digest-meeting [name]` | Digest notes from a completed 1:1 or meeting: reads shared doc + raw notes, structures session file, updates READMEs, proposes task updates |
+| `/weekly-review` | Friday GTD review: triage overdue tasks, check project health, compact old sessions, preview next week. Persists output to `data/files/areas/weekly-reviews/` |
+| `/prep-1on1 [name]` | Full 1:1 prep workflow: reads README + last sessions, gathers Slack/task context, generates session file with shared agenda |
+| `/digest-meeting [name]` | Digest notes from a completed 1:1 or meeting: reads shared Google Doc + raw notes, structures session notes, updates READMEs, proposes task updates |
+| `/compact-sessions` | Compact old session files to structured summaries, archive originals. Runs automatically in `/weekly-review`, or standalone for ad-hoc use |
 | `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
+| `/review-reminders` | Import pending items from Apple Reminders into the task database. Also runs during `/morning-briefing` |
+| `/level-candidate` | IC leveling assessment against the engineering competency framework |
 | `/review-launch-tracker` | Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches |
-| `/level-candidate [name]` | IC leveling assessment against your engineering leveling framework |
-| `/review-reminders` | Import pending items from Apple Reminders into the task database. Reads from a configured list, lets you selectively import |
-| `/ui` | Start the Chief of Staff web UI — a WYSIWYG markdown editor at localhost:3737 |
 | `/publish-to-gdoc` | Render a markdown file into a formatted Google Doc (requires google-workspace MCP) |
-| `/process-ui-annotations [file]` | Process annotations left in the web UI — Claude reads your instructions and applies changes |
+| `/process-ui-annotations [file]` | Process inline annotations dropped on a markdown file (`<file>.annotations.json` sidecar) — Claude reads each instruction and applies the change |
 | `/task-export` | Export the task database to YAML files for backup or debugging |
 | `/internal-consistency-check` | Audit repo for internal inconsistencies: missing READMEs, mismatched listings, stale sessions |
 | `/upstream-review` | Review local changes and port generalizable ones back to the template repo (see [Contributing back](#contributing-back)) |
 
 You can add your own commands by creating `.md` files in `.claude/commands/`.
 
-## Set up automation
+## Desktop app (v2)
 
-The system includes two macOS launchd agents for unattended operation. Both are optional.
+A native desktop app — Tauri 2 with a React/TypeScript frontend and Rust backend — provides a WYSIWYG editing surface over the same content tree. Source lives in `v2/app/`.
 
-### Overdue task notifications (daily, 8 AM)
-
-Checks the task DB for overdue items and pushes them to your phone via Apple Reminders.
-
-```bash
-bash bin/reminders/overdue-notifier-setup.sh install     # Enable (daily at 8 AM)
-bash bin/reminders/overdue-notifier-setup.sh status       # Check if running
-bash bin/reminders/overdue-notifier.sh --dry-run          # Preview without creating reminders
-NOTIFIER_HOUR=9 bash bin/reminders/overdue-notifier-setup.sh install  # Change time
-bash bin/reminders/overdue-notifier-setup.sh uninstall    # Disable
-```
-
-### Weekly review (Friday, 8 PM)
-
-Runs the full `/weekly-review` command via Claude Code CLI in non-interactive mode. Handles task triage, project health, session compaction, and persists a dated review file.
-
-```bash
-bash bin/weekly-review/weekly-review-setup.sh install     # Enable (Fridays at 8 PM)
-bash bin/weekly-review/weekly-review-setup.sh status       # Check if running
-bash bin/weekly-review/weekly-review-runner.sh             # Test run now
-REVIEW_HOUR=19 bash bin/weekly-review/weekly-review-setup.sh install  # Change time
-bash bin/weekly-review/weekly-review-setup.sh uninstall    # Disable
-```
-
-Output is saved to `data/files/areas/weekly-reviews/sessions/YYYY-MM-DD.md`.
-
-## Web UI
-
-The system includes a local web UI for browsing and editing your files in a Google Docs-like experience. Instead of reading markdown in VS Code, you get a WYSIWYG rich text editor with:
-
-- Floating toolbar (select text for formatting)
-- Auto-save (changes write back to your markdown files)
-- Sidebar navigation for all people, meetings, projects, and reference files
-- Collapsible sidebar groups — major sections expanded, nested items (sessions, project files) collapsed by default
-- **Cmd+K quick search** — command palette for fuzzy file search with keyboard navigation
-- Task dashboard
-- Dark mode (follows system preference)
-- Cmd+click internal links to navigate between files
-- Live reload — changes from Claude or the filesystem appear automatically
+- **Tabbed workspace** — Cmd+T new tab, Cmd+W close, Cmd+1..9 switch, Cmd+Shift+T reopen, drag to reorder, pin to keep something parked, right-click for the action menu, ⌘K palette indexes open tabs
+- **WYSIWYG editor** with floating toolbar, auto-save, table support, code blocks, internal links
+- **Sidebar** with all people, meetings, projects, areas, recents, and pinned docs
+- **Cmd+K command palette** — fuzzy search for files, people, tasks, projects, and slash-command actions
+- **Task dashboard, calendar, ops + velocity surfaces, planning views** — see `cos-dev/PRDs/v2/` for the feature surface
+- **Themes** — light/dark, multiple palettes, density + text-size controls
+- **Live reload** — changes Claude makes to files on disk show up instantly
 
 ### Annotations
 
-The UI supports inline annotations for collaborating with Claude asynchronously:
+Drop inline instructions on a markdown file for Claude to act on later — a two-way collaboration surface:
 
-1. **Select text** in the editor and click the pencil icon in the floating toolbar
+1. **Select text** in the editor and add an annotation
 2. **Type an instruction** — what you want Claude to do with that section (rewrite, expand, research, restructure, etc.)
-3. The text highlights in amber. Annotations **persist immediately** — navigate away and they'll still be there when you come back.
-4. Click **"Process with Claude"** in the header to have Claude read your annotations and apply the changes, streaming progress in a modal overlay.
+3. The text highlights and the instruction is saved to a `<file>.annotations.json` sidecar next to the markdown
+4. Run `/process-ui-annotations [file]` (from terminal or the in-app button) — Claude reads each annotation, applies the change, and clears the entry
 
-This turns the UI into a two-way collaboration surface: you mark up documents with instructions, Claude carries them out. You can also trigger processing from the terminal with `/process-ui-annotations [file]`.
+### Running
 
-To start the UI, type `/ui` in Claude Code. First run installs dependencies automatically (requires Node.js 22+). The UI runs at `http://localhost:3737`. Stop it with `/ui stop`.
+```bash
+cd v2/app
+npm install
+npm run tauri dev   # dev mode with hot reload
+# or:
+npm run tauri build # produces a signed .dmg in src-tauri/target/release/bundle/dmg/
+```
 
-Edits you make in the browser save to disk, and changes Claude makes to your files show up in the browser automatically.
+Edits you make in the app save to disk, and changes Claude makes to your files show up in the app automatically.
 
 ## Optional integrations
 
-The system works standalone with just Claude Code, but it's designed to plug in data sources via MCP servers for richer context:
+The system works standalone with just Claude Code, but it's designed to plug in data sources via MCP servers for richer context. Each integration auto-prompts for OAuth the first time you use a command that needs it — no manual setup required, just authenticate when your browser opens.
 
-- **Slack search** (e.g., Glean MCP) — lets Claude research recent conversations during 1:1 and meeting prep
-- **Notion** — for shared/collaborative docs and databases
-- **Calendar** (e.g., google-workspace MCP) — enables calendar-aware daily briefings, meeting prioritization, and inserting 1:1 agendas directly into shared Google Docs
-- **Jira/Linear** — for cross-referencing engineering work items
+| Integration | What it enables | First prompt trigger |
+|---|---|---|
+| **Slack** (slack-local-mcp) | Search, read, send messages, create drafts | First `/morning-briefing` or Slack-related question |
+| **Google Workspace** | Calendar, Sheets, Slides, Docs | First `/morning-briefing` (calendar) or doc access |
+| **Glean** | Cross-source search (Slack + Confluence + Drive) | First Glean search fallback |
+| **Atlassian** (Jira/Confluence) | Ticket operations, Confluence search | First `/jira` or ticket command |
+| **Datadog** | Log/trace/dashboard queries | First Datadog query |
 
-These are configured in the `## Integrations` section of CLAUDE.md during or after initialization. The 1:1 prep process gracefully degrades without them — it just works from your local notes instead of also pulling recent Slack threads.
+The 1:1 prep process gracefully degrades without integrations — it just works from your local notes instead of also pulling recent Slack threads.
+
+**GitHub MCP** (optional, for PR workflows):
+```bash
+curl -L https://github.com/github/github-mcp-server/releases/latest/download/github-mcp-server-darwin-arm64.tar.gz | tar xz -C ~/.local/bin
+```
+Then run `/chime-github:github-setup` in Claude Code for guided configuration.
 
 ## File structure
 
 ```
 claude-chief-of-staff/
-  CLAUDE.md                # System instructions + your personal context
+  CLAUDE.md                # System instructions + your personal context (Claude reads this every session)
+  README.md                # This file (for humans)
   .claude/commands/        # Custom slash commands
   .nvmrc                   # Node.js version (22+ required for built-in SQLite)
   bin/                     # Tooling scripts (template code)
-    md-to-gdoc-payload.js  # Google Docs publishing helper
-    db/                    # Task database tooling
-      task-cli.sh          # nvm-aware wrapper — always use this
-      task-cli.js          # Task CLI (list, add, done, archive, etc.)
-      task-db.js           # Shared data access module (used by CLI and UI)
-      migrations/          # SQL schema migrations (applied automatically)
-      tests/               # Unit and integration tests (node --test)
-    reminders/             # Apple Reminders adapter (overdue notifier + import)
-    weekly-review/         # Friday review automation (launchd agent)
+    cos                    #   Headless CLI — `bash bin/cos --help` for full surface
+    md-to-gdoc-payload.js  #   Google Docs publishing helper
+    db/                    #   Task database tooling (delegated to from bin/cos)
+      task-cli.sh          #     nvm-aware wrapper — bin/cos calls this
+      task-cli.js          #     Task CLI (list, add, done, archive, etc.)
+      task-db.js           #     Shared data access module (used by CLI and UI)
+      migrations/          #     SQL schema migrations (applied automatically)
+      tests/               #     Unit and integration tests (node --test)
+    reminders/             #   Apple Reminders integration
+      apple-reminders.sh   #     Swift adapter (auto-compiles on first run)
+      overdue-notifier.sh  #     Checks for overdue tasks, creates phone reminders
+      overdue-notifier-setup.sh  # Install/uninstall the daily launchd agent
+    weekly-review/         #   Weekly review automation
+      weekly-review-runner.sh    # Invokes Claude Code CLI non-interactively
+      weekly-review-setup.sh     # Install/uninstall the Friday launchd agent
   data/                    # All user-specific data
-    cos.db                 # SQLite task database (auto-created on first run)
-    files/                 # User content files
-      inbox.md             # Raw capture - process into other lists
-      waiting-for.md       # Delegated items you're tracking
-      someday-maybe.md     # Ideas for later
-      reading-list.md      # Articles, videos, resources to consume
-      style-guide.md       # Your writing style (built over time)
-      google-docs-style-guide.md  # Google Docs formatting via Apps Script
-      exports/             # Exported data (YAML backups from /task-export)
+    cos.db                 #   SQLite task database (auto-created on first run)
+    logs/                  #   Automation logs (overdue-notifier, weekly-review)
+    files/                 #   User content files
+      inbox.md             #     Raw capture - process into other lists
+      waiting-for.md       #     Delegated items you're tracking
+      someday-maybe.md     #     Ideas for later
+      reading-list.md      #     Articles, videos, resources to consume
+      style-guide.md       #     Your writing style (built over time)
       projects/
-        INDEX.md           # Project registry (active, on hold, archived)
-        <project-id>/      # One folder per active project
+        INDEX.md           #     Project registry (active, on hold, archived)
+        <project-id>/      #     One folder per active project
       areas/
-        one-on-ones/       # 1:1 system (per-person folders with README + sessions)
-        meetings/          # Recurring meetings (same pattern)
-        daily-briefings/   # Morning briefing history (sessions/YYYY-MM-DD.md)
-        weekly-reviews/    # Friday review artifacts (sessions/YYYY-MM-DD.md)
-        career/            # Promotion tracking, growth plans
-        comms/             # Drafted messages
-      archive/             # Completed projects (moved from projects/)
-  ui/                      # Chief of Staff web UI (WYSIWYG editor, start with /ui)
+        one-on-ones/       #     1:1 system (per-person folders with README + sessions)
+        meetings/          #     Recurring meetings (same pattern)
+        daily-briefings/   #     Morning briefing history (sessions/YYYY-MM-DD.md)
+        weekly-reviews/    #     Friday weekly review artifacts (sessions/YYYY-MM-DD.md)
+        career/            #     Promotion tracking, growth plans
+        comms/             #     Drafted messages
+      archive/             #     Completed projects (moved from projects/)
+  v2/app/                  # Tauri desktop app — Rust + React/TypeScript
   cos-dev/                 # Development documentation (PRDs, implementation loop)
 ```
 
@@ -212,19 +235,20 @@ The system gets better as you use it:
 - **1:1 READMEs** accumulate context about each person over time
 - **Session files** create a searchable history of what you discussed and decided
 - **Tasks** build up a record of what you've shipped
+- **Weekly reviews** build a longitudinal record of project health and task patterns
+
+### Session compaction
+
+As session files accumulate, Claude automatically compacts older ones during the weekly review to keep things manageable:
+
+- **Last 3 sessions** per person/meeting stay full-fidelity
+- **Older sessions** are compacted to structured summaries (~15-25 lines) with key outcomes, follow-ups, and coaching signals preserved
+- **Originals** are moved to `sessions/archive/` for grep/search — nothing is deleted
+- **Daily briefings** compact more aggressively (anything older than 2 weeks)
+
+This keeps Claude's context window efficient while preserving all information. Run `/compact-sessions --dry-run` to preview what would be compacted, or let it happen automatically on Fridays.
 
 Commit periodically so you have a timeline of when things changed.
-
-## Session compaction
-
-Over time, session files accumulate. The compaction system keeps things manageable:
-
-- **Last 3 sessions per person/meeting** are kept at full fidelity
-- **Older sessions** are archived to `sessions/archive/` and summarized into a single `sessions/compacted_STARTDATE_to_ENDDATE.md` file
-- **Daily briefings** compact anything older than 2 weeks
-- **Originals are never deleted** — they're always in `sessions/archive/` for grep/search
-
-Compaction runs automatically as part of `/weekly-review`, or manually via `/compact-sessions`.
 
 ## Contributing back
 

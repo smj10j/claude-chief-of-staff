@@ -1,0 +1,385 @@
+#!/bin/bash
+# `cos` — headless CLI for Chief of Staff. Wraps the most-used flows
+# so terminal users / scripts can run without launching the desktop
+# app. Each subcommand delegates to an existing script under bin/ or
+# the local `claude` binary.
+#
+# Subcommands (run `cos --help` to print this list):
+#   task list           — active tasks (delegates to bin/db/task-cli.sh)
+#   task list --due-by today
+#   task add "title…"   — create a task with Claude-parsed defaults
+#   task done <id>      — mark complete
+#   brief               — run /morning-briefing via the claude CLI
+#   prep <slug>         — run /prep-1on1 <slug>
+#   triage              — run /task-triage
+#   events today        — pull today's calendar via EventKit
+#   events week         — today + 6 days
+#   check               — install readiness (binary, EventKit, ICS URL)
+#   export <dir>        — tar.gz backup of content tree + cos.db +
+#                          blob store into <dir>/cos-backup-<date>.tgz
+#   schedule install    — install daily /morning-briefing launchd
+#                          agent (default 7:00 AM; override with
+#                          BRIEFING_HOUR / BRIEFING_MINUTE env vars)
+#   schedule uninstall  — remove the agent
+#   schedule status     — show whether the agent is installed
+#   open <rel-path>     — request the running desktop app to open the
+#                          given doc (path relative to data/files/, or
+#                          a full data/files/... path which is stripped).
+#                          Polled every ~1.5s by the app when focused.
+#   status              — quick stdout snapshot — task counts, briefing
+#                          today y/n, calendar transport, claude binary
+#   search <query>      — grep the content tree (data/files/) for the
+#                          query; prints rel-path : line for each hit.
+#                          Case-insensitive, fixed-string match.
+#   done <id>           — alias for `cos task done <id>` (the
+#                          one-most-common task op).
+#   add "<title>"       — alias for `cos task add "<title>"` (Claude
+#                          parses NL into priority/due/tags as usual).
+#   digest <rel-path>   — run /digest-meeting on a specific session
+#                          file (path relative to data/files/ or a
+#                          full path; data/files/ prefix is stripped).
+#   help                — this list
+#
+# All subcommands are read-only by default; mutation (task add, task
+# done) calls the same audit-logged API the desktop app uses.
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TASK_CLI="$REPO_ROOT/bin/db/task-cli.sh"
+EVENTKIT="$REPO_ROOT/bin/calendar/eventkit.sh"
+
+usage() {
+  sed -n '/^# `cos`/,/^# All subcommands/p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+# Resolve the claude binary the same way the v2 app does:
+# 1. CLAUDE_BIN env override
+# 2. $PATH
+# 3. ~/.claude/local/claude
+# 4. /opt/homebrew/bin/claude, /usr/local/bin/claude, ~/.local/bin/claude
+resolve_claude() {
+  if [ -n "${CLAUDE_BIN:-}" ] && [ -x "$CLAUDE_BIN" ]; then
+    echo "$CLAUDE_BIN"
+    return 0
+  fi
+  if command -v claude >/dev/null 2>&1; then
+    command -v claude
+    return 0
+  fi
+  for candidate in "$HOME/.claude/local/claude" /opt/homebrew/bin/claude /usr/local/bin/claude "$HOME/.local/bin/claude"; do
+    if [ -x "$candidate" ]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_skill() {
+  local invocation="$1"
+  local claude_bin
+  if ! claude_bin=$(resolve_claude); then
+    echo "cos: claude binary not found. Set CLAUDE_BIN or install Claude Code." >&2
+    return 1
+  fi
+  # --print + permission-mode auto matches the v2 transport so the
+  # results are identical to what the desktop runs.
+  echo "$invocation" | "$claude_bin" --print --permission-mode auto --model opus
+}
+
+case "${1:-help}" in
+  help|--help|-h)
+    usage
+    ;;
+  task)
+    shift
+    case "${1:-list}" in
+      list|add|update|done|archive|unarchive|get|recurring)
+        exec bash "$TASK_CLI" "$@"
+        ;;
+      *)
+        echo "cos task: unknown subcommand '${1:-}'" >&2
+        echo "valid: list | add | update | done | archive | unarchive | get | recurring" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  done)
+    # Shortcut: cos done <id> → cos task done <id>
+    shift
+    if [ -z "${1:-}" ]; then
+      echo "cos done: missing task id." >&2
+      echo "usage: cos done <task-id>" >&2
+      exit 1
+    fi
+    exec bash "$TASK_CLI" done "$@"
+    ;;
+  add)
+    # Shortcut: cos add "title with NL" → cos task add "title…"
+    shift
+    if [ -z "${1:-}" ]; then
+      echo "cos add: missing title." >&2
+      echo 'usage: cos add "<title>"' >&2
+      exit 1
+    fi
+    exec bash "$TASK_CLI" add "$@"
+    ;;
+  brief)
+    run_skill "/morning-briefing"
+    ;;
+  prep)
+    if [ -z "${2:-}" ]; then
+      echo "cos prep: missing person slug. Try: cos prep alice" >&2
+      exit 1
+    fi
+    run_skill "/prep-1on1 $2"
+    ;;
+  triage)
+    run_skill "/task-triage"
+    ;;
+  digest)
+    if [ -z "${2:-}" ]; then
+      echo "cos digest: missing session path." >&2
+      echo "usage: cos digest <rel-path>" >&2
+      exit 1
+    fi
+    raw="$2"
+    rel="${raw#./}"
+    rel="${rel#data/files/}"
+    case "$rel" in
+      /*|*..*)
+        echo "cos digest: refusing absolute path or '..': $rel" >&2
+        exit 1
+        ;;
+    esac
+    if [ -z "$rel" ]; then
+      echo "cos digest: empty rel-path after normalization." >&2
+      exit 1
+    fi
+    run_skill "/digest-meeting $rel"
+    ;;
+  events)
+    sub="${2:-today}"
+    today="$(date +%Y-%m-%d)"
+    case "$sub" in
+      today)
+        exec bash "$EVENTKIT" list --from "$today" --to "$today"
+        ;;
+      week)
+        end="$(date -v+6d +%Y-%m-%d 2>/dev/null || date -d '+6 days' +%Y-%m-%d)"
+        exec bash "$EVENTKIT" list --from "$today" --to "$end"
+        ;;
+      *)
+        echo "cos events: try 'today' or 'week'" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  check)
+    # Mirror v2's install_status checks in bash.
+    fail=0
+    printf "Content root: "
+    if [ -d "$REPO_ROOT/data/files" ]; then
+      echo "✓ $REPO_ROOT/data/files"
+    else
+      echo "✗ not found at $REPO_ROOT/data/files"
+      fail=1
+    fi
+    printf "Claude CLI: "
+    if claude_bin=$(resolve_claude); then
+      echo "✓ $claude_bin"
+    else
+      echo "✗ not found on PATH (set CLAUDE_BIN or install Claude Code)"
+      fail=1
+    fi
+    printf "EventKit adapter: "
+    if [ -x "$EVENTKIT" ]; then
+      echo "✓ $EVENTKIT"
+    else
+      echo "✗ not found at $EVENTKIT"
+      fail=1
+    fi
+    printf "Task CLI: "
+    if [ -x "$TASK_CLI" ]; then
+      echo "✓ $TASK_CLI"
+    else
+      echo "✗ not found at $TASK_CLI"
+      fail=1
+    fi
+    exit "$fail"
+    ;;
+  export)
+    # cos export <dir> — tar.gz the content tree + audit DB + blob
+    # store into <dir>/cos-backup-<YYYYMMDD-HHMM>.tgz. Read-only;
+    # never touches the originals.
+    if [ -z "${2:-}" ]; then
+      echo "cos export: missing destination directory." >&2
+      echo "usage: cos export <dir>" >&2
+      exit 1
+    fi
+    dest="$2"
+    if [ ! -d "$dest" ]; then
+      echo "cos export: destination '$dest' is not a directory." >&2
+      exit 1
+    fi
+    # Resolve the app data dir the same way Tauri does on macOS.
+    app_data="$HOME/Library/Application Support/com.smj10j.chiefofstaff"
+    stamp="$(date +%Y%m%d-%H%M)"
+    archive="$dest/cos-backup-$stamp.tgz"
+    # Build the tar member list. Each input gets a stable parent
+    # name inside the archive so unpack-everywhere works:
+    #   - data/files/    (full content tree, never includes .git or
+    #                    blob-store cache, those live elsewhere)
+    #   - app-data/cos.db    (audit + snapshot DB)
+    #   - app-data/snapshots/ (content-addressed blob store)
+    #   - app-data/calendar.json, claude-cli.json, perf.json (cfg)
+    tar_args=(--gzip)
+    # Always include data/files when present.
+    if [ -d "$REPO_ROOT/data/files" ]; then
+      tar_args+=(-C "$REPO_ROOT" "data/files")
+    fi
+    # App data: include only if the directory exists. Tar requires
+    # at least one input, so we accumulate before invoking.
+    if [ -d "$app_data" ]; then
+      tar_args+=(-C "$(dirname "$app_data")" "$(basename "$app_data")")
+    fi
+    if [ ${#tar_args[@]} -le 1 ]; then
+      echo "cos export: nothing to back up — content + app data both missing." >&2
+      exit 1
+    fi
+    if tar -czf "$archive" "${tar_args[@]:1}"; then
+      bytes=$(wc -c < "$archive" | tr -d ' ')
+      echo "✓ wrote $archive ($bytes bytes)"
+    else
+      echo "✗ tar failed; partial archive at $archive may exist." >&2
+      exit 1
+    fi
+    ;;
+  search)
+    # cos search <query> — grep the content tree for matching lines.
+    # Output: <rel-path>:<line>:<text> per hit. Limited to 50 lines so
+    # broad queries don't blow up the terminal.
+    if [ -z "${2:-}" ]; then
+      echo "cos search: missing query." >&2
+      echo "usage: cos search <query>" >&2
+      exit 1
+    fi
+    query="$2"
+    content_dir="$REPO_ROOT/data/files"
+    if [ ! -d "$content_dir" ]; then
+      echo "cos search: content root not found at $content_dir" >&2
+      exit 1
+    fi
+    # -r recursive, -n line numbers, -i case-insensitive,
+    # -F fixed-string (treat the query literally), -I skip binaries,
+    # --include limits to .md files (the only thing we author).
+    # Strip the absolute prefix so output is rel-path readable.
+    grep -rniIF --include="*.md" "$query" "$content_dir" 2>/dev/null \
+      | sed -E "s#^${content_dir}/##" \
+      | head -50 \
+      || {
+        echo "no matches"
+        exit 0
+      }
+    ;;
+  status)
+    # Quick at-a-glance snapshot. Prints to stdout, exits 0 unless
+    # something is genuinely broken (claude missing, content root gone).
+    today="$(date +%Y-%m-%d)"
+    fail=0
+    # Active task count via the v1 CLI. Prefer compact format and grep
+    # the trailing summary line; if that's not present, fall back to a
+    # row count.
+    if [ -x "$TASK_CLI" ]; then
+      active="$(bash "$TASK_CLI" list 2>/dev/null | wc -l | tr -d ' ')"
+      overdue="$(bash "$TASK_CLI" list --due-by "$today" 2>/dev/null | wc -l | tr -d ' ')"
+      printf "Tasks:        %s active · %s due-by-today\n" "$active" "$overdue"
+    else
+      printf "Tasks:        ✗ task-cli not at %s\n" "$TASK_CLI"
+      fail=1
+    fi
+    # Today's briefing — file existence is enough to answer "did I run it"
+    briefing="$REPO_ROOT/data/files/areas/daily-briefings/sessions/$today.md"
+    if [ -f "$briefing" ]; then
+      bytes="$(wc -c < "$briefing" | tr -d ' ')"
+      printf "Briefing:     ✓ today's briefing (%s bytes)\n" "$bytes"
+    else
+      printf "Briefing:     · none today (run 'cos brief')\n"
+    fi
+    # Calendar transport (read calendar.json if present)
+    cal_cfg="$HOME/Library/Application Support/com.smj10j.chiefofstaff/calendar.json"
+    if [ -f "$cal_cfg" ]; then
+      transport="$(grep -oE '"transport"[[:space:]]*:[[:space:]]*"[^"]+"' "$cal_cfg" | head -1 | sed -E 's/.*"([^"]+)"$/\1/')"
+      [ -z "$transport" ] && transport="ics"
+      printf "Calendar:     %s\n" "$transport"
+    else
+      printf "Calendar:     · not configured (Settings → Calendar)\n"
+    fi
+    # Claude CLI
+    if claude_bin=$(resolve_claude); then
+      printf "Claude CLI:   ✓ %s\n" "$claude_bin"
+    else
+      printf "Claude CLI:   ✗ not found\n"
+      fail=1
+    fi
+    exit "$fail"
+    ;;
+  open)
+    # cos open <rel-path> — drop a JSON request next to the app data
+    # dir so the running desktop app can pick it up on its next poll.
+    # Path is normalized to be relative to data/files/ (strip leading
+    # data/files/ if present, drop any leading "./").
+    if [ -z "${2:-}" ]; then
+      echo "cos open: missing path." >&2
+      echo "usage: cos open <rel-path>" >&2
+      exit 1
+    fi
+    raw="$2"
+    rel="${raw#./}"
+    rel="${rel#data/files/}"
+    if [ -z "$rel" ]; then
+      echo "cos open: empty rel-path after normalization." >&2
+      exit 1
+    fi
+    # Reject path traversal attempts upfront — the app re-validates,
+    # but we'd rather fail loud at the CLI than write a doomed
+    # request to disk.
+    case "$rel" in
+      /*|*..*)
+        echo "cos open: refusing absolute path or '..': $rel" >&2
+        exit 1
+        ;;
+    esac
+    label="${3:-${rel##*/}}"
+    label="${label%.md}"
+    app_data="$HOME/Library/Application Support/com.smj10j.chiefofstaff"
+    if [ ! -d "$app_data" ]; then
+      mkdir -p "$app_data"
+    fi
+    request="$app_data/.open-request.json"
+    # Atomic-ish write: write to .tmp then rename so the app never
+    # reads a partial file. mktemp -d is overkill for a sibling file.
+    tmp="$request.tmp"
+    printf '{"rel_path":"%s","label":"%s"}\n' "$rel" "$label" > "$tmp"
+    mv "$tmp" "$request"
+    echo "✓ requested open: $rel (queued at $request)"
+    ;;
+  schedule)
+    sub="${2:-status}"
+    case "$sub" in
+      install|uninstall|status)
+        exec bash "$REPO_ROOT/bin/schedule/morning-briefing-setup.sh" "$sub"
+        ;;
+      *)
+        echo "cos schedule: unknown subcommand '$sub'." >&2
+        echo "valid: install | uninstall | status" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "cos: unknown subcommand '$1'. Run 'cos help' for the list." >&2
+    exit 1
+    ;;
+esac

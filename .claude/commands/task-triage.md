@@ -5,7 +5,7 @@ Surface and manage overdue or stale tasks. Quick cleanup pass.
 ## Steps
 
 ### 1. Load Tasks
-- Run `bash bin/db/task-cli.sh list --format json` and identify:
+- Run `bash bin/cos task list --format json` and identify:
   - **Overdue**: due date is in the past
   - **Stale**: no due date and priority is low, or has been sitting with no updates
   - **Due soon**: due within the next 3 days
@@ -36,11 +36,19 @@ End the file with: `Mark up this file in the UI with your changes, then tell Cla
 
 The user can respond either inline in the terminal or via UI annotations — support both flows.
 
+After writing the file, print **exactly one final line**:
+
+```
+SAVED: data/files/areas/task-triage/triage.md
+```
+
+The v2 UI parses this to open the triage doc in the editor where the user can annotate it. The `SAVED:` line must be the LAST line of the response.
+
 ### 3. Execute Changes
 After the user reviews and confirms (either via UI annotations or verbally):
-- Use `bash bin/db/task-cli.sh update <id>` to update due dates
-- Use `bash bin/db/task-cli.sh done <id>` or `bash bin/db/task-cli.sh archive <id>` for completed/dropped tasks
-- Use `bash bin/db/task-cli.sh update <id> --notes "..."` to add context
+- Use `bash bin/cos task update <id>` to update due dates
+- Use `bash bin/cos task done <id>` or `bash bin/cos task archive <id>` for completed/dropped tasks
+- Use `bash bin/cos task update <id> --notes "..."` to add context
 
 ### 4. Summary
 Show what changed: how many re-dated, dropped, completed, still overdue.

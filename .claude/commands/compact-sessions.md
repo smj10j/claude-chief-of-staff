@@ -5,7 +5,7 @@ Compact old session files across 1:1s, meetings, and daily briefings. Archives o
 ## Parameters
 
 - `$ARGUMENTS` — optional:
-  - A person or meeting name to compact only that folder (e.g., `alex`, `team-standup`)
+  - A person or meeting name to compact only that folder (e.g., `alice`, `xfn-weekly-sync`)
   - `--dry-run` to preview candidates without making changes
   - `--all` to process everything (default if no args)
 

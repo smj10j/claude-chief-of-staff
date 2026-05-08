@@ -85,9 +85,17 @@ install() {
 </plist>
 PLIST
 
-    # Load the agent
-    launchctl unload "$PLIST_PATH" 2>/dev/null || true
-    launchctl load "$PLIST_PATH"
+    # Bootstrap the agent. macOS Sonoma+ deprecated `launchctl load`:
+    # it returns 0 without registering the agent, so the next status
+    # check would forever read "installed but not loaded." Use the
+    # modern bootstrap verb against the user's GUI domain; fall back
+    # to load on older systems.
+    USER_GUI_DOMAIN="gui/$(id -u)"
+    launchctl bootout "$USER_GUI_DOMAIN/$PLIST_NAME" 2>/dev/null || true
+    if ! launchctl bootstrap "$USER_GUI_DOMAIN" "$PLIST_PATH" 2>/dev/null; then
+      launchctl unload "$PLIST_PATH" 2>/dev/null || true
+      launchctl load "$PLIST_PATH"
+    fi
 
     echo ""
     echo "Overdue notifier installed."
@@ -104,7 +112,9 @@ PLIST
 uninstall() {
     echo "Uninstalling overdue task notifier..."
     if [ -f "$PLIST_PATH" ]; then
-        launchctl unload "$PLIST_PATH" 2>/dev/null || true
+        USER_GUI_DOMAIN="gui/$(id -u)"
+        launchctl bootout "$USER_GUI_DOMAIN/$PLIST_NAME" 2>/dev/null || \
+          launchctl unload "$PLIST_PATH" 2>/dev/null || true
         rm "$PLIST_PATH"
         echo "  Removed $PLIST_PATH"
     else
@@ -117,10 +127,13 @@ status() {
     if [ -f "$PLIST_PATH" ]; then
         echo "Overdue notifier is installed."
         echo "  Plist: $PLIST_PATH"
-        if launchctl list | grep -q "$PLIST_NAME"; then
-            echo "  Status: loaded"
+        USER_GUI_DOMAIN="gui/$(id -u)"
+        if launchctl print "$USER_GUI_DOMAIN/$PLIST_NAME" >/dev/null 2>&1 \
+            || launchctl list 2>/dev/null | grep -q "$PLIST_NAME"; then
+            echo "  Status: ✓ loaded (will fire at the scheduled time)"
         else
-            echo "  Status: installed but not loaded (run: launchctl load $PLIST_PATH)"
+            echo "  Status: ✗ installed but NOT loaded — won't fire."
+            echo "  Recover: bash $0 install   (re-bootstraps the agent)"
         fi
         # Show schedule from plist
         SCHED_HOUR=$(defaults read "$PLIST_PATH" StartCalendarInterval 2>/dev/null | grep Hour | awk '{print $3}' | tr -d ';' || echo "?")

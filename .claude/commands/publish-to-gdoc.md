@@ -68,6 +68,14 @@ This reads the script from disk, bypassing Claude's token output entirely. This 
 2. Copy the URL to clipboard: `echo -n "URL" | pbcopy`
 3. Do NOT read the doc back for verification
 
+After the URL is reported, print **exactly one final line**:
+
+```
+GDOC_URL: <full-google-doc-url>
+```
+
+The v2 UI parses this to open the URL in the browser when the publish button is clicked from the editor toolbar. The `GDOC_URL:` line must be the LAST line of the response.
+
 ## Error Handling
 
 - If the file doesn't exist, the script will error - report to user
