@@ -132,9 +132,6 @@ struct Session {
 struct TranscriptWriter {
     md_path: PathBuf,
     jsonl_path: PathBuf,
-    /// Workspace-relative path of `md_path`, used by the frontend
-    /// for Recents / cross-references.
-    md_rel: String,
     /// Set after the frontmatter is written (idempotent guard).
     initialized: bool,
     /// Cached metadata used in the frontmatter on first init.
@@ -154,7 +151,6 @@ impl TranscriptWriter {
     fn new(
         md_path: PathBuf,
         jsonl_path: PathBuf,
-        md_rel: String,
         cwd: String,
         argv: Vec<String>,
     ) -> Self {
@@ -162,7 +158,6 @@ impl TranscriptWriter {
         Self {
             md_path,
             jsonl_path,
-            md_rel,
             initialized: false,
             started_iso,
             cwd,
@@ -389,6 +384,9 @@ fn event_to_markdown(event: &Value) -> Option<String> {
 
 /// Slugify a string for use in the transcript filename. Lowercase,
 /// kebab-case, alphanumeric + hyphens, truncated to ~50 chars.
+/// Reserved for the Phase 3 follow-up that adds a slug suffix once
+/// we have the first user turn (see `compute_transcript_paths`).
+#[allow(dead_code)]
 pub fn slugify_for_transcript(text: &str) -> String {
     let mut out = String::new();
     let mut last_was_dash = false;
@@ -720,7 +718,6 @@ impl Manager {
         let writer = TranscriptWriter::new(
             md_path,
             jsonl_path,
-            md_rel.clone(),
             cwd.display().to_string(),
             argv.clone(),
         );
@@ -1353,7 +1350,6 @@ mod tests {
         let mut w = TranscriptWriter::new(
             md.clone(),
             jsonl.clone(),
-            "areas/console-sessions/sessions/foo.md".to_string(),
             "/some/cwd".to_string(),
             vec!["--print".into()],
         );
@@ -1381,7 +1377,6 @@ mod tests {
         let mut w = TranscriptWriter::new(
             md.clone(),
             jsonl.clone(),
-            "a.md".into(),
             ".".into(),
             vec![],
         );
@@ -1420,7 +1415,6 @@ mod tests {
         let mut w = TranscriptWriter::new(
             md.clone(),
             jsonl,
-            "b.md".into(),
             ".".into(),
             vec![],
         );
