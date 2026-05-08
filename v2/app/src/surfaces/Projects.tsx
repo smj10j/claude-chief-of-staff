@@ -1002,7 +1002,7 @@ function EpicsTab({
         <div className="cos-empty cos-empty-error">
           <p>Atlassian MCP: {payload.mcp_error}</p>
           <p className="cos-helper-text">
-            See Settings → Plugins to verify the <your-atlassian-plugin> plugin
+            See Settings → Plugins to verify the {"<your-atlassian-plugin>"} plugin
             is configured.
           </p>
         </div>
