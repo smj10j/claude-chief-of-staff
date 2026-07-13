@@ -50,13 +50,6 @@ type Props = {
   onClearProject: () => void;
 };
 
-const STATUS_ORDER: ProjectStatus[] = [
-  "blocked",
-  "at-risk",
-  "on-track",
-  "soon-done",
-];
-
 const STATUS_LABELS: Record<ProjectStatus, string> = {
   blocked: "Blocked",
   "at-risk": "At risk",
@@ -70,10 +63,10 @@ const STATUS_LABELS: Record<ProjectStatus, string> = {
  * has a folder per active initiative; this surface gives them a one-
  * click route to either the README or any sub-doc inside.
  *
- * PRD-115 §6.6: grouped by status (Blocked / At risk / On track / Soon
- * done) using the explicit-then-derived signal from content_project_status
- * (B3-CP4). Within each group, sort by last_touched desc. Archived
- * projects collapse to a strip below the active grid.
+ * Active projects render as a single flat list sorted by last_touched
+ * desc. At-risk projects get a red-tinted background so they stay
+ * visually flagged without needing a separate column. Archived
+ * projects collapse to a strip below the active list.
  */
 export function Projects({
   onOpenDoc,
@@ -188,37 +181,26 @@ export function Projects({
     );
   }
 
-  // Bucket projects by status. Anything not in the status feed
-  // (or marked archived) lands in the "active no-status" or
-  // "archived" buckets respectively. Within each bucket, sort by
-  // last_touched desc so the recently-edited project floats up.
-  const grouped = new Map<ProjectStatus, ProjectRef[]>();
+  // Split archived off from active. Active is a single flat list
+  // sorted by last_touched desc; at-risk projects pick up a red
+  // tint via the card's tone-${status} class rather than a
+  // separate column.
   const archived: ProjectRef[] = [];
-  const noStatus: ProjectRef[] = [];
+  const active: ProjectRef[] = [];
   for (const p of load.projects) {
     const info = statusMap.get(p.slug);
-    if (info?.status === "archived") {
-      archived.push(p);
-      continue;
-    }
-    if (!info) {
-      noStatus.push(p);
-      continue;
-    }
-    const bucket = grouped.get(info.status) ?? [];
-    bucket.push(p);
-    grouped.set(info.status, bucket);
+    if (info?.status === "archived") archived.push(p);
+    else active.push(p);
   }
-  for (const list of [...grouped.values(), archived, noStatus]) {
-    list.sort((a, b) => {
-      const at = a.last_touched ?? "";
-      const bt = b.last_touched ?? "";
-      return bt.localeCompare(at);
-    });
-  }
+  const byTouchedDesc = (a: ProjectRef, b: ProjectRef) => {
+    const at = a.last_touched ?? "";
+    const bt = b.last_touched ?? "";
+    return bt.localeCompare(at);
+  };
+  archived.sort(byTouchedDesc);
+  active.sort(byTouchedDesc);
 
-  const totalActive =
-    load.projects.length - archived.length;
+  const totalActive = active.length;
 
   return (
     <div className="cos-projects">
@@ -338,41 +320,25 @@ export function Projects({
         </section>
       )}
 
-      {!searchActive && <div className="cos-projects-grid">
-        {STATUS_ORDER.map((status) => {
-          const bucket = grouped.get(status);
-          if (!bucket || bucket.length === 0) return null;
-          return (
-            <ProjectColumn
-              key={status}
-              status={status}
-              label={STATUS_LABELS[status]}
-              projects={bucket}
-              statusMap={statusMap}
-              pinnedRel={pinnedRel}
-              onTogglePin={(rel) =>
-                setPinnedRel((cur) => (cur === rel ? null : rel))
+      {!searchActive && (
+        <div className="cos-projects-list">
+          {active.map((p) => (
+            <ProjectCard
+              key={p.rel_path}
+              project={p}
+              status={statusMap.get(p.slug) ?? null}
+              pinned={pinnedRel === p.rel_path}
+              onTogglePin={() =>
+                setPinnedRel((cur) =>
+                  cur === p.rel_path ? null : p.rel_path,
+                )
               }
               onGoToProject={onGoToProject}
               onOpenDoc={onOpenDoc}
             />
-          );
-        })}
-        {noStatus.length > 0 && (
-          <ProjectColumn
-            status={null}
-            label="Active"
-            projects={noStatus}
-            statusMap={statusMap}
-            pinnedRel={pinnedRel}
-            onTogglePin={(rel) =>
-              setPinnedRel((cur) => (cur === rel ? null : rel))
-            }
-            onGoToProject={onGoToProject}
-            onOpenDoc={onOpenDoc}
-          />
-        )}
-      </div>}
+          ))}
+        </div>
+      )}
 
       {!searchActive && archived.length > 0 && (
         <section className="cos-projects-archived">
@@ -406,48 +372,6 @@ export function Projects({
       )}
       </>}
     </div>
-  );
-}
-
-function ProjectColumn({
-  status,
-  label,
-  projects,
-  statusMap,
-  pinnedRel,
-  onTogglePin,
-  onGoToProject,
-  onOpenDoc,
-}: {
-  status: ProjectStatus | null;
-  label: string;
-  projects: ProjectRef[];
-  statusMap: Map<string, ProjectStatusInfo>;
-  pinnedRel: string | null;
-  onTogglePin: (relPath: string) => void;
-  onGoToProject: (target: ProjectTarget) => void;
-  onOpenDoc: (doc: OpenDoc) => void;
-}) {
-  return (
-    <section
-      className={`cos-projects-col${status ? ` tone-${status}` : ""}`}
-      aria-label={`${label} projects`}
-    >
-      <SectionHeader label={label} count={projects.length} />
-      <div className="cos-projects-col-list">
-        {projects.map((p) => (
-          <ProjectCard
-            key={p.rel_path}
-            project={p}
-            status={statusMap.get(p.slug) ?? null}
-            pinned={pinnedRel === p.rel_path}
-            onTogglePin={() => onTogglePin(p.rel_path)}
-            onGoToProject={onGoToProject}
-            onOpenDoc={onOpenDoc}
-          />
-        ))}
-      </div>
-    </section>
   );
 }
 

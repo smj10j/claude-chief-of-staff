@@ -909,37 +909,7 @@ button {
   max-width: 1100px;
 }
 
-.cos-projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--cos-space-lg);
-}
-
-.cos-projects-col {
-  display: grid;
-  gap: var(--cos-space-sm);
-  padding: var(--cos-space-md);
-  border-radius: var(--cos-radius-md);
-  background: var(--cos-surface-raised);
-}
-
-.cos-projects-col.tone-blocked {
-  background: var(--cos-status-blocked-tint);
-}
-
-.cos-projects-col.tone-at-risk {
-  background: var(--cos-status-at-risk-tint);
-}
-
-.cos-projects-col.tone-on-track {
-  background: var(--cos-status-on-track-tint);
-}
-
-.cos-projects-col.tone-soon-done {
-  background: var(--cos-status-soon-done-tint);
-}
-
-.cos-projects-col-list {
+.cos-projects-list {
   display: grid;
   gap: var(--cos-space-xs);
 }
@@ -951,6 +921,18 @@ button {
   border-radius: var(--cos-radius-sm);
   background: var(--cos-surface-canvas);
   transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-project-card.tone-at-risk {
+  background: var(--cos-status-blocked-tint);
+}
+
+.cos-project-card.tone-at-risk.is-clickable:hover {
+  background: color-mix(
+    in srgb,
+    var(--cos-status-blocked-tint) 60%,
+    var(--cos-surface-hover)
+  );
 }
 
 .cos-project-card.is-clickable {
