@@ -40,7 +40,7 @@ Use the Write tool. The shape:
       "description": "One-line summary",
       "hierarchy": [
         { "id": "<manager-slug>", "label": "<Manager Name>", "title": "<title>", "slug": "<slug>", "parent": null },
-        { "id": "<user-slug>", "label": "<User Name>", "title": "<title>", "is_self": true, "parent": "<manager-slug>" },
+        { "id": "<user-slug>", "label": "<User Name>", "title": "<title>", "slug": "<self-slug>", "is_self": true, "parent": "<manager-slug>" },
         { "id": "<report-slug>", "label": "<Report Name>", "title": "<title>", "slug": "<slug>", "parent": "<user-slug>" }
       ],
       "partners": [
@@ -56,7 +56,8 @@ Field rules:
 - `id`: slugify (lowercase, hyphen) — unique across the whole file.
 - `parent`: another id in this view's hierarchy, or null for a root.
 - `is_self`: true on exactly one node (the user, per CLAUDE.md).
-- `slug`: present only when there's a real 1:1 folder. For people without a folder, omit the slug — the UI renders them as "no 1:1".
+- `slug`: present only when there's a real 1:1 folder. For people without a folder, omit the slug — the UI renders them as "no 1:1". **This includes the `is_self` node:** if the user has a `self/<slug>/` folder under `one-on-ones/` (e.g. `self/<self-slug>`), set its `slug` so their own row links to their profile + career docs. Only omit the self slug if no such folder exists.
+- `hidden`: **preserve it.** If an existing node has `"hidden": true`, the user deliberately curated that person out of the visible view — keep the node (with its slug) and the flag. A hidden node stays in the file so the person doesn't show as an orphan, but the UI renders it nowhere. Don't drop it and don't add it on your own.
 - `partners`: flat list, no parent field.
 - **Do not** include any of: `has_folder`, `relationship`, `rel_path`, `last_session`. Those are computed by the v2 backend on every load.
 

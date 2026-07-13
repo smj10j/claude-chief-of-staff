@@ -1236,7 +1236,15 @@ impl Content {
     /// List the .md files inside a single project folder. Returns
     /// README first if present, then alphabetical.
     pub fn list_project_files(&self, project_rel: &str) -> AppResult<Vec<ProjectFile>> {
-        let abs = self.resolve(project_rel)?;
+        // Tolerate a missing/unresolvable folder by returning no docs rather
+        // than erroring. This powers both the Projects detail view and the
+        // per-person Career section, whose `career/` subfolder won't exist for
+        // people you aren't actively developing (peers, manager, xfn) — the
+        // profile then renders the empty "start one" state instead of an error.
+        let abs = match self.resolve(project_rel) {
+            Ok(p) => p,
+            Err(_) => return Ok(vec![]),
+        };
         if !abs.is_dir() {
             return Ok(vec![]);
         }
@@ -1857,20 +1865,22 @@ fn is_iso_date(s: &str) -> bool {
             .all(|&i| b[i].is_ascii_digit())
 }
 
-/// Display order for one-on-one relationship groups. Direct reports sit at
-/// the top because managers prep those most often; manager + peers next,
-/// then skip-levels (up and down), then xfn, then alumni sink to the
-/// bottom (they're kept for context but rarely consulted).
+/// Display order for one-on-one relationship groups. `self` (your own
+/// "You" page — the `self/` folder) pins to the very top; then direct
+/// reports (managers prep those most often); manager + peers next; then
+/// skip-levels (up and down), then xfn, then alumni sink to the bottom
+/// (they're kept for context but rarely consulted).
 fn relationship_rank(kind: &str) -> u8 {
     match kind {
-        "direct-reports" => 0,
-        "manager" => 1,
-        "peers" => 2,
-        "skip-level" => 3,
-        "skip-level-reports" => 4,
-        "xfn" => 5,
+        "self" => 0,
+        "direct-reports" => 1,
+        "manager" => 2,
+        "peers" => 3,
+        "skip-level" => 4,
+        "skip-level-reports" => 5,
+        "xfn" => 6,
         "alumni" => 9,
-        _ => 6,
+        _ => 7,
     }
 }
 
@@ -3332,6 +3342,23 @@ intro paragraph
         let files = c.list_project_files("projects/x").unwrap();
         let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(names, vec!["README.md", "a.md", "z.md"]);
+    }
+
+    #[test]
+    fn list_project_files_returns_empty_when_dir_missing() {
+        // Powers the per-person Career section: a `career/` subfolder that
+        // doesn't exist (people you aren't developing) must resolve to an
+        // empty list rather than an error, so the profile shows the empty
+        // "start one" state instead of surfacing a rejection.
+        let tmp = TempDir::new().unwrap();
+        seed_content(tmp.path());
+        let c = Content::new(tmp.path().to_path_buf());
+        assert_eq!(
+            c.list_project_files("areas/one-on-ones/peers/nobody/career")
+                .unwrap()
+                .len(),
+            0,
+        );
     }
 
     #[test]

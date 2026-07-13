@@ -99,6 +99,7 @@ After confirmation, create everything:
 1. Determine relationship category (from user's confirmation)
 2. Create `data/files/areas/one-on-ones/<category>/<name>/README.md` with name, role, team, cadence
 3. Create `data/files/areas/one-on-ones/<category>/<name>/sessions/.gitkeep`
+4. **If the category is `direct-reports` or `skip-level-reports`:** also create `data/files/areas/one-on-ones/<category>/<name>/career/README.md` from the career template (see one-on-ones [README → Career Folder](../../data/files/areas/one-on-ones/README.md#career-folder)). Pre-fill level/team/goal from what's known. Other categories don't get one (the app's Career section shows an empty state).
 
 **Meeting folders** — For each confirmed recurring meeting:
 1. Create `data/files/areas/meetings/<meeting-id>/README.md` with cadence, attendees, linked doc

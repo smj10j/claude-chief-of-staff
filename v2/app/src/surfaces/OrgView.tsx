@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type MouseEvent, useMemo } from "react";
 
 export type OrgNode = {
   id: string;
@@ -7,6 +7,7 @@ export type OrgNode = {
   slug?: string | null;
   parent?: string | null;
   is_self?: boolean;
+  hidden?: boolean;
   has_folder?: boolean;
   relationship?: string | null;
   rel_path?: string | null;
@@ -28,13 +29,21 @@ export function OrgViewPanel({
   onGoToProfile,
 }: {
   view: OrgView;
-  onGoToProfile: (node: OrgNode) => void;
+  onGoToProfile: (node: OrgNode, e: MouseEvent) => void;
 }) {
-  const tree = useMemo(() => buildTree(view.hierarchy), [view.hierarchy]);
+  // `hidden` nodes are curated out of the file's views but still present
+  // (so they don't orphan). Drop them before building the tree / partner
+  // list so they render nowhere. All hidden nodes are leaves today; if a
+  // hidden node ever had children, they'd fall back to roots via buildTree.
+  const tree = useMemo(
+    () => buildTree(view.hierarchy.filter((n) => !n.hidden)),
+    [view.hierarchy],
+  );
+  const visiblePartners = view.partners.filter((p) => !p.hidden);
 
-  const openPerson = (n: OrgNode) => {
+  const openPerson = (n: OrgNode, e: MouseEvent) => {
     if (!n.has_folder || !n.rel_path) return;
-    onGoToProfile(n);
+    onGoToProfile(n, e);
   };
 
   return (
@@ -43,7 +52,7 @@ export function OrgViewPanel({
         <p className="cos-section-lede">{view.description}</p>
       )}
 
-      {tree.length === 0 && view.partners.length === 0 && (
+      {tree.length === 0 && visiblePartners.length === 0 && (
         <div className="cos-empty">
           No people in this view yet. Edit{" "}
           <code>data/files/areas/org/org.json</code> or (soon) use the
@@ -59,11 +68,11 @@ export function OrgViewPanel({
         </div>
       )}
 
-      {view.partners.length > 0 && (
+      {visiblePartners.length > 0 && (
         <div className="cos-org-partners">
           <h3>Partners</h3>
           <ul className="cos-org-partner-list">
-            {view.partners.map((p) => (
+            {visiblePartners.map((p) => (
               <li key={p.id}>
                 <OrgEntry node={p} onOpen={openPerson} />
               </li>
@@ -82,7 +91,7 @@ function OrgBranch({
 }: {
   node: TreeNode;
   depth: number;
-  onOpen: (n: OrgNode) => void;
+  onOpen: (n: OrgNode, e: MouseEvent) => void;
 }) {
   return (
     <div className="cos-org-branch" style={{ paddingLeft: depth * 20 }}>
@@ -108,9 +117,12 @@ function OrgEntry({
   onOpen,
 }: {
   node: OrgNode;
-  onOpen: (n: OrgNode) => void;
+  onOpen: (n: OrgNode, e: MouseEvent) => void;
 }) {
-  const clickable = node.has_folder === true && !node.is_self;
+  // The self node is clickable too, once the user has a `self/<slug>/`
+  // folder (enrichment sets has_folder + rel_path from its slug). Older
+  // builds hard-excluded is_self because "you" had no folder to open.
+  const clickable = node.has_folder === true;
   const className = [
     "cos-org-entry",
     node.is_self ? "cos-org-entry-self" : "",
@@ -142,8 +154,11 @@ function OrgEntry({
     <button
       type="button"
       className={className}
-      onClick={() => onOpen(node)}
-      title={`Open ${node.label}'s latest session`}
+      onClick={(e) => onOpen(node, e)}
+      onAuxClick={(e) => {
+        if (e.button === 1) onOpen(node, e);
+      }}
+      title={node.is_self ? "Open your page" : `Open ${node.label}'s latest session`}
     >
       {body}
     </button>

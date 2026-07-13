@@ -6,6 +6,7 @@ Organized by relationship type. Populated during `/init`.
 
 ```
 one-on-ones/
+  self/              -- your own "You" page (self/<your-slug>/)
   direct-reports/    -- people who report to you
   manager/           -- your manager
   peers/             -- peers you meet with regularly
@@ -13,6 +14,9 @@ one-on-ones/
   skip-level-reports/ -- your reports' reports (skip-level 1:1s)
   xfn/               -- cross-functional partners
 ```
+
+Direct reports, skip-level reports, and your own `self/` folder also get a
+`career/` subfolder for career-development docs (see [Career Folder](#career-folder)).
 
 ## How I Run 1:1s
 
@@ -63,20 +67,61 @@ one-on-ones/
 ## Per-Person Notes
 
 ### Structure
-Each person's folder has two layers:
+Each person's folder has these layers:
 
 **README.md** — Persistent context (updated over time, not overwritten per session)
 - Role, team, org context
 - Working style and interaction patterns
 - Key relationships they navigate
 - What's generally top of mind for them
-- Growth/career context (for direct reports)
+- Growth/career context (for direct reports — the full plan lives in [`career/`](#career-folder))
 - Standing questions to keep in rotation
 - Link to shared Google Doc (used in post-session digest)
 
 **sessions/** — Temporal check-in notes (one file per 1:1)
 - Named by date: `2026-03-10.md`, `2026-03-17.md`, etc.
 - What we discussed, action items, follow-ups, observations
+- **Compaction:** After 3 newer sessions exist, older sessions are archived to `sessions/archive/` and their compact summaries consolidated into a single `sessions/compacted_STARTDATE_to_ENDDATE.md` file. During prep, read the last 3 full sessions; scan the compacted file only for longer-term context threads.
+
+**career/** — Career-development docs (direct reports + skip-level reports; your own docs live under `self/<your-slug>/career/`)
+- A `README.md` overview (the development plan) plus any number of extra docs — a promotion packet, a leveling assessment, etc. Shaped like a project folder.
+- Surfaced in the app's per-person **Career** section (People → open the person → Career).
+- Peers, manager, skip-level, XFN, and alumni folders don't get one by default (the Career section shows an empty "start one" state).
+
+---
+
+## Career Folder
+
+Direct reports and skip-level reports get a `career/` folder scaffolded when
+their 1:1 folder is created (see `/init` and `/prep-1on1`). It starts with a
+single `README.md` from the standard template below, pre-filled with whatever
+is known (level from `person.json`, team, goal) and deepened over time from
+1:1s. Additional docs (e.g. a promotion packet) can be dropped alongside it and
+appear in the person's Career section automatically.
+
+**Template (`career/README.md`):**
+
+Keep the header meta on a **single line** — two adjacent bold lines get
+mangled when a doc is opened + auto-saved in the v2 Tiptap editor.
+
+```markdown
+# Career Development: [Name]
+
+**Current level:** ... · **Goal:** ... · **Team:** ... (reports to ...) · **Started:** [date] · **Last updated:** [date]
+
+## Summary
+## Strengths
+## Growth Areas
+  ### N. [Area]
+  **Gap:** / **Actions:** / **How you coach this:**
+## Current Landscape
+## Your Commitments
+## Check-in Cadence
+```
+
+Shared leveling references (framework, guidelines) stay in
+[`../career/`](../career/README.md); only per-person docs live in the person's
+folder.
 
 ---
 
