@@ -9,6 +9,7 @@ import {
 import { type OpenDoc } from "../state/openDoc";
 import { useRunning } from "../state/skillRuns";
 import { findSurface, type SurfaceId } from "../state/surfaces";
+import { intentFromEvent, type OpenIntent } from "../state/tabs";
 import { type MeetingTarget } from "../surfaces/MeetingDetail";
 import { type ProfileTarget } from "../surfaces/PersonProfile";
 import { type ProjectTarget } from "../surfaces/ProjectDetail";
@@ -70,28 +71,35 @@ export function Header({
     else onPopDoc();
   };
 
-  const goToProfile = (target: ProfileTarget) => {
+  const goToProfile = (target: ProfileTarget, intent: OpenIntent) => {
     window.dispatchEvent(
-      new CustomEvent("cos:goto", { detail: { profile: target } }),
+      new CustomEvent("cos:goto", { detail: { profile: target, intent } }),
     );
   };
-  const goToProject = (target: {
-    slug: string;
-    label: string;
-    rel_path: string;
-  }) => {
+  const goToProject = (
+    target: { slug: string; label: string; rel_path: string },
+    intent: OpenIntent,
+  ) => {
     window.dispatchEvent(
-      new CustomEvent("cos:goto", { detail: { project: target } }),
+      new CustomEvent("cos:goto", { detail: { project: target, intent } }),
     );
   };
-  const goToMeeting = (target: {
-    slug: string;
-    label: string;
-    rel_path: string;
-  }) => {
+  const goToMeeting = (
+    target: { slug: string; label: string; rel_path: string },
+    intent: OpenIntent,
+  ) => {
     window.dispatchEvent(
-      new CustomEvent("cos:goto", { detail: { meeting: target } }),
+      new CustomEvent("cos:goto", { detail: { meeting: target, intent } }),
     );
+  };
+  const followCrumb = (
+    c: NonNullable<OpenDoc["crumbs"]>[number],
+    intent: OpenIntent,
+  ) => {
+    if (c.profile) goToProfile(c.profile, intent);
+    else if (c.project) goToProject(c.project, intent);
+    else if (c.meeting) goToMeeting(c.meeting, intent);
+    else onPopDoc();
   };
   // On a bare surface the breadcrumb only repeats what the sidebar +
   // hero already say. Render it only when there's a sub-context (an
@@ -146,11 +154,9 @@ export function Header({
                   <button
                     type="button"
                     className="cos-breadcrumb-parent cos-breadcrumb-link"
-                    onClick={() => {
-                      if (c.profile) goToProfile(c.profile);
-                      else if (c.project) goToProject(c.project);
-                      else if (c.meeting) goToMeeting(c.meeting);
-                      else onPopDoc();
+                    onClick={(e) => followCrumb(c, intentFromEvent(e))}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) followCrumb(c, intentFromEvent(e));
                     }}
                     title={`Back to ${c.label}`}
                   >

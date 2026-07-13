@@ -24,10 +24,10 @@
  *   - Mode-toggle bridging via --resume (raw ↔ chat preserves session)
  */
 import {
-  lazy,
-  Suspense,
+  memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -71,11 +71,8 @@ import {
   type ConsoleRunHerePayload,
 } from "../../state/consoleRunHere";
 import { recordRecent } from "../../state/recentDocs";
+import { ChatMarkdown } from "./ChatMarkdown";
 import { ToolCallCard } from "./ToolCallCard";
-
-const MarkdownView = lazy(() =>
-  import("../MarkdownView").then((m) => ({ default: m.MarkdownView })),
-);
 
 type OpenResult = {
   handle: string;
@@ -174,6 +171,51 @@ export function ChatView({
   const feedRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const lastItemCountRef = useRef(0);
+
+  // Auto-grow the composer to fit its content. The old `rows`
+  // heuristic counted newlines, so a single long paragraph that
+  // word-wrapped stayed one row tall and scrolled out of view.
+  // Measuring scrollHeight grows the box for wrapped text too, up to
+  // a generous cap (half the window); past that it scrolls internally
+  // so the whole draft stays reachable while you type it. Runs on
+  // draft change and on tab switch (the parent re-keys per tab, so
+  // this remounts and re-fits the restored draft).
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const maxHeight = Math.round(window.innerHeight * 0.5);
+    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+  }, [draft]);
+
+  // Stable per-tab handlers for the transcript rows. ChatItemView is
+  // memoized (see below); passing fresh inline closures per item on
+  // every render would defeat the memo and re-render the whole feed on
+  // each streaming chunk. Reading the session fresh from the store keeps
+  // these identity-stable across renders (deps: tabId only).
+  const editUserTurn = useCallback((text: string) => {
+    setDraft(text);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, []);
+  const regenerateFromAssistant = useCallback(
+    (itemId: string) => {
+      const s = getTab(tabId)?.session;
+      if (!s || s.inFlight || s.exited) return;
+      // Find the most recent user turn before this assistant item and
+      // copy it back into the input so claude can re-attempt with
+      // current context (no truncation — that's a separate fork action).
+      const idx = s.items.findIndex((i) => i.id === itemId);
+      for (let i = idx - 1; i >= 0; i--) {
+        const candidate = s.items[i];
+        if (candidate && candidate.kind === "user") {
+          setDraft(candidate.text);
+          setTimeout(() => inputRef.current?.focus(), 0);
+          return;
+        }
+      }
+    },
+    [tabId],
+  );
 
   // Auto-scroll: pin to bottom while a turn streams; if the user
   // scrolls up, pause until they hit the jump pill or scroll back
@@ -805,28 +847,8 @@ export function ChatView({
             key={item.id}
             item={item}
             findQuery={findQuery}
-            onEditUserTurn={(text) => {
-              setDraft(text);
-              setTimeout(() => inputRef.current?.focus(), 0);
-            }}
-            onRegenerateAssistant={() => {
-              if (!session || session.inFlight || session.exited) return;
-              // Find the most recent user turn before this assistant
-              // item. Re-fire it as a new turn — we don't actually
-              // truncate the conversation (that's a fork-from-turn
-              // follow-up); we just send the same text again so claude
-              // can re-attempt with current context.
-              const items = session.items;
-              const idx = items.findIndex((i) => i.id === item.id);
-              for (let i = idx - 1; i >= 0; i--) {
-                const candidate = items[i];
-                if (candidate.kind === "user") {
-                  setDraft(candidate.text);
-                  setTimeout(() => inputRef.current?.focus(), 0);
-                  return;
-                }
-              }
-            }}
+            onEditUserTurn={editUserTurn}
+            onRegenerateAssistant={regenerateFromAssistant}
           />
         ))}
         {isStopped && (
@@ -936,7 +958,7 @@ export function ChatView({
                 : "message claude — Enter to send, Shift+Enter newline"
               : "message claude — first send starts the session"
           }
-          rows={Math.min(8, Math.max(1, draft.split("\n").length))}
+          rows={1}
           disabled={localState.kind === "starting" || isStopped}
         />
         <div className="cos-chat-input-actions">
@@ -1238,7 +1260,7 @@ function EmptyState() {
   );
 }
 
-function ChatItemView({
+const ChatItemView = memo(function ChatItemView({
   item,
   findQuery,
   onEditUserTurn,
@@ -1247,7 +1269,7 @@ function ChatItemView({
   item: ChatItem;
   findQuery: string;
   onEditUserTurn: (text: string) => void;
-  onRegenerateAssistant: () => void;
+  onRegenerateAssistant: (itemId: string) => void;
 }) {
   if (item.kind === "user") {
     return (
@@ -1303,7 +1325,7 @@ function ChatItemView({
         <button
           type="button"
           className="cos-chat-turn-action"
-          onClick={onRegenerateAssistant}
+          onClick={() => onRegenerateAssistant(item.id)}
           title="Re-run the previous user turn to regenerate this response"
         >
           regenerate ↻
@@ -1312,16 +1334,7 @@ function ChatItemView({
       <div className="cos-chat-turn-body">
         {item.blocks.map((block, idx) => {
           if (block.kind === "text") {
-            return (
-              <Suspense
-                key={idx}
-                fallback={
-                  <div className="cos-chat-text-fallback">{block.text}</div>
-                }
-              >
-                <MarkdownView markdown={block.text} />
-              </Suspense>
-            );
+            return <ChatMarkdown key={idx} markdown={block.text} />;
           }
           if (block.kind === "thinking") {
             return (
@@ -1336,7 +1349,7 @@ function ChatItemView({
       </div>
     </div>
   );
-}
+});
 
 function highlightMatches(text: string, query: string): boolean {
   if (!query.trim()) return false;

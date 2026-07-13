@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import { type OpenDoc } from "../state/openDoc";
 import { dismissRun, runSkill, useRun } from "../state/skillRuns";
+import { intentFromEvent, type OpenIntent } from "../state/tabs";
 import { PersonCard, SectionHeader, SurfaceHero } from "../ui";
 import { OrgViewPanel, type OrgView } from "./OrgView";
 import { PersonProfile, type ProfileTarget } from "./PersonProfile";
@@ -44,7 +45,7 @@ type OrgLoad =
 type Props = {
   onOpenDoc: (doc: OpenDoc) => void;
   profile: ProfileTarget | null;
-  onGoToProfile: (target: ProfileTarget) => void;
+  onGoToProfile: (target: ProfileTarget, intent?: OpenIntent) => void;
   onClearProfile: () => void;
 };
 
@@ -263,13 +264,23 @@ export function People({
                   <button
                     type="button"
                     className="cos-people-search-row"
-                    onClick={() =>
-                      onGoToProfile({
-                        slug: p.slug,
-                        label: p.label,
-                        rel_path: p.rel_path,
-                      })
+                    onClick={(e) =>
+                      onGoToProfile(
+                        { slug: p.slug, label: p.label, rel_path: p.rel_path },
+                        intentFromEvent(e),
+                      )
                     }
+                    onAuxClick={(e) => {
+                      if (e.button === 1)
+                        onGoToProfile(
+                          {
+                            slug: p.slug,
+                            label: p.label,
+                            rel_path: p.rel_path,
+                          },
+                          intentFromEvent(e),
+                        );
+                    }}
                   >
                     <PersonAvatar
                       photoUrl={p.photo_url}
@@ -309,12 +320,11 @@ export function People({
                   lastTouched={attentionTouchedLabel(p)}
                   stale={p.reasons.includes("stale")}
                   attention
-                  onOpen={() =>
-                    onGoToProfile({
-                      slug: p.slug,
-                      label: p.label,
-                      rel_path: p.rel_path,
-                    })
+                  onOpen={(e) =>
+                    onGoToProfile(
+                      { slug: p.slug, label: p.label, rel_path: p.rel_path },
+                      intentFromEvent(e),
+                    )
                   }
                 />
               ))}
@@ -350,12 +360,11 @@ export function People({
       {!searchActive && activeOrgView && (
         <OrgViewPanel
           view={activeOrgView}
-          onGoToProfile={(n) =>
-            onGoToProfile({
-              slug: n.slug ?? n.id,
-              label: n.label,
-              rel_path: n.rel_path!,
-            })
+          onGoToProfile={(n, e) =>
+            onGoToProfile(
+              { slug: n.slug ?? n.id, label: n.label, rel_path: n.rel_path! },
+              intentFromEvent(e),
+            )
           }
         />
       )}
@@ -392,7 +401,7 @@ function OrphanPanel({
   onGoToProfile,
 }: {
   people: PersonRef[];
-  onGoToProfile: (target: ProfileTarget) => void;
+  onGoToProfile: (target: ProfileTarget, intent?: OpenIntent) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -491,22 +500,25 @@ function PersonRow({
   onGoToProfile,
 }: {
   person: PersonRef;
-  onGoToProfile: (target: ProfileTarget) => void;
+  onGoToProfile: (target: ProfileTarget, intent?: OpenIntent) => void;
 }) {
   const staleness = person.last_session
     ? staleLabel(person.last_session)
     : null;
 
+  const open = (e: MouseEvent) =>
+    onGoToProfile(
+      { slug: person.slug, label: person.label, rel_path: person.rel_path },
+      intentFromEvent(e),
+    );
+
   return (
     <li
       className="cos-person-row"
-      onClick={() =>
-        onGoToProfile({
-          slug: person.slug,
-          label: person.label,
-          rel_path: person.rel_path,
-        })
-      }
+      onClick={open}
+      onAuxClick={(e) => {
+        if (e.button === 1) open(e);
+      }}
     >
       <div className="cos-person-main">
         <span className="cos-person-label">{person.label}</span>

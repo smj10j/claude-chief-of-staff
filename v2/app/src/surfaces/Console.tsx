@@ -57,7 +57,7 @@ function writeMode(m: Mode): void {
   }
 }
 
-export function Console() {
+export function Console({ active = true }: { active?: boolean }) {
   const [mode, setMode] = useState<Mode>(() => readMode());
 
   useEffect(() => {
@@ -112,7 +112,7 @@ export function Console() {
         </div>
       </div>
       <div className="cos-console-mode-body">
-        {mode === "chat" ? <ChatHost /> : <RawConsole />}
+        {mode === "chat" ? <ChatHost active={active} /> : <RawConsole />}
       </div>
     </div>
   );
@@ -125,7 +125,7 @@ export function Console() {
  * bar open/closed, history index, etc.). Per-tab draft and
  * attachments survive because they're stored on the tab record.
  */
-function ChatHost() {
+function ChatHost({ active }: { active: boolean }) {
   // Bump the host on any store mutation so children re-read fresh
   // tab data (label, in-flight, unseen pip). `getVersion` is a
   // primitive so it's stable under Object.is comparison.
@@ -142,18 +142,26 @@ function ChatHost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabIds.length]);
 
-  // Keyboard: Cmd+T new, Cmd+W close, Cmd+Opt+Arrow cycle.
+  // Keyboard: Cmd+T new, Cmd+W close, Cmd+Opt+Arrow cycle. Only while
+  // the Console surface is actually visible — it stays mounted (hidden)
+  // when you switch away, so an ungated window listener would hijack
+  // ⌘T/⌘W on every other surface.
   useEffect(() => {
+    if (!active) return;
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
       if (!meta) return;
-      if (e.key === "t" || e.key === "T") {
+      // ⌘T / ⌘W (no Shift) manage console tabs. The global handler
+      // (Shell) yields these to us while the Console surface is active,
+      // so exactly one action fires. Shifted variants stay reserved for
+      // the workspace (⌘⇧T reopen, ⌘⇧[ / ⌘⇧] cycle).
+      if ((e.key === "t" || e.key === "T") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         const id = createTab();
         setActiveTabId(id);
         return;
       }
-      if (e.key === "w" || e.key === "W") {
+      if ((e.key === "w" || e.key === "W") && !e.shiftKey) {
         if (activeTabId) {
           e.preventDefault();
           handleClose(activeTabId);
@@ -169,7 +177,7 @@ function ChatHost() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTabId]);
+  }, [activeTabId, active]);
 
   const handleClose = useCallback(async (id: TabId) => {
     const tab = getTab(id);
