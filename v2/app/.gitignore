@@ -27,3 +27,6 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
+
+# Tauri updater signing key env (never commit signing secrets)
+.env_updater

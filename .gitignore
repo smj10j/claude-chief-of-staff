@@ -4,11 +4,14 @@ node_modules/
 data/cos.db
 data/cos.db-*
 data/.overdue-notified
+data/files/exports/
 data/logs/
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 .env
+cos-dev/TODO-prd-*.md
 bin/reminders/.apple-reminders-bin
 bin/calendar/.eventkit-bin

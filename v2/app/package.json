@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "setup-codesign": "bash scripts/setup-dev-codesign.sh",
     "tauri:fresh": "bash scripts/launch-fresh.sh",
-    "tauri:fresh:restore": "bash scripts/launch-fresh.sh --restore"
+    "tauri:fresh:restore": "bash scripts/launch-fresh.sh --restore",
+    "make-latest-json": "bash scripts/make-latest-json.sh"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
