@@ -1,27 +1,38 @@
-# Career
+# Career (shared references)
 
-Promotion tracking, growth plans, and strategic relationships.
+Career-development docs are **not centralized here** — they live in each
+person's own folder so they surface in the app's per-person **Career** section
+(People → open a person → Career).
 
-## Current Level & Target
-<!-- Where you are and where you're headed. Example:
-- **Current:** Senior Engineering Manager
-- **Target:** Director of Engineering
-- **Sponsor:** [Name] (your manager or champion)
--->
+This folder holds only the org-level **reference** docs that are shared across
+every leveling assessment (your company's leveling framework, your personal
+leveling guidelines, etc.).
 
-## Strategic Relationships
-<!-- People your manager or sponsors recommended building relationships with.
-Track status and next steps for each. Example:
-- **[Name]** — [Their role]. Status: [building/established]. Next: [action]
--->
+## Where career docs live now
 
-## Growth Areas
-<!-- Specific skills or behaviors you're working on. For each:
-- **Source:** Who gave the feedback and when (e.g., "from [Name], 2026-03-12")
-- **Why it matters:** How this connects to your target level
-- **Concrete practice:** What you're doing differently, with specific actions
-- **Tracking:** How you'll know it's working (e.g., "Track: did I do X this week?")
--->
+| Whose | Location |
+|-------|----------|
+| **You** — your own promotion track | `../one-on-ones/self/<your-slug>/career/` |
+| **A direct report / skip-level report** | `../one-on-ones/<relationship>/<slug>/career/` |
 
-## Next Steps
-<!-- Immediate actions for your career growth. Link to tasks in tasks.yaml where applicable. -->
+Each person's `career/` folder is shaped like a project folder: a `README.md`
+overview plus any number of extra docs (a promotion packet, a leveling
+assessment, etc.). New docs added there show up automatically in that person's
+Career section.
+
+## Reference Docs (stay here)
+
+Drop shared, org-level references here — for example:
+
+| File | Purpose |
+|------|---------|
+| `eng-leveling-framework.md` | Your company's IC competency framework (source of truth for level definitions) |
+| `leveling-guidelines.md` | Your personal leveling philosophy (used by `/level-candidate`) |
+
+## Per-person career template
+
+When a new direct report or skip-level report is added, a `career/README.md`
+is scaffolded from the standard template (see the one-on-ones
+[README](../one-on-ones/README.md#career-folder) for the workflow). The
+template sections: **Summary · Strengths · Growth Areas · Current Landscape ·
+Your Commitments · Check-in Cadence**.

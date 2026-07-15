@@ -395,6 +395,12 @@ export function PersonProfile({
             )}
           </section>
 
+          <PersonCareer
+            relPath={target.rel_path}
+            target={target}
+            onOpenDoc={onOpenDoc}
+          />
+
           <section className="cos-profile-readme">
             <SectionHeader
               label="README"
@@ -429,6 +435,120 @@ export function PersonProfile({
         </>
       )}
     </div>
+  );
+}
+
+// =============================================================
+// Career section — each person's folder can hold a `career/`
+// subfolder: a flat set of markdown docs with README.md as the
+// landing/overview, shaped exactly like a project folder. We reuse
+// the project file-lister (content_list_project_files) rather than a
+// bespoke command — it returns README-first and yields an empty list
+// when the folder is missing, so a person with no career/ folder
+// simply shows the "start one" empty state (the editor's save path
+// create_dir_all's the folder on first write).
+//
+// Folders are seeded for the people you develop (direct reports
+// + skip-level reports) and your own "You" page; every other profile
+// shows the empty state until a doc is added.
+// =============================================================
+
+type CareerDoc = { name: string; rel_path: string };
+
+function careerDocLabel(name: string): string {
+  const stem = name.replace(/\.(md|html)$/i, "");
+  if (stem === "README") return "Overview";
+  return stem
+    .split(/[-_]/)
+    .filter((w) => w.length > 0)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function PersonCareer({
+  relPath,
+  target,
+  onOpenDoc,
+}: {
+  relPath: string;
+  target: ProfileTarget;
+  onOpenDoc: (doc: OpenDoc) => void;
+}) {
+  const careerPath = `${relPath}/career`;
+  const [docs, setDocs] = useState<CareerDoc[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    invoke<CareerDoc[]>("content_list_project_files", { relPath: careerPath })
+      .then((r) => {
+        if (!cancelled) setDocs(r);
+      })
+      .catch(() => {
+        if (!cancelled) setDocs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [careerPath]);
+
+  const openCareerDoc = (relPathToOpen: string, label: string) =>
+    onOpenDoc({
+      relPath: relPathToOpen,
+      label,
+      crumbs: [{ label: target.label, profile: target }],
+    });
+
+  // README (overview) pinned first. The backend already sorts it to
+  // the front; we re-sort defensively so the pin is layout-driven.
+  const sorted = (docs ?? []).slice().sort((a, b) => {
+    const ar = a.name === "README.md" ? 0 : 1;
+    const br = b.name === "README.md" ? 0 : 1;
+    return ar - br || a.name.localeCompare(b.name);
+  });
+
+  return (
+    <section className="cos-profile-career">
+      <SectionHeader
+        label="Career"
+        count={sorted.length}
+        trailing={
+          sorted.length > 0 ? (
+            <button
+              type="button"
+              className="cos-btn cos-btn-ghost"
+              onClick={() => openCareerDoc(`${careerPath}/README.md`, "Career")}
+              title="Open the career overview doc"
+            >
+              open
+            </button>
+          ) : undefined
+        }
+      />
+      {docs === null ? (
+        <div className="cos-empty">…</div>
+      ) : sorted.length === 0 ? (
+        <div className="cos-empty">
+          No career docs yet — track level, growth areas, and promotion
+          progress here.{" "}
+          <button
+            type="button"
+            className="cos-btn cos-btn-ghost"
+            onClick={() => openCareerDoc(`${careerPath}/README.md`, "Career")}
+          >
+            start one
+          </button>
+        </div>
+      ) : (
+        <div className="cos-profile-snippet-grid">
+          {sorted.map((d) => (
+            <SnippetCard
+              key={d.rel_path}
+              date={careerDocLabel(d.name)}
+              onOpen={() => openCareerDoc(d.rel_path, careerDocLabel(d.name))}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

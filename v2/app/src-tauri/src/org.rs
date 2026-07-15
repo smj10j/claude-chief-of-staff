@@ -63,6 +63,12 @@ pub struct OrgNode {
     pub parent: Option<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub is_self: bool,
+    /// Curated out of the visible org view: the node stays in the file (so the
+    /// person still counts as "in the org" — no orphan-panel entry — and their
+    /// 1:1 folder is untouched) but the UI renders it nowhere. Persisted, not
+    /// computed: it survives save (`strip_computed` leaves it alone).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub hidden: bool,
 
     // --- Computed on load, stripped before save ---
     // Each is deserialized-optional (default if absent) and
@@ -262,6 +268,7 @@ mod tests {
                 slug: None,
                 parent: None,
                 is_self: false,
+                hidden: false,
                 has_folder: false,
                 relationship: None,
                 rel_path: None,
@@ -292,6 +299,34 @@ mod tests {
         assert!(raw.contains("\"is_self\": true"));
         // Manager and direct-report-a keep their slugs.
         assert!(raw.contains("\"slug\": \"manager\""));
+    }
+
+    #[test]
+    fn hidden_flag_persists_through_save() {
+        // `hidden` is user-curated state, not a computed field — it must
+        // survive the save round-trip (unlike has_folder/rel_path).
+        let tmp = TempDir::new().unwrap();
+        let file = OrgFile {
+            views: vec![OrgView {
+                id: "primary".into(),
+                label: "Primary".into(),
+                description: String::new(),
+                hierarchy: vec![
+                    OrgNode { id: "a".into(), label: "A".into(), slug: Some("a".into()), hidden: true, ..Default::default() },
+                    OrgNode { id: "b".into(), label: "B".into(), slug: Some("b".into()), ..Default::default() },
+                ],
+                partners: vec![],
+            }],
+        };
+        save(tmp.path(), &file).unwrap();
+        let raw = fs::read_to_string(org_file(tmp.path())).unwrap();
+        assert!(raw.contains("\"hidden\": true"), "hidden:true must persist");
+        assert_eq!(raw.matches("\"hidden\"").count(), 1, "hidden:false must be elided");
+
+        let got = load(tmp.path()).unwrap();
+        let h = &got.views[0].hierarchy;
+        assert!(h.iter().find(|n| n.id == "a").unwrap().hidden);
+        assert!(!h.iter().find(|n| n.id == "b").unwrap().hidden);
     }
 
     #[test]

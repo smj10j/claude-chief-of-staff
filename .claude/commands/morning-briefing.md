@@ -14,6 +14,14 @@ Generate a prioritized daily briefing. Run all data gathering in parallel, then 
 
 3. **1:1 Prep**: For any 1:1s on today's calendar, check if a session file exists in `data/files/areas/one-on-ones/`. If not, flag that prep is needed. If one exists, note the key topics.
 
+   **Folder lookup is fuzzy, not exact.** Folders are slugified full names (e.g. `alice-nguyen`, `bob-carter`) but calendar events typically show only the first name (e.g. "Alice / You", "Bob / You"). Always do a case-insensitive recursive search across all relationship subfolders before declaring "no folder":
+
+   ```bash
+   find data/files/areas/one-on-ones -maxdepth 3 -type d -iname "*<first-name>*"
+   ```
+
+   Only conclude "no folder" if this search returns empty. The `/prep-1on1` skill uses this same pattern — match it exactly.
+
 4. **Meeting Prep**: For any meetings in `data/files/areas/meetings/`, check the README for context.
 
 5. **Signals**: If a Slack/comms integration is available, search for recent activity mentioning you or your teams from yesterday/today. Look for:
@@ -72,13 +80,15 @@ Run all data gathering (calendar, tasks, Slack/comms, projects) in parallel. Ide
 Before writing the briefing, **prep every 1:1 and tracked meeting on today's calendar**. This ensures the briefing reflects what was actually prepped and can include key topics from each session file.
 
 #### 1:1 Auto-Prep
-For each 1:1 on today's calendar where the person has a folder in `data/files/areas/one-on-ones/`:
+For each 1:1 on today's calendar, first resolve whether a folder exists using the fuzzy lookup pattern from data gathering step 3 (`find data/files/areas/one-on-ones -maxdepth 3 -type d -iname "*<first-name>*"`). Do not rely on memory or guess — run the search.
+
+If a folder is found:
 - **Skip if**: the other person has declined or not responded to the invite (flag in the briefing but don't waste time prepping)
 - **Skip if**: a session file for today already exists
 - **Prep**: Follow the full prep workflow from `/prep-1on1` — read README + last session, gather context, create the session file with Shared Agenda + Prep + Raw Notes sections
 - Run all 1:1 preps in parallel using subagents
 
-For 1:1s where the person does NOT have a folder in `data/files/areas/one-on-ones/`, note it in the briefing and ask if the user wants to add them.
+Only if the recursive search returns empty, note in the briefing that the person has no folder and ask if the user wants to add them. **Never write "no folder" in the briefing without running the search first.**
 
 #### Meeting Auto-Prep
 For each meeting on today's calendar that matches a folder in `data/files/areas/meetings/`:

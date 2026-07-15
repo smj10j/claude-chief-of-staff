@@ -10,6 +10,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import "../editor/editor.css";
 import { resolveRelativePath } from "../editor/resolveRelativePath";
 import { ensureDocPath } from "../editor/linkOpen";
+import { intentFromEvent } from "../state/tabs";
 
 /**
  * Read-only markdown renderer. Reuses the same Tiptap extension set
@@ -69,6 +70,9 @@ export function MarkdownView({
     const container = containerRef.current;
     if (!container) return;
     function onClick(e: MouseEvent) {
+      // auxclick fires for every non-primary button; only middle-click
+      // (button 1 ≡ open-in-background) should route a link.
+      if (e.type === "auxclick" && e.button !== 1) return;
       const target = e.target as HTMLElement | null;
       const anchor = target?.closest("a") as HTMLAnchorElement | null;
       if (!anchor) return;
@@ -90,14 +94,20 @@ export function MarkdownView({
       if (!resolved) return;
       const final = ensureDocPath(resolved);
       const label = final.split("/").pop()?.replace(/\.md$/, "") ?? final;
+      // Cmd/Ctrl/middle-click opens the target in a new tab; a plain
+      // click follows in place (read-mode default).
       window.dispatchEvent(
         new CustomEvent("cos:open-doc", {
-          detail: { relPath: final, label },
+          detail: { relPath: final, label, intent: intentFromEvent(e) },
         }),
       );
     }
     container.addEventListener("click", onClick);
-    return () => container.removeEventListener("click", onClick);
+    container.addEventListener("auxclick", onClick);
+    return () => {
+      container.removeEventListener("click", onClick);
+      container.removeEventListener("auxclick", onClick);
+    };
   }, [relPath]);
 
   if (!editor) return null;

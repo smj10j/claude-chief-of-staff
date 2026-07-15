@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "setup-codesign": "bash scripts/setup-dev-codesign.sh",
     "tauri:fresh": "bash scripts/launch-fresh.sh",
-    "tauri:fresh:restore": "bash scripts/launch-fresh.sh --restore"
+    "tauri:fresh:restore": "bash scripts/launch-fresh.sh --restore",
+    "make-latest-json": "bash scripts/make-latest-json.sh"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
@@ -46,6 +47,8 @@
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^9.1.0",
+    "remark-gfm": "^4.0.1",
     "tiptap-markdown": "^0.9.0"
   },
   "devDependencies": {

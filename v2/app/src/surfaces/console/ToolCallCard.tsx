@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { type ToolCall } from "../../state/chatSession";
@@ -23,7 +23,11 @@ import {
  *   - bash: expanded (the command + output is short usually)
  *   - everything else: collapsed
  */
-export function ToolCallCard({ call }: { call: ToolCall }) {
+export const ToolCallCard = memo(function ToolCallCard({
+  call,
+}: {
+  call: ToolCall;
+}) {
   const isFileEdit =
     call.name === "Edit" ||
     call.name === "Write" ||
@@ -88,7 +92,7 @@ export function ToolCallCard({ call }: { call: ToolCall }) {
       )}
     </div>
   );
-}
+});
 
 /**
  * Pull the most user-facing field out of the tool input as a

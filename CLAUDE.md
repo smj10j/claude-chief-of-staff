@@ -163,7 +163,8 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
     - `data/files/areas/` - ongoing responsibilities with no finish line (never archived)
       - `data/files/areas/one-on-ones/` - 1:1 system with per-person folders
         - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
-        - Organized by relationship type: `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
+        - Organized by relationship type: `self/` (your own "You" page), `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
+        - Direct reports + skip-level reports (and `self/`) also have a `career/` folder (career-development docs, shaped like a project folder — a README overview + optional extra docs). Surfaced in the app's per-person **Career** section. Scaffolded on folder creation; see one-on-ones README → Career Folder. Shared leveling references stay in `data/files/areas/career/`.
         - **Full people listing and folder tree in** `data/files/areas/one-on-ones/README.md` — that file is the source of truth for who has folders and which category they're in
         - **Session workflow also defined in** `data/files/areas/one-on-ones/README.md` — follow this for all prep and digest steps
         - Before a 1:1: read README + last session, generate session doc with empty `## Raw Notes` section. After: digest raw notes, read shared doc if available via integration, update README, update tasks, propose new AIs

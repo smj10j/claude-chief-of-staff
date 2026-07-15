@@ -909,37 +909,7 @@ button {
   max-width: 1100px;
 }
 
-.cos-projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--cos-space-lg);
-}
-
-.cos-projects-col {
-  display: grid;
-  gap: var(--cos-space-sm);
-  padding: var(--cos-space-md);
-  border-radius: var(--cos-radius-md);
-  background: var(--cos-surface-raised);
-}
-
-.cos-projects-col.tone-blocked {
-  background: var(--cos-status-blocked-tint);
-}
-
-.cos-projects-col.tone-at-risk {
-  background: var(--cos-status-at-risk-tint);
-}
-
-.cos-projects-col.tone-on-track {
-  background: var(--cos-status-on-track-tint);
-}
-
-.cos-projects-col.tone-soon-done {
-  background: var(--cos-status-soon-done-tint);
-}
-
-.cos-projects-col-list {
+.cos-projects-list {
   display: grid;
   gap: var(--cos-space-xs);
 }
@@ -951,6 +921,18 @@ button {
   border-radius: var(--cos-radius-sm);
   background: var(--cos-surface-canvas);
   transition: background var(--cos-motion-quick) var(--cos-motion-ease);
+}
+
+.cos-project-card.tone-at-risk {
+  background: var(--cos-status-blocked-tint);
+}
+
+.cos-project-card.tone-at-risk.is-clickable:hover {
+  background: color-mix(
+    in srgb,
+    var(--cos-status-blocked-tint) 60%,
+    var(--cos-surface-hover)
+  );
 }
 
 .cos-project-card.is-clickable {
@@ -7015,6 +6997,16 @@ button {
 }
 
 /* ============ PRD-116 Phase 2.5 — Chat mode + mode toggle ============ */
+/* Persistent Console wrapper (Shell keeps it mounted across surface
+   switches). Fills the main zone like a routed surface; `hidden` fully
+   removes it from layout when another surface or a doc is showing. */
+.cos-console-host {
+  height: 100%;
+}
+.cos-console-host[hidden] {
+  display: none;
+}
+
 .cos-console-shell {
   display: flex;
   flex-direction: column;
@@ -7475,6 +7467,101 @@ button {
   font-family: inherit;
 }
 
+/* Lightweight transcript markdown (react-markdown). Mirrors the editor's
+   read-mode styling (editor.css) without a ProseMirror instance per
+   block. Kept scoped to .cos-chat-markdown so it never leaks into the
+   Tiptap doc viewer. */
+.cos-chat-markdown {
+  color: var(--cos-content-primary);
+  font-size: var(--cos-font-body);
+  line-height: 1.55;
+  word-break: break-word;
+}
+.cos-chat-markdown > :first-child {
+  margin-top: 0;
+}
+.cos-chat-markdown > :last-child {
+  margin-bottom: 0;
+}
+.cos-chat-markdown p {
+  margin: 0 0 var(--cos-space-md);
+}
+.cos-chat-markdown ul,
+.cos-chat-markdown ol {
+  margin: 0 0 var(--cos-space-md);
+  padding-left: var(--cos-space-xl);
+}
+.cos-chat-markdown li {
+  margin-bottom: var(--cos-space-xs);
+}
+.cos-chat-markdown li > p {
+  margin-bottom: var(--cos-space-xs);
+}
+.cos-chat-markdown h1,
+.cos-chat-markdown h2,
+.cos-chat-markdown h3,
+.cos-chat-markdown h4 {
+  margin: var(--cos-space-md) 0 var(--cos-space-sm);
+  line-height: 1.25;
+}
+.cos-chat-markdown code {
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: 1px 5px;
+  border-radius: var(--cos-radius-sm);
+  font-family: var(--cos-font-family-mono);
+  font-size: 0.92em;
+}
+.cos-chat-markdown pre {
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  overflow-x: auto;
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+  margin: 0 0 var(--cos-space-md);
+}
+.cos-chat-markdown pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+.cos-chat-markdown a {
+  color: var(--cos-info);
+  text-decoration: underline;
+  text-decoration-color: rgba(122, 162, 247, 0.3);
+  cursor: pointer;
+}
+.cos-chat-markdown blockquote {
+  border-left: 3px solid var(--cos-outline-strong);
+  padding-left: var(--cos-space-md);
+  color: var(--cos-content-secondary);
+  margin: var(--cos-space-md) 0;
+}
+.cos-chat-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--cos-outline-subtle);
+  margin: var(--cos-space-lg) 0;
+}
+.cos-chat-markdown table {
+  border-collapse: collapse;
+  margin: 0 0 var(--cos-space-md);
+  font-size: 0.95em;
+}
+.cos-chat-markdown th,
+.cos-chat-markdown td {
+  border: 1px solid var(--cos-outline-subtle);
+  padding: 4px 8px;
+  text-align: left;
+}
+.cos-chat-markdown th {
+  background: var(--cos-surface-raised);
+  font-weight: 600;
+}
+
 .cos-chat-jump-pill {
   position: absolute;
   bottom: 80px;
@@ -7505,6 +7592,14 @@ button {
 
 .cos-chat-input textarea {
   width: 100%;
+  /* Height is driven by the auto-grow effect in ChatView (measures
+     scrollHeight); box-sizing: border-box keeps that math exact so
+     the box doesn't creep. max-height + overflow are the safety net
+     once the draft passes the cap. */
+  box-sizing: border-box;
+  min-height: 38px;
+  max-height: 50vh;
+  overflow-y: auto;
   resize: none;
   border: 1px solid var(--cos-outline-subtle);
   border-radius: var(--cos-radius-sm);

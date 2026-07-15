@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 export type PersonCardProps = {
   name: string;
@@ -15,7 +15,9 @@ export type PersonCardProps = {
   attention?: boolean;
   /** Optional action chips rendered below the body row (Prep, DM, etc). */
   actions?: ReactNode;
-  onOpen?: () => void;
+  /** The originating event is passed so callers can resolve an open
+   *  intent (Cmd/middle-click → new tab) via `intentFromEvent`. */
+  onOpen?: (e: MouseEvent) => void;
 };
 
 /**
@@ -46,7 +48,12 @@ export function PersonCard({
     <button
       type="button"
       className={className}
-      onClick={onOpen}
+      onClick={(e) => onOpen?.(e)}
+      onAuxClick={(e) => {
+        // Middle-click ≡ Cmd-click (open in background tab). The click
+        // event doesn't fire for the middle button, so route it here.
+        if (e.button === 1) onOpen?.(e);
+      }}
       aria-label={`Open ${name}`}
     >
       <div className="cos-person-card-avatar" aria-hidden>

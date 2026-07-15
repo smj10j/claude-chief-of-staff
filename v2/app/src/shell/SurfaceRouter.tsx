@@ -1,5 +1,3 @@
-import { lazy, Suspense } from "react";
-
 import { Calendar } from "../surfaces/Calendar";
 import { Home } from "../surfaces/Home";
 import { Meetings } from "../surfaces/Meetings";
@@ -13,12 +11,11 @@ import { Settings } from "../surfaces/Settings";
 import { TaskDetailPanel, Work, type V1Task } from "../surfaces/Work";
 import { type OpenDoc } from "../state/openDoc";
 import { type SurfaceId } from "../state/surfaces";
+import { type OpenIntent } from "../state/tabs";
 
-// Lazy: xterm is ~150 KB and only the Console surface needs it. Cold
-// startup paths (Home, People, Tasks) shouldn't pay that cost.
-const Console = lazy(() =>
-  import("../surfaces/Console").then((m) => ({ default: m.Console })),
-);
+// NB: the Console surface is not routed here. Shell mounts it
+// persistently (kept alive across surface switches) so this router only
+// covers the surfaces that are fine to mount/unmount on demand.
 
 type Props = {
   active: SurfaceId;
@@ -27,7 +24,7 @@ type Props = {
   onOpenDoc: (doc: OpenDoc) => void;
   taskRefreshNonce: number;
   peopleProfile: ProfileTarget | null;
-  onGoToProfile: (target: ProfileTarget) => void;
+  onGoToProfile: (target: ProfileTarget, intent?: OpenIntent) => void;
   onClearProfile: () => void;
   onTaskCreated: (t: V1Task) => void;
   taskScrollHint: { id: string } | null;
@@ -118,13 +115,8 @@ export function SurfaceRouter({
     case "ops":
       return <Ops onGoToProfile={onGoToProfile} />;
     case "console":
-      return (
-        <Suspense
-          fallback={<div className="cos-empty">Loading console…</div>}
-        >
-          <Console />
-        </Suspense>
-      );
+      // Mounted persistently by Shell; never routed here.
+      return null;
     case "settings":
       return <Settings />;
   }

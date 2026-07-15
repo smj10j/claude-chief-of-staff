@@ -22,6 +22,13 @@ const DocEditor = lazy(() =>
 const HtmlEditor = lazy(() =>
   import("../editor/HtmlEditor").then((m) => ({ default: m.HtmlEditor })),
 );
+// Console carries xterm (~290 KB) + its chat runtime. Kept off the cold
+// path (Home/People/Tasks never pay it) via lazy, then — once the user
+// visits it the first time — mounted persistently so switching back is
+// instant instead of re-parsing the whole transcript each time.
+const Console = lazy(() =>
+  import("../surfaces/Console").then((m) => ({ default: m.Console })),
+);
 import { CommandPalette } from "../palette/CommandPalette";
 import { useGlobalKeys } from "../state/keys";
 import { type OpenDoc } from "../state/openDoc";
@@ -332,13 +339,22 @@ export function Shell() {
   // ---- Tab strip handlers (PRD §4.4.1 / §4.4.3) ----
   const handleNewTab = useCallback(() => {
     setTabsState((s) => {
+      // On the Console surface, ⌘T is owned by the console's own tab
+      // strip (new chat session). Yield so we don't also spawn a
+      // workspace tab and steal focus away from the console.
+      if (readActiveTab(s).surface === "console") return s;
       const newTab = createTab("home");
       return appendTab(s, newTab, true);
     });
   }, []);
 
   const handleCloseActiveTab = useCallback(() => {
-    setTabsState((s) => closeTabInState(s, s.activeTabId));
+    setTabsState((s) => {
+      // Symmetric with ⌘T: on the Console surface, ⌘W closes the active
+      // chat tab (handled inside the console), not the workspace tab.
+      if (readActiveTab(s).surface === "console") return s;
+      return closeTabInState(s, s.activeTabId);
+    });
   }, []);
 
   const handleCloseTab = useCallback((tabId: string) => {
@@ -830,6 +846,16 @@ export function Shell() {
 
   const showingDoc = openDoc !== null;
 
+  // Once the Console surface has been visited, keep it mounted for the
+  // rest of the session (hidden when another surface is active). Its
+  // chat/PTY sessions and rendered transcript survive the switch, so
+  // coming back is instant. Deferred until first visit so cold start
+  // never pays the xterm chunk.
+  const [consoleMounted, setConsoleMounted] = useState(false);
+  useEffect(() => {
+    if (active === "console") setConsoleMounted(true);
+  }, [active]);
+
   if (catalogMode) {
     return <Catalog />;
   }
@@ -931,7 +957,7 @@ export function Shell() {
                   />
                 )}
               </Suspense>
-            ) : (
+            ) : active !== "console" ? (
               <ErrorBoundary
                 key={active}
                 label={`the ${active} surface`}
@@ -955,6 +981,23 @@ export function Shell() {
                 onGoToMeeting={goToMeeting}
                 onClearMeeting={clearMeeting}
               />
+              </ErrorBoundary>
+            ) : null}
+            {/* Console is mounted once (on first visit) and kept alive,
+                hidden when a doc or another surface is showing, so
+                switching back to it is instant. */}
+            {consoleMounted && (
+              <ErrorBoundary label="the console surface">
+                <div
+                  className="cos-console-host"
+                  hidden={showingDoc || active !== "console"}
+                >
+                  <Suspense
+                    fallback={<div className="cos-empty">Loading console…</div>}
+                  >
+                    <Console active={!showingDoc && active === "console"} />
+                  </Suspense>
+                </div>
               </ErrorBoundary>
             )}
           </main>
