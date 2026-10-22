@@ -13,6 +13,7 @@ one-on-ones/
   skip-level/        -- leaders above your manager (strategic relationships)
   skip-level-reports/ -- your reports' reports (skip-level 1:1s)
   xfn/               -- cross-functional partners
+  alumni/            -- people who've left (folders kept for history; note "formerly <category>/")
 ```
 
 Direct reports, skip-level reports, and your own `self/` folder also get a
@@ -140,6 +141,8 @@ folder.
 6. Update README if new context changes what's top of mind
 7. Create the session file using the template below
 8. Convert all timestamps to the user's local timezone
+
+**Carry only live threads.** Do not pull standing threads forward and re-expand them every session by default. A thread earns a spot in the new prep only if it is *live*: it was discussed last session, has a new signal since (Slack/doc/task), or has a genuine action owed this session. Threads that keep getting carried without being discussed are fluff — drop them, or demote them to a single one-line "still open, no movement" mention. When in doubt, prefer a short prep with the few things that actually matter over a comprehensive one that re-litigates dormant topics.
 
 **Session file template:**
 

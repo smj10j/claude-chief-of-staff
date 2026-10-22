@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This is a personal work management system, not a software project. There are no build commands or tests. Claude's role here is chief-of-staff: managing tasks, drafting comms, preparing for meetings, and maintaining context across sessions.
+This is primarily a personal work management system. Claude's role here is chief-of-staff: managing tasks, drafting comms, preparing for meetings, and maintaining context across sessions. Supporting tooling lives in `bin/` (tests in `bin/db/tests/`, run with `node --test`), and the desktop app in `v2/app/` has its own build (see "Chief of Staff app (v2)" below).
 
 ---
 
@@ -103,6 +103,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 - `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches.
 
 **Comms / docs**
+- `/exec-weekly-update` — Example command: draft your program's section of a recurring leadership status doc. Adapt the placeholders to your doc's structure before use.
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc. Optionally pass a doc URL to update in-place.
 - `/process-ui-annotations [file]` — Process annotations from `<file>.annotations.json` sidecar. Triggered by the v2 desktop app's "Process with Claude" button or run manually.
 
@@ -158,10 +159,14 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 The repo separates **template code** (syncs with upstream) from **user data** (unique to your instance):
 
 - `bin/` - tooling scripts (template code)
+  - `bin/cos` - headless CLI entrypoint (`task`, `brief`, `prep`, `events`, `connectors`, `schedule`, …). Delegates to the scripts below. `bash bin/cos --help` for the full surface.
   - `bin/db/` - task CLI, data access module, migrations, tests
   - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run. Supports `list`, `complete`, `add`, and `update` commands.
     - `bin/reminders/overdue-notifier.sh` - checks the task DB for overdue tasks and creates Apple Reminders with alarms (read-only — never modifies tasks). Tracks notified tasks in `data/.overdue-notified` to avoid duplicates.
     - `bin/reminders/overdue-notifier-setup.sh` - installs/uninstalls a macOS launchd agent that runs the notifier daily at 8:00 AM. Run `bash bin/reminders/overdue-notifier-setup.sh install` to enable.
+  - `bin/calendar/` - EventKit calendar adapter (Swift; `eventkit.sh` auto-compiles `eventkit.swift` on first run). Backs `cos events`.
+  - `bin/schedule/` - morning briefing automation. `morning-briefing.sh` runs `/morning-briefing` non-interactively; `morning-briefing-setup.sh` installs/uninstalls the daily launchd agent (`cos schedule install`).
+  - `bin/weekly-review/` - weekly review automation. `weekly-review-runner.sh` runs `/weekly-review` non-interactively; `weekly-review-setup.sh` installs/uninstalls the Friday launchd agent.
   - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
 - `data/` - all user-specific data (ignored by upstream review)
   - `data/cos.db` - SQLite task database (auto-created on first run)
@@ -172,13 +177,14 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
     - `data/files/areas/` - ongoing responsibilities with no finish line (never archived)
       - `data/files/areas/one-on-ones/` - 1:1 system with per-person folders
         - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
-        - Organized by relationship type: `self/` (your own "You" page), `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
+        - Organized by relationship type: `self/` (your own "You" page), `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`, `alumni/` (people who've left; folders retained for history)
         - Direct reports + skip-level reports (and `self/`) also have a `career/` folder (career-development docs, shaped like a project folder — a README overview + optional extra docs). Surfaced in the app's per-person **Career** section. Scaffolded on folder creation; see one-on-ones README → Career Folder. Shared leveling references stay in `data/files/areas/career/`.
         - **Full people listing and folder tree in** `data/files/areas/one-on-ones/README.md` — that file is the source of truth for who has folders and which category they're in
         - **Session workflow also defined in** `data/files/areas/one-on-ones/README.md` — follow this for all prep and digest steps
         - Before a 1:1: read README + last session, generate session doc with empty `## Raw Notes` section. After: digest raw notes, read shared doc if available via integration, update README, update tasks, propose new AIs
         - Every session file MUST start with a `## Shared Agenda` section at the top — a compressed, copy/paste-ready list that can be dropped directly into a shared doc. Each item should be a question or a topic to check in on. Keep it tight — no background context unless absolutely necessary. The full prep (context, coaching notes, research) goes in the sections below. This shared agenda serves three purposes: (1) gives the other person context before the meeting, (2) structures the live conversation, (3) makes it easy for Claude to read the doc afterward and capture outcomes.
       - `data/files/areas/meetings/` - recurring meetings and forums (not 1:1s). Same pattern: `README.md` (persistent context, attendees, standing agenda) + `sessions/` (dated prep/notes)
+        - **Full meeting listing (names, cadence, attendees) in** `data/files/areas/meetings/README.md` — that file is the source of truth for which meetings have folders
         - Before a meeting: read README + last session. After: create session file. Periodically: update README
       - `data/files/areas/career/` - promotion tracking, growth plans, strategic relationships
       - `data/files/areas/comms/` - drafted messages and comms
@@ -186,6 +192,10 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/weekly-reviews/` - Friday weekly review artifacts. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/weekly-review`.
       - `data/files/areas/task-triage/` - working directory for `/task-triage` output (triage.md)
       - `data/files/areas/console-sessions/` - per-tab Console transcripts from the v2 desktop app's multi-tab Console. Naming pattern `YYYY-MM-DD-HHMM-c#.{md,jsonl}` where `c#` is the tab number. Auto-written by the app, not edited by hand.
+      - `data/files/areas/ops/` - JSON snapshots for the v2 app's Ops Health tab (`incidents.json`, `datadog-monitors.json`, `rollbar-top.json`). Written by the `/ops-*` commands. Optional `team.txt` (team scope) is read by `/ops-team-jira` and `/planning-team-epics`.
+      - `data/files/areas/work/` - JSON snapshots of Jira work (`my-jira.json`, `team-jira.json`) plus `/velocity-diagnose` reports (`velocity-diagnose-<date>.md`). Written by `/ops-my-jira`, `/ops-team-jira`, `/velocity-diagnose`.
+      - `data/files/areas/planning/` - JSON snapshots for the Roadmap tab (`epics.json`, `jpd.json`) plus `updates/<epic-key>-<date>.md` drafts from `/planning-epic-update`. Written by the `/planning-*` commands.
+      - `data/files/areas/org/` - canonical `org.json` for the People → org views. Written by `/org-generate`.
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
 - `cos-dev/` - Chief of Staff app development documentation
   - `cos-dev/TDD.md` - Technical design document
