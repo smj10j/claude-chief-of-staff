@@ -3105,7 +3105,7 @@ intro paragraph
         fs::create_dir_all(&dir).unwrap();
         fs::write(
             dir.join("2026-04-25.md"),
-            "# Friday April 25\n\n## Top Priorities\n\n- ship cp4\n- review aaron prep\n- send the slack update\n",
+            "# Friday April 25\n\n## Top Priorities\n\n- ship cp4\n- review bob prep\n- send the slack update\n",
         )
         .unwrap();
         let c = Content::new(tmp.path().to_path_buf());
@@ -3126,20 +3126,20 @@ intro paragraph
         // a project README the bullet links to, and a session file.
         let briefing_dir = tmp.path().join("areas/daily-briefings/sessions");
         fs::create_dir_all(&briefing_dir).unwrap();
-        let project_dir = tmp.path().join("projects/leadership-shift");
+        let project_dir = tmp.path().join("projects/example-project");
         fs::create_dir_all(&project_dir).unwrap();
-        fs::write(project_dir.join("README.md"), "# Leadership shift\n").unwrap();
+        fs::write(project_dir.join("README.md"), "# Example project\n").unwrap();
         let session_dir =
-            tmp.path().join("areas/one-on-ones/direct-reports/aaron-salls/sessions");
+            tmp.path().join("areas/one-on-ones/direct-reports/alice/sessions");
         fs::create_dir_all(&session_dir).unwrap();
-        fs::write(session_dir.join("2026-04-25.md"), "# Aaron 4/25\n").unwrap();
+        fs::write(session_dir.join("2026-04-25.md"), "# Alice 4/25\n").unwrap();
 
         fs::write(
             briefing_dir.join("2026-04-25.md"),
             "## Top Priorities\n\n\
-             1. **Aaron transition** — see [aaron 4/25](../../one-on-ones/direct-reports/aaron-salls/sessions/2026-04-25.md)\n\
-             2. **Bob leadership shift** — [project](../../../projects/leadership-shift/) — HIGH, due 4/22.\n\
-             3. **Churn model use cases for Avik** — HIGH, due today.\n",
+             1. **Alice transition** — see [alice 4/25](../../one-on-ones/direct-reports/alice/sessions/2026-04-25.md)\n\
+             2. **Bob project kickoff** — [project](../../../projects/example-project/) — HIGH, due 4/22.\n\
+             3. **Pricing model use cases for Carol** — HIGH, due today.\n",
         ).unwrap();
 
         let c = Content::new(tmp.path().to_path_buf());
@@ -3150,14 +3150,14 @@ intro paragraph
         //     no scroll hint (we have a precise target).
         assert_eq!(
             got[0].rel_path.as_deref(),
-            Some("areas/one-on-ones/direct-reports/aaron-salls/sessions/2026-04-25.md"),
+            Some("areas/one-on-ones/direct-reports/alice/sessions/2026-04-25.md"),
         );
         assert_eq!(got[0].scroll_to, None);
 
         // (2) folder-style project link → resolved to projects/<id>/README.md.
         assert_eq!(
             got[1].rel_path.as_deref(),
-            Some("projects/leadership-shift/README.md"),
+            Some("projects/example-project/README.md"),
         );
         assert_eq!(got[1].scroll_to, None);
 
@@ -3169,7 +3169,7 @@ intro paragraph
         );
         assert_eq!(
             got[2].scroll_to.as_deref(),
-            Some("Churn model use cases for Avik"),
+            Some("Pricing model use cases for Carol"),
         );
     }
 
@@ -3507,7 +3507,7 @@ intro paragraph
         let bytes: &[u8] = b"PNG-bytes";
         let rel = content
             .write_attachment(
-                "areas/one-on-ones/peers/aaron/sessions/2026-04-25.md",
+                "areas/one-on-ones/peers/alice/sessions/2026-04-25.md",
                 "screenshot.png",
                 bytes,
             )

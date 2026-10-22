@@ -30,7 +30,7 @@ Cmd+N anywhere → quick task capture. Tasks land in the **Tasks** surface, buck
 
 When the list feels heavy, hit **"Triage"** — Claude reviews overdue + stale items and suggests actions (re-date, drop, delegate). You confirm before anything changes.
 
-Tasks can be tagged with a project (`work`, `team:dder-mx`, `xfn`, etc.) and link to other docs by relative path.
+Tasks can be tagged with a project (`work`, `team:core`, `xfn`, etc.) and link to other docs by relative path.
 
 ### 4. Annotate a markdown file → have Claude apply your edits
 

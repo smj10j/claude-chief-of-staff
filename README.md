@@ -178,7 +178,7 @@ The 1:1 prep process gracefully degrades without integrations — it just works 
 ```bash
 curl -L https://github.com/github/github-mcp-server/releases/latest/download/github-mcp-server-darwin-arm64.tar.gz | tar xz -C ~/.local/bin
 ```
-Then run `/chime-github:github-setup` in Claude Code for guided configuration.
+Then register it with Claude Code (`claude mcp add`) — see the [GitHub MCP server README](https://github.com/github/github-mcp-server) for the token and config options.
 
 ## File structure
 

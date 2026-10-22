@@ -88,7 +88,7 @@ The v2 UI parses this line to know which file to reload in the editor. **The `SA
 
 ## Rules
 - Always read both the internal session file AND the shared Google Doc. The Google Doc is often the primary source.
-- Always convert timestamps to CDT.
+- Always convert timestamps to your local timezone.
 - Don't repeat context the person already knows.
 - If the user provides verbal notes (in the chat message), treat those as raw notes and incorporate them.
 - After digesting, offer to create/update tasks for any follow-ups identified.

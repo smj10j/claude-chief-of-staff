@@ -106,9 +106,9 @@ li.setGlyphType(DocumentApp.GlyphType.NUMBER);
 
 ```javascript
 // Do this:
-p.appendText('CRP migration is underway - and the evaluation path is being rebuilt');
+p.appendText('The migration is underway - and the rollout plan is being rebuilt');
 // Not this:
-p.appendText('CRP migration is underway \u2014 and the evaluation path is being rebuilt');
+p.appendText('The migration is underway \u2014 and the rollout plan is being rebuilt');
 ```
 
 ### No horizontal rules

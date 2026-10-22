@@ -102,20 +102,20 @@ export function Catalog() {
           <PersonCard
             name="Alice Wong"
             role="EM, Payments Core"
-            initials="AS"
+            initials="AW"
             lastTouched="3d"
           />
           <PersonCard
             name="Carol Lee"
             role="EM, Payments Growth"
-            initials="PK"
+            initials="CL"
             lastTouched="2w"
             stale
           />
           <PersonCard
             name="Dan Smith"
-            role="EM, At Work / AtWork"
-            initials="JS"
+            role="EM, Platform"
+            initials="DS"
             lastTouched="—"
             attention
           />
@@ -136,15 +136,15 @@ export function Catalog() {
             relative="today"
             followUps={[
               { text: "Share growth plan doc", done: false },
-              { text: "Confirm CB Sweep 2.0 launch date", done: true },
+              { text: "Confirm v2.0 launch date", done: true },
             ]}
           />
           <SnippetCard
             date="2026-04-17"
             relative="7 days ago"
             followUps={[
-              { text: "Higher Limits fairness analysis", done: false },
-              { text: "Albert onboarding plan", done: true },
+              { text: "Pricing fairness analysis", done: false },
+              { text: "Carol onboarding plan", done: true },
             ]}
           />
         </div>
@@ -156,7 +156,7 @@ export function Catalog() {
           <TimeBucket label="Now" tone="overdue" count={3} shortcut="N">
             <div style={{ padding: "var(--cos-space-xs) 0" }}>
               <span style={{ color: "var(--cos-content-secondary)" }}>
-                Bob leadership shift response
+                Bob roadmap review response
               </span>
             </div>
             <div style={{ padding: "var(--cos-space-xs) 0" }}>
@@ -166,7 +166,7 @@ export function Catalog() {
             </div>
             <div style={{ padding: "var(--cos-space-xs) 0" }}>
               <span style={{ color: "var(--cos-content-secondary)" }}>
-                Aaron transition doc review
+                Team transition doc review
               </span>
             </div>
           </TimeBucket>

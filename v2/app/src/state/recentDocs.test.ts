@@ -182,10 +182,10 @@ describe("decorateRecentLabel", () => {
   it("leaves a specific label unchanged", () => {
     expect(
       decorateRecentLabel(
-        "areas/one-on-ones/peers/aaron/README.md",
-        "Aaron's Notes",
+        "areas/one-on-ones/peers/dana/README.md",
+        "Dana's Notes",
       ),
-    ).toBe("Aaron's Notes");
+    ).toBe("Dana's Notes");
   });
 
   it("prefixes the parent person for a generic README label", () => {
@@ -217,8 +217,8 @@ describe("decorateRecentLabel", () => {
 
   it("prefixes the parent project for a generic README label", () => {
     expect(
-      decorateRecentLabel("projects/director-pm-backfill/README.md", "README"),
-    ).toBe("Director Pm Backfill · README");
+      decorateRecentLabel("projects/hiring-plan/README.md", "README"),
+    ).toBe("Hiring Plan · README");
   });
 
   it("returns just the owner when the label is empty", () => {

@@ -394,8 +394,8 @@ mod tests {
 
     #[test]
     fn parse_whoami_extracts_email() {
-        let raw = r#"{"user":{"id":"U1","email":"steve@example.com","name":"Steve"}}"#;
-        assert_eq!(parse_whoami(raw).unwrap(), "steve@example.com");
+        let raw = r#"{"user":{"id":"U1","email":"carol@example.com","name":"Carol"}}"#;
+        assert_eq!(parse_whoami(raw).unwrap(), "carol@example.com");
     }
 
     #[test]

@@ -651,7 +651,7 @@ function LoadedEditor({
   // instance with the *incoming* relPath would mutate the ref before
   // unmount, so dirty-flush wrote the old editor's content to the new
   // tab's path. Symptom in the wild: Bob-session content overwrote
-  // Aaron-README, Aaron-session content overwrote Grace-skip-level.
+  // Alice-README, Alice-session content overwrote Carol-skip-level.
   const relPathRef = useRef(relPath);
 
   const publish = useCallback(() => {

@@ -733,7 +733,7 @@ export function deriveTitle(tab: TabState): string {
   if (tab.openDoc) {
     const label = tab.openDoc.label?.trim() ?? "";
     // `decorateRecentLabel` is a no-op for distinctive labels and
-    // prefixes the owner ("Alice · 2026-04-22", "Bank Approval Queue
+    // prefixes the owner ("Alice · 2026-04-22", "Example Project
     // · README") for generic ones. The same logic the sidebar uses
     // for its Recent section.
     return decorateRecentLabel(tab.openDoc.relPath, label);

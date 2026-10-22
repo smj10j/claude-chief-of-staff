@@ -11,7 +11,7 @@ const DOC_EXTS = [".md", ".html"] as const;
 /**
  * Normalize an in-app link target to a path the editor can open.
  *
- * Folder-style targets like `projects/leadership-shift/` get bumped
+ * Folder-style targets like `projects/example-project/` get bumped
  * to that folder's README.md — matches the project-card / meeting-card
  * routing convention so the user lands on the canonical doc, not a
  * 404 for a "directory file".

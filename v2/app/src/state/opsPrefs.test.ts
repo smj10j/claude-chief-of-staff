@@ -38,9 +38,9 @@ describe("resolveMyPolicyKeywords (B9-CP41)", () => {
       resolveMyPolicyKeywords({
         ...DEFAULT_OPS_PREFS,
         myTeam: "Payments Eng",
-        myPolicyKeywords: ["dder", "dte"],
+        myPolicyKeywords: ["payments", "core"],
       }),
-    ).toEqual(["dder", "dte"]);
+    ).toEqual(["payments", "core"]);
   });
 
   it("falls back to splitting myTeam on whitespace when keywords are empty", () => {

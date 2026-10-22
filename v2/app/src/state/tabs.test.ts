@@ -727,11 +727,11 @@ describe("deriveTitle (PRD §4.3 precedence)", () => {
   it("generic README label is decorated with the project slug", () => {
     const t = createTab("projects", {
       openDoc: {
-        relPath: "projects/bank-approval-queue/README.md",
+        relPath: "projects/example-project/README.md",
         label: "README",
       },
     });
-    expect(deriveTitle(t)).toBe("Bank Approval Queue · README");
+    expect(deriveTitle(t)).toBe("Example Project · README");
   });
 
   it("falls back to a humanized owner segment when openDoc has no label", () => {
@@ -763,12 +763,12 @@ describe("deriveTitle (PRD §4.3 precedence)", () => {
         createTab("projects", {
           projectProfile: {
             slug: "x",
-            label: "Bank Approval Queue",
+            label: "Example Project",
             rel_path: "x",
           },
         }),
       ),
-    ).toBe("Bank Approval Queue");
+    ).toBe("Example Project");
     expect(
       deriveTitle(
         createTab("meetings", {
