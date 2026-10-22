@@ -83,6 +83,8 @@ Two patterns depending on content type:
 - Bold the header row
 - Bold the total/summary row if there is one
 - Keep tables simple — no merged cells, no excessive formatting
+- **Every row keeps all its cells.** An empty cell still occupies a column so the row's column count matches the header — otherwise the table renders misaligned. The markdown-to-gdoc converter preserves empty inner cells (see below); don't drop a trailing/empty cell in the source markdown to "save space."
+- **Status-glyph tables** (decision logs and similar): before publishing, verify the legend glyphs (✅ 🟡 ⏸ ♻︎) and any emoji/color render consistently across every row — a mixed or missing glyph reads as a mistake in a shared doc.
 
 ## Apps Script Implementation Notes
 
@@ -138,3 +140,27 @@ Markdown link syntax `[text](url)` must be converted to actual hyperlinks — di
 ### `<mark>` and other HTML tags must be stripped
 
 Annotation tags like `<mark data-annotation-id="...">text</mark>` from the UI should be stripped, preserving only the inner text.
+
+### Table cells: preserve empty inner cells
+
+When parsing a markdown table row, strip only the outer pipes, then split — keep inner empty cells so every row keeps its column count. Do not `.filter()` out empty cells, or a row with a blank column collapses and misaligns against the header.
+
+```javascript
+// Do this — strip outer pipes, then split, keeping empty cells:
+const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+// Not this — this drops empty cells and breaks column alignment:
+// const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+```
+
+### Internal anchor links resolve to heading bookmarks
+
+A `#anchor` URL passed straight to `setLinkUrl` renders as a broken link, so in-document anchors (`[Points of confusion](#points-of-confusion)`) need special handling:
+
+- **In paragraphs and list items:** each heading gets a bookmark keyed by its GitHub-style slug as it's rendered. `#slug` links are deferred until the whole doc exists, then pointed at `#bookmark=<id>`, so they jump to the heading. A slug with no matching heading stays plain text.
+- **In table cells:** `#anchor` links are skipped (display text kept as plain text) — only external links get `setLinkUrl`.
+
+```javascript
+if (run.link && run.link.charAt(0) !== '#') cellElem.setLinkUrl(offset, runEnd, run.link);
+```
+
+All of this is implemented in `bin/md-to-gdoc-payload.js`. Documented here so it isn't regressed.
