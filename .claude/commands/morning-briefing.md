@@ -4,7 +4,9 @@ Generate a prioritized daily briefing. Run all data gathering in parallel, then 
 
 ## Data Gathering (run in parallel)
 
-1. **Calendar**: If a calendar integration is available, get today's events. Convert all times to the user's local timezone. Note which are accepted vs. maybe vs. declined.
+0. **Connector preflight (RUN THIS FIRST, before anything else)**: Run `bash bin/cos connectors`. This shells out to `claude mcp list` — a **real connection probe** — and is the ONLY source of truth for connector status. It exits 0 when every configured critical connector (see `COS_CRITICAL_CONNECTORS`) is live. **Any connector-status line in the briefing MUST be derived from this command's output, never from the session's startup snapshot.** If this command reports everything connected, do NOT add any "not connected / carried-forward / unavailable" caveat — the connectors are live. Only name a connector as down if `bash bin/cos connectors` actually printed `✗ NOT connected` for it (or the command itself failed to run). A connector it reports as `· not configured` simply isn't part of your setup — skip that source without a warning. See CLAUDE.md → "Connector availability — ground truth only."
+
+1. **Calendar**: If a calendar integration is available, get today's events. If its tools aren't loaded yet at session start, resolve them with `ToolSearch("select:<your-calendar-list-events-tool>")` first — it waits for connecting servers. Convert all times to the user's local timezone. Note which are accepted vs. maybe vs. declined.
 
 2. **Tasks**: Run `bash bin/cos task list --format json` and `bash bin/cos task recurring --format json`. The JSON output includes a computed `isOverdue` field. Identify:
    - Tasks due today (with times, if set - partition into time-specific vs. end-of-day)
@@ -24,10 +26,11 @@ Generate a prioritized daily briefing. Run all data gathering in parallel, then 
 
 4. **Meeting Prep**: For any meetings in `data/files/areas/meetings/`, check the README for context.
 
-5. **Signals**: If a Slack/comms integration is available, search for recent activity mentioning you or your teams from yesterday/today. Look for:
+5. **Signals**: If a Slack/comms integration is configured, resolve its tools with `ToolSearch` first if they aren't loaded yet — do NOT skip this section because the startup snapshot showed the server "still connecting", or showed a stale duplicate server as "needs authentication". Then search for recent activity mentioning you or your teams from yesterday/today. Look for:
    - Direct mentions or DMs that may need response
    - Threads in team channels with activity
    - Any incidents or escalations
+   - If Slack genuinely fails to connect after a ToolSearch, note "Signals skipped — Slack did not connect" in the briefing rather than silently omitting the section.
 
 6. **Projects**: Scan `data/files/projects/INDEX.md` for active projects with upcoming milestones.
 
@@ -111,6 +114,7 @@ The briefing should:
 This creates a running history of daily briefings, following the same date-based session pattern used for 1:1s and meetings.
 
 ## Rules
+- **Connector status comes from `bash bin/cos connectors` ONLY.** Never write "Slack/Glean/Calendar not connected", "MCP not available this session", or any "carried-forward signal" caveat based on the session's startup snapshot. That snapshot's "still connecting" is a transient startup state, not a failure. If the preflight (step 0) reported everything connected, the briefing states signals are live — full stop. A false "not connected" line is a bug, not a hedge.
 - Be concise. This is a morning scan, not a novel.
 - Lead with what matters most, not what's first chronologically.
 - Always offer to copy any draft messages to clipboard via pbcopy.

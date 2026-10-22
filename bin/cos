@@ -15,6 +15,21 @@
 #   events today        — pull today's calendar via EventKit
 #   events week         — today + 6 days
 #   check               — install readiness (binary, EventKit, ICS URL)
+#   connectors          — ground-truth MCP connector health via
+#                          `claude mcp list` (a real connection probe;
+#                          never trust a session's transient "still
+#                          connecting" snapshot). Each critical connector
+#                          reports ✓ connected / ✗ NOT connected /
+#                          · not configured. Alias-tolerant: a connector
+#                          counts as live if ANY server whose name
+#                          matches is connected, so a stale duplicate
+#                          that needs auth can't mask a working one.
+#                          Exits non-zero only when a configured critical
+#                          connector is down. Override the critical list
+#                          with COS_CRITICAL_CONNECTORS — comma-separated
+#                          entries, `|` between aliases within one entry
+#                          (default: "glean,google-workspace|google
+#                          calendar|google drive,slack").
 #   export <dir>        — tar.gz backup of content tree + cos.db +
 #                          blob store into <dir>/cos-backup-<date>.tgz
 #   schedule install    — install daily /morning-briefing launchd
@@ -206,6 +221,87 @@ case "${1:-help}" in
     else
       echo "✗ not found at $TASK_CLI"
       fail=1
+    fi
+    exit "$fail"
+    ;;
+  connectors)
+    # Ground-truth MCP connector health. Shells out to `claude mcp
+    # list`, which actually *connects* to each server and reports a
+    # real status — unlike a session's startup snapshot, whose "still
+    # connecting" is transient and must NEVER be reported as a failure
+    # (see CLAUDE.md → "Connector availability").
+    #
+    # Matching is alias-tolerant per connector: it's healthy if ANY
+    # server whose name matches one of its aliases reports Connected.
+    # That keeps a working server from being masked by a stale
+    # duplicate (same capability, sibling name) that needs auth.
+    if ! claude_bin=$(resolve_claude); then
+      echo "cos connectors: claude binary not found. Set CLAUDE_BIN or install Claude Code." >&2
+      exit 2
+    fi
+    # `claude mcp list` pings every server, so this takes ~10-30s.
+    raw="$("$claude_bin" mcp list 2>/dev/null || true)"
+    if [ -z "$raw" ]; then
+      echo "cos connectors: 'claude mcp list' produced no output (could not probe)." >&2
+      exit 2
+    fi
+    # Server lines look like "<name>: <command-or-url> - <status>". The
+    # name is everything before the first ": " (plugin servers carry
+    # colons in their names, e.g. "plugin:foo:foo"). The literal word
+    # "Connected" only appears on live lines — "Needs authentication" /
+    # "Failed to connect" never contain it — so the check is
+    # glyph-independent.
+    # probe_cap <aliases-ERE> → prints "connected <name>", "down", or "absent"
+    probe_cap() {
+      local aliases="$1" line name present=0
+      while IFS= read -r line; do
+        case "$line" in *": "*) ;; *) continue ;; esac
+        name="${line%%: *}"
+        if grep -qiE "$aliases" <<< "$name"; then
+          present=1
+          case "$line" in
+            *Connected*) echo "connected $name"; return 0 ;;
+          esac
+        fi
+      done <<< "$raw"
+      if [ "$present" -eq 1 ]; then echo "down"; else echo "absent"; fi
+    }
+    critical="${COS_CRITICAL_CONNECTORS:-glean,google-workspace|google calendar|google drive,slack}"
+    fail=0
+    configured=0
+    echo "Connector health (source: claude mcp list — real connection probe)"
+    IFS=',' read -r -a entries <<< "$critical"
+    for entry in "${entries[@]}"; do
+      entry="$(echo "$entry" | sed 's/^ *//; s/ *$//')"
+      [ -z "$entry" ] && continue
+      printf "  %-18s" "${entry%%|*}:"
+      result="$(probe_cap "$entry")"
+      case "$result" in
+        connected*) echo "✓ connected (${result#connected })"; configured=1 ;;
+        down)       echo "✗ NOT connected"; configured=1; fail=1 ;;
+        *)          echo "· not configured" ;;
+      esac
+    done
+    # Informational (never gating): other connectors some skills use.
+    echo "  ---"
+    for entry in "atlassian" "datadog" "rollbar"; do
+      printf "  %-18s" "$entry:"
+      result="$(probe_cap "$entry")"
+      case "$result" in
+        connected*) echo "✓ connected (${result#connected })" ;;
+        down)       echo "· not connected" ;;
+        *)          echo "· not configured" ;;
+      esac
+    done
+    if [ "$configured" -eq 0 ]; then
+      echo "" >&2
+      echo "None of the critical connectors are configured. That's fine if you" >&2
+      echo "don't use them; set COS_CRITICAL_CONNECTORS to the ones you rely on." >&2
+    fi
+    if [ "$fail" -ne 0 ]; then
+      echo "" >&2
+      echo "One or more CRITICAL connectors are down. Re-auth via /mcp in an" >&2
+      echo "interactive Claude Code session, then re-run 'cos connectors'." >&2
     fi
     exit "$fail"
     ;;
