@@ -104,6 +104,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 
 **Comms / docs**
 - `/exec-weekly-update` — Example command: draft your program's section of a recurring leadership status doc. Adapt the placeholders to your doc's structure before use.
+- `/decision-log [project or topic]` — Build a decision log for a project or program: "what did we decide, and what's still open?" Sweeps local docs + program sheet/PRDs + relevant Slack channels, synthesizes one scannable table per area (decision · detail · status · dated source link), and surfaces conflicts rather than adjudicating them. Decisions, facts, and open questions only — no workstream or owner tracking.
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc. Optionally pass a doc URL to update in-place.
 - `/process-ui-annotations [file]` — Process annotations from `<file>.annotations.json` sidecar. Triggered by the v2 desktop app's "Process with Claude" button or run manually.
 

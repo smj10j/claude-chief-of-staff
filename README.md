@@ -130,6 +130,7 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/level-candidate` | IC leveling assessment against the engineering competency framework |
 | `/org-generate` | Rebuild `data/files/areas/org/org.json` and every per-person `person.json` (powers the app's People → org views) |
 | `/person-refresh [name]` | Refresh one person's `person.json` (Slack/email/title metadata) |
+| `/decision-log [project or topic]` | Build a decision log for a project: what's decided and what's still open, one table per area with dated source links. Surfaces conflicts rather than adjudicating them |
 | `/ops-incidents` | Snapshot active incidents from your incidents Slack channel for the app's Ops Health tab |
 | `/ops-datadog-monitors` | Snapshot failing Datadog monitors for the Ops Health tab |
 | `/ops-rollbar-top` | Snapshot top Rollbar error items for the Ops Health tab |
