@@ -57,6 +57,7 @@ import {
   getActiveTabId,
   getTab,
   getVersion,
+  replayItems,
   setTabSession,
   subscribeChat,
   updateTab,
@@ -159,6 +160,14 @@ export function ChatView({
     () => tab?.attachments ?? [],
   );
 
+  // Restored ("ghost") tab preview — the prior conversation, read back
+  // from the transcript and shown read-only until the user sends the
+  // first message (which spawns the live child via startSession). This
+  // is what makes a restored tab show its content the moment it opens,
+  // not only after the first send. Null when there's a live session or
+  // nothing to restore. PRD-116 §4.5.
+  const [preview, setPreview] = useState<ChatItem[] | null>(null);
+
   // Persist draft + attachments back to the tab record so switching
   // tabs and switching back finds the in-progress message intact.
   useEffect(() => {
@@ -167,6 +176,36 @@ export function ChatView({
     // (Map mutation + emit). Persistence to localStorage is debounced
     // by virtue of being a single setItem call per emit — fine.
   }, [tabId, draft, attachments]);
+
+  // Load the restored conversation for a ghost tab (no live session yet
+  // but a resume hint pointing at a prior transcript) so it shows on
+  // open. Re-reads the same transcript startSession will use — the
+  // extra file read is cheap and keeps the display + spawn paths
+  // independent. Depends on session *presence* (not identity) so it
+  // doesn't re-run on every streamed turn once the tab is live.
+  const hasSession = session !== null;
+  useEffect(() => {
+    if (hasSession) {
+      setPreview(null);
+      return;
+    }
+    const src = getTab(tabId)?.resumeHint?.transcriptMdRel;
+    if (!src) {
+      setPreview(null);
+      return;
+    }
+    let cancelled = false;
+    void invoke<unknown[]>("chat_replay", { transcriptMdRel: src })
+      .then((events) => {
+        if (!cancelled) setPreview(replayItems(events));
+      })
+      .catch(() => {
+        if (!cancelled) setPreview(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tabId, hasSession]);
 
   const feedRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -233,6 +272,16 @@ export function ChatView({
     }
     lastItemCountRef.current = session.items.length;
   }, [session?.items.length, autoScroll, session]);
+
+  // Pin the restored-conversation preview to its most-recent turn so a
+  // reopened tab lands at the bottom (where the user left off), not the
+  // top of a long history.
+  useLayoutEffect(() => {
+    if (session) return;
+    if (!preview || preview.length === 0) return;
+    const feed = feedRef.current;
+    if (feed) feed.scrollTop = feed.scrollHeight;
+  }, [preview, session]);
 
   // Detect manual scroll-up to pause auto-scroll.
   useEffect(() => {
@@ -443,9 +492,28 @@ export function ChatView({
         argv: open.argv,
         transcriptMdRel: open.transcript_md_rel ?? undefined,
       };
+      // Replay the prior transcript into the feed so a restored (ghost)
+      // tab shows its conversation instead of an empty pane. `--resume`
+      // (above) restored claude's server-side context; this restores
+      // what the user sees. We read the *old* transcript named by the
+      // resume hint — `chat_open` with a resume_id starts a fresh
+      // transcript pair, so `open.transcript_md_rel` is the new file.
+      // Best-effort: a replay failure must not block starting the tab.
+      let replayed: ChatItem[] = [];
+      const replaySource = resumeHint?.transcriptMdRel;
+      if (replaySource) {
+        try {
+          const events = await invoke<unknown[]>("chat_replay", {
+            transcriptMdRel: replaySource,
+          });
+          replayed = replayItems(events);
+        } catch {
+          // Leave the feed empty — the session still opened fine.
+        }
+      }
       const initial: ChatSession = {
         meta,
-        items: [],
+        items: replayed,
         inFlight: false,
         queue: [],
         exited: false,
@@ -825,7 +893,30 @@ export function ChatView({
         />
       )}
       <div className="cos-chat-feed" ref={feedRef}>
-        {!session && localState.kind !== "starting" && <EmptyState />}
+        {!session && preview && preview.length > 0 && (
+          <>
+            {localState.kind !== "starting" && (
+              <div className="cos-chat-status-banner" role="status">
+                Restored session — send a message to resume.
+              </div>
+            )}
+            {preview.map((item) => (
+              <ChatItemView
+                key={item.id}
+                item={item}
+                findQuery={findQuery}
+                onEditUserTurn={(text) => {
+                  setDraft(text);
+                  setTimeout(() => inputRef.current?.focus(), 0);
+                }}
+                onRegenerateAssistant={() => undefined}
+              />
+            ))}
+          </>
+        )}
+        {!session &&
+          (!preview || preview.length === 0) &&
+          localState.kind !== "starting" && <EmptyState />}
         {localState.kind === "starting" && (
           <div className="cos-chat-status">spinning up claude…</div>
         )}

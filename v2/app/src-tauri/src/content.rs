@@ -1450,6 +1450,72 @@ impl Content {
         })
     }
 
+    /// PRD-116 §4.5 — read a console session's `.jsonl` event log so
+    /// the frontend can replay a restored ("ghost") tab's conversation
+    /// back into the feed. `rel_path` is the workspace-relative `.md`
+    /// transcript path carried on the tab's resume hint; we read its
+    /// `.jsonl` sibling (the resume/replay source of truth) and return
+    /// each event in order.
+    ///
+    /// Blank and unparseable lines are skipped. A missing `.jsonl`
+    /// (brand-new session with no turns yet, or transcript creation
+    /// failed at open time) is not an error — we return an empty vec so
+    /// the caller falls back to an empty feed rather than surfacing a
+    /// failure.
+    pub fn read_transcript_events(
+        &self,
+        rel_path: &str,
+    ) -> AppResult<Vec<serde_json::Value>> {
+        // Normalize to the `.jsonl` sibling regardless of whether the
+        // caller handed us the `.md` or the `.jsonl` path.
+        let jsonl_rel = if let Some(stem) = rel_path.strip_suffix(".md") {
+            format!("{stem}.jsonl")
+        } else if rel_path.ends_with(".jsonl") {
+            rel_path.to_string()
+        } else {
+            format!("{rel_path}.jsonl")
+        };
+
+        // Path-safety: only plain components (mirrors `resolve`, but we
+        // must tolerate a not-yet-existing file, which `resolve` can't
+        // — it canonicalizes eagerly).
+        let rel = Path::new(&jsonl_rel);
+        for c in rel.components() {
+            if !matches!(c, Component::Normal(_)) {
+                return Err(AppError::Io(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "rel_path must contain only plain components",
+                )));
+            }
+        }
+        let joined = self.root.join(rel);
+        if !joined.exists() {
+            return Ok(Vec::new());
+        }
+        // Canonicalize + containment check (defense-in-depth vs symlinks).
+        let canon_root = fs::canonicalize(&self.root)?;
+        let canon = fs::canonicalize(&joined)?;
+        if !canon.starts_with(&canon_root) {
+            return Err(AppError::Io(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "rel_path escapes content root",
+            )));
+        }
+
+        let text = fs::read_to_string(&canon)?;
+        let mut events = Vec::new();
+        for line in text.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
+                events.push(v);
+            }
+        }
+        Ok(events)
+    }
+
     /// Write markdown to disk, protected by the per-change snapshot store +
     /// hash-chained audit log (PRD-102 §13a + §12). Sequence:
     ///   1. Read current file (if any) → `before` blob
@@ -3453,6 +3519,50 @@ intro paragraph
         let c = Content::new(tmp.path().join("does-not-exist"));
         assert_eq!(c.recent_sessions(5).unwrap().len(), 0);
         assert!(!c.status().found);
+    }
+
+    #[test]
+    fn read_transcript_events_reads_jsonl_sibling() {
+        let tmp = TempDir::new().unwrap();
+        let dir = tmp.path().join("areas/console-sessions/sessions");
+        std::fs::create_dir_all(&dir).unwrap();
+        // Two events + a blank line + an unparseable line. The reader
+        // should return the two valid events and skip the noise.
+        std::fs::write(
+            dir.join("s.jsonl"),
+            "{\"type\":\"user\",\"_origin\":\"local\",\"message\":{\"role\":\"user\",\"content\":\"hi\"}}\n\
+             \n\
+             not json at all\n\
+             {\"type\":\"result\",\"subtype\":\"success\"}\n",
+        )
+        .unwrap();
+        let c = Content::new(tmp.path().to_path_buf());
+        // Caller passes the `.md` path; we resolve the `.jsonl` sibling.
+        let events = c
+            .read_transcript_events("areas/console-sessions/sessions/s.md")
+            .unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0]["type"], "user");
+        assert_eq!(events[0]["message"]["content"], "hi");
+        assert_eq!(events[1]["type"], "result");
+    }
+
+    #[test]
+    fn read_transcript_events_missing_file_is_empty_not_error() {
+        let tmp = TempDir::new().unwrap();
+        let c = Content::new(tmp.path().to_path_buf());
+        let events = c
+            .read_transcript_events("areas/console-sessions/sessions/nope.md")
+            .unwrap();
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn read_transcript_events_rejects_parent_escape() {
+        let tmp = TempDir::new().unwrap();
+        let c = Content::new(tmp.path().to_path_buf());
+        let err = c.read_transcript_events("../outside.md").unwrap_err();
+        assert!(format!("{err}").contains("plain components"));
     }
 
     // --- CP7 write-path tests ---

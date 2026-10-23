@@ -692,6 +692,60 @@ export function dequeueTurn(s: ChatSession): {
   return { next: { ...s, queue: rest }, text: head };
 }
 
+/**
+ * Rebuild a conversation feed from a transcript's raw event log — the
+ * `.jsonl` read back via the `chat_replay` IPC. This is the visible
+ * half of resume: `--resume <sessionId>` restores claude's server-side
+ * context, `replayItems` restores what the user *sees* so a reopened
+ * ("ghost") tab shows its prior conversation instead of an empty pane.
+ * PRD-116 §4.5.
+ *
+ * We fold each event through the exact reducers used live, so the
+ * reconstruction is faithful:
+ *   - The `inFlight` lifecycle is reproduced (a user turn flips it on,
+ *     the turn's `result` event flips it off), which is what makes the
+ *     stream of per-block `assistant` events merge back into a single
+ *     bubble per turn — and tool results re-attach to their calls.
+ *   - Local user turns are re-materialized as user items. The live
+ *     reducer treats a `user` event with string content as a no-op
+ *     echo (the live path adds user turns optimistically in `submit`),
+ *     but on replay there is no optimistic path, so we add them here.
+ *
+ * Unparseable / metadata-only events (`system.init`, hook events,
+ * `rate_limit_event`) pass through `applyEvent` and are handled or
+ * ignored exactly as they are live.
+ */
+export function replayItems(events: unknown[]): ChatItem[] {
+  let s: ChatSession = {
+    meta: { handle: "", binary_path: "", cwd: "", argv: [] },
+    items: [],
+    inFlight: false,
+    queue: [],
+    exited: false,
+    dataUnlisten: () => undefined,
+    exitUnlisten: () => undefined,
+    stderrUnlisten: () => undefined,
+  };
+  for (const event of events) {
+    if (!event || typeof event !== "object") continue;
+    const ev = event as Record<string, unknown>;
+    if (ev.type === "user") {
+      const message = ev.message as Record<string, unknown> | undefined;
+      const content = message?.content;
+      // Our own user turns are logged with a string `content` (plus an
+      // `_origin: "local"` marker). Claude's `user` events instead
+      // carry a tool_result array — those fall through to applyEvent so
+      // the result attaches to the originating tool call.
+      if (typeof content === "string") {
+        s = addUserTurn(s, content);
+        continue;
+      }
+    }
+    s = applyEvent(s, event);
+  }
+  return s.items;
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────
 
 let idCounter = 0;
