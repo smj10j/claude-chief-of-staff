@@ -53,6 +53,7 @@ import {
   autoLabelTabFromFirstTurn,
   bumpUnseenCompletion,
   dequeueTurn,
+  describeSessionCost,
   enqueueTurn,
   getActiveTabId,
   getTab,
@@ -1110,6 +1111,7 @@ function ChatHeader({
   onToggleFind: () => void;
   onConvert: (() => void) | null;
 }) {
+  const cost = describeSessionCost(meta?.modelCosts);
   return (
     <div className="cos-chat-chips">
       {meta?.model && (
@@ -1139,17 +1141,20 @@ function ChatHeader({
                 ? " is-warn"
                 : ""
           }`}
-          title="Context window usage"
+          title={`Context window usage: ${(meta.contextTokens ?? 0).toLocaleString()} of ${(meta.contextWindow ?? 0).toLocaleString()} tokens`}
         >
           <span className="cos-chip-label">ctx</span>
           <span className="cos-chip-value">{meta.contextPercent}%</span>
         </span>
       )}
       {typeof meta?.totalCostUsd === "number" && meta.totalCostUsd > 0 && (
-        <span className="cos-chip" title="Session cost">
+        <span
+          className={`cos-chip${cost.isGuess ? " is-warn" : ""}`}
+          title={cost.title}
+        >
           <span className="cos-chip-label">cost</span>
           <span className="cos-chip-value">
-            ${meta.totalCostUsd.toFixed(4)}
+            {cost.isGuess ? "~" : ""}${meta.totalCostUsd.toFixed(4)}
           </span>
         </span>
       )}

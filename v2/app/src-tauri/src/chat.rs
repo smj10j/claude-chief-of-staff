@@ -148,6 +148,9 @@ struct TranscriptWriter {
     /// rewriting the file.
     last_session_id: Option<String>,
     last_model: Option<String>,
+    /// Latest `total_cost_usd` written. That field is the session's
+    /// running total, so each turn's own cost is the difference.
+    last_total_cost: Option<f64>,
 }
 
 impl TranscriptWriter {
@@ -159,6 +162,9 @@ impl TranscriptWriter {
         argv: Vec<String>,
     ) -> Self {
         let started_iso = chrono_like_iso();
+        // A resumed session appends to its existing .jsonl; Claude Code
+        // carries the running total across --resume, so pick it up.
+        let last_total_cost = last_total_cost_in(&jsonl_path);
         Self {
             md_path,
             jsonl_path,
@@ -169,6 +175,7 @@ impl TranscriptWriter {
             argv,
             last_session_id: None,
             last_model: None,
+            last_total_cost,
         }
     }
 
@@ -223,7 +230,7 @@ impl TranscriptWriter {
         jsonl.write_all(b"\n")?;
         // .md: humanized append. Lossy on tool args — the .jsonl is
         // the source of truth for replay.
-        if let Some(md_chunk) = event_to_markdown(event) {
+        if let Some(md_chunk) = event_to_markdown(event, self.last_total_cost) {
             let mut md = fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -232,6 +239,11 @@ impl TranscriptWriter {
         }
         // Track session id + model for the close-block.
         let ty = event.get("type").and_then(|v| v.as_str()).unwrap_or("");
+        if ty == "result" {
+            if let Some(c) = event.get("total_cost_usd").and_then(|v| v.as_f64()) {
+                self.last_total_cost = Some(c);
+            }
+        }
         if ty == "system" {
             if let Some(s) = event.get("session_id").and_then(|v| v.as_str()) {
                 self.last_session_id = Some(s.to_string());
@@ -273,8 +285,9 @@ impl TranscriptWriter {
 
 /// Map a stream-json event to a markdown chunk. None for events
 /// that don't add user-visible content (e.g., system.init metadata
-/// already lives in the frontmatter).
-fn event_to_markdown(event: &Value) -> Option<String> {
+/// already lives in the frontmatter). `prev_total_cost` is the
+/// running total before this event, used to report a turn's own cost.
+fn event_to_markdown(event: &Value, prev_total_cost: Option<f64>) -> Option<String> {
     let ty = event.get("type").and_then(|v| v.as_str())?;
     match ty {
         "assistant" => {
@@ -364,27 +377,73 @@ fn event_to_markdown(event: &Value) -> Option<String> {
                 Some(out)
             }
         }
-        "result" => {
-            let cost = event
-                .get("total_cost_usd")
-                .and_then(|v| v.as_f64())
-                .map(|c| format!("${c:.4}"))
-                .unwrap_or_else(|| "-".into());
-            let usage = event.get("usage");
-            let inp = usage
-                .and_then(|u| u.get("input_tokens"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(-1);
-            let outp = usage
-                .and_then(|u| u.get("output_tokens"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(-1);
-            Some(format!(
-                "_Turn complete · cost {cost} · tokens in {inp} / out {outp}._\n\n",
-            ))
-        }
+        "result" => Some(result_to_markdown(event, prev_total_cost)),
         _ => None,
     }
+}
+
+/// The closing line for a turn. `total_cost_usd` is the session's
+/// running total, so the turn's cost is its increase over the previous
+/// total; a total below the previous one is a fresh baseline.
+fn result_to_markdown(event: &Value, prev_total_cost: Option<f64>) -> String {
+    let cost = match event.get("total_cost_usd").and_then(|v| v.as_f64()) {
+        Some(total) => {
+            let turn = match prev_total_cost {
+                Some(prev) if total >= prev => total - prev,
+                _ => total,
+            };
+            // Claude Code marks a model it had no rate for as "unknown"
+            // and prices it at its default model's rate.
+            let guessed = event
+                .get("modelUsage")
+                .and_then(|m| m.as_object())
+                .is_some_and(|m| {
+                    m.values().any(|u| {
+                        u.get("costBasis").and_then(|b| b.as_str()) == Some("unknown")
+                    })
+                });
+            let note = if guessed { " (estimate)" } else { "" };
+            format!("${turn:.4} · session ${total:.4}{note}")
+        }
+        None => "-".into(),
+    };
+    // usage is summed over the turn's API calls. input_tokens alone is
+    // only the uncached tail, so cache reads/writes are added back in.
+    let usage = event.get("usage");
+    let tokens = |key: &str| {
+        usage
+            .and_then(|u| u.get(key))
+            .and_then(|v| v.as_i64())
+    };
+    let inp = tokens("input_tokens")
+        .map(|i| {
+            i + tokens("cache_read_input_tokens").unwrap_or(0)
+                + tokens("cache_creation_input_tokens").unwrap_or(0)
+        })
+        .unwrap_or(-1);
+    let outp = tokens("output_tokens").unwrap_or(-1);
+    format!("_Turn complete · cost {cost} · tokens in {inp} / out {outp}._\n\n")
+}
+
+/// Latest `total_cost_usd` in an existing `.jsonl` transcript, or None
+/// when the file is missing or has no result events yet.
+fn last_total_cost_in(jsonl_path: &Path) -> Option<f64> {
+    let file = fs::File::open(jsonl_path).ok()?;
+    let mut last = None;
+    for line in BufReader::new(file).lines().map_while(Result::ok) {
+        if !line.contains("\"total_cost_usd\"") {
+            continue;
+        }
+        let Ok(event) = serde_json::from_str::<Value>(&line) else {
+            continue;
+        };
+        if event.get("type").and_then(|v| v.as_str()) == Some("result") {
+            if let Some(c) = event.get("total_cost_usd").and_then(|v| v.as_f64()) {
+                last = Some(c);
+            }
+        }
+    }
+    last
 }
 
 /// Slugify a string for use in the transcript filename. Lowercase,
@@ -1346,6 +1405,70 @@ mod tests {
         // Truncation at 50 chars.
         let long = slugify_for_transcript(&"a".repeat(100));
         assert_eq!(long.len(), 50);
+    }
+
+    #[test]
+    fn result_line_reports_turn_cost_and_session_total() {
+        let ev = serde_json::json!({
+            "type": "result",
+            "total_cost_usd": 20.7367,
+            "usage": {
+                "input_tokens": 6,
+                "cache_read_input_tokens": 117127,
+                "cache_creation_input_tokens": 58023,
+                "output_tokens": 5858
+            },
+            "modelUsage": { "claude-opus-5-5": { "costBasis": "list" } }
+        });
+        assert_eq!(
+            result_to_markdown(&ev, Some(19.9696)),
+            "_Turn complete · cost $0.7671 · session $20.7367 · tokens in 175156 / out 5858._\n\n"
+        );
+    }
+
+    #[test]
+    fn result_line_treats_first_or_lower_total_as_the_turn() {
+        let ev = serde_json::json!({ "type": "result", "total_cost_usd": 0.5 });
+        let first = result_to_markdown(&ev, None);
+        assert!(first.contains("cost $0.5000 · session $0.5000 ·"), "{first}");
+        let reset = result_to_markdown(&ev, Some(3.0));
+        assert!(reset.contains("cost $0.5000 · session $0.5000 ·"), "{reset}");
+        assert!(first.contains("tokens in -1 / out -1"), "{first}");
+    }
+
+    #[test]
+    fn result_line_marks_unpriced_models_as_estimates() {
+        let ev = serde_json::json!({
+            "type": "result",
+            "total_cost_usd": 1.0,
+            "modelUsage": {
+                "claude-opus-5-5": { "costBasis": "list" },
+                "claude-next": { "costBasis": "unknown" }
+            }
+        });
+        assert!(result_to_markdown(&ev, None).contains("session $1.0000 (estimate) ·"));
+        let no_cost = serde_json::json!({ "type": "result" });
+        assert!(result_to_markdown(&no_cost, None).starts_with("_Turn complete · cost - ·"));
+    }
+
+    #[test]
+    fn last_total_cost_in_reads_the_latest_result() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let path = tmp.path().join("s.jsonl");
+        assert_eq!(last_total_cost_in(&path), None);
+        std::fs::write(
+            &path,
+            concat!(
+                "{\"type\":\"system\",\"subtype\":\"init\"}\n",
+                "{\"type\":\"result\",\"total_cost_usd\":1.25}\n",
+                "not json \"total_cost_usd\"\n",
+                "{\"type\":\"assistant\",\"total_cost_usd\":99}\n",
+                "{\"type\":\"result\",\"total_cost_usd\":2.5}\n",
+                "{\"type\":\"user\"}\n",
+            ),
+        )
+        .unwrap();
+        assert_eq!(last_total_cost_in(&path), Some(2.5));
     }
 
     #[test]

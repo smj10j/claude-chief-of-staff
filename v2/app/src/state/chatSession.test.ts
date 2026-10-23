@@ -12,6 +12,7 @@ import {
   createTab,
   cycleTab,
   dequeueTurn,
+  describeSessionCost,
   enqueueTurn,
   getActiveTabId,
   getInFlightCount,
@@ -203,26 +204,146 @@ describe("chatSession reducer", () => {
     expect(block.call.isError).toBe(true);
   });
 
-  it("captures cost + tokens + context% on result event", () => {
+  it("captures session cost + per-model breakdown on result event", () => {
     let s = addUserTurn(freshSession(), "hi");
     s = applyEvent(s, {
       type: "system",
       subtype: "init",
       session_id: "x",
-      model: "claude-opus-4-7",
+      model: "claude-opus-5-5",
     });
     s = applyEvent(s, {
       type: "result",
       subtype: "success",
-      total_cost_usd: 0.0142,
-      usage: { input_tokens: 1000, output_tokens: 500 },
+      total_cost_usd: 0.6147934,
+      modelUsage: {
+        "claude-haiku-4-5-20251001": {
+          costUSD: 0.01,
+          costBasis: "list",
+          contextWindow: 200000,
+        },
+        "claude-opus-5-5": {
+          costUSD: 0.6047934,
+          costBasis: "list",
+          contextWindow: 1000000,
+        },
+      },
     });
-    expect(s.meta.totalCostUsd).toBeCloseTo(0.0142);
-    expect(s.meta.inputTokens).toBe(1000);
-    expect(s.meta.outputTokens).toBe(500);
-    // 1500/200000 = 0.75% → 1
-    expect(s.meta.contextPercent).toBe(1);
+    expect(s.meta.totalCostUsd).toBeCloseTo(0.6147934);
+    expect(s.meta.modelCosts?.map((m) => m.model)).toEqual([
+      "claude-opus-5-5",
+      "claude-haiku-4-5-20251001",
+    ]);
+    // Window comes from the session model's row, not the subagent's.
+    expect(s.meta.contextWindow).toBe(1000000);
     expect(s.inFlight).toBe(false);
+  });
+
+  it("keeps the previous breakdown when a result has no modelUsage", () => {
+    let s = applyEvent(freshSession(), {
+      type: "result",
+      total_cost_usd: 1,
+      modelUsage: { "claude-opus-5-5": { costUSD: 1, contextWindow: 1e6 } },
+    });
+    s = applyEvent(s, { type: "result", subtype: "success" });
+    expect(s.meta.totalCostUsd).toBe(1);
+    expect(s.meta.modelCosts?.[0].costUsd).toBe(1);
+    expect(s.meta.contextWindow).toBe(1e6);
+  });
+
+  it("sizes context from the latest assistant call, cache included", () => {
+    let s = addUserTurn(freshSession(), "hi");
+    s = applyEvent(s, {
+      type: "system",
+      subtype: "init",
+      model: "claude-opus-5-5",
+    });
+    s = applyEvent(s, {
+      type: "assistant",
+      parent_tool_use_id: null,
+      message: {
+        content: [{ type: "text", text: "ok" }],
+        usage: {
+          input_tokens: 2,
+          cache_read_input_tokens: 55750,
+          cache_creation_input_tokens: 15403,
+          output_tokens: 4,
+        },
+      },
+    });
+    expect(s.meta.contextTokens).toBe(71155);
+    // Window unknown until the first result.
+    expect(s.meta.contextPercent).toBeUndefined();
+    s = applyEvent(s, {
+      type: "result",
+      modelUsage: { "claude-opus-5-5": { costUSD: 0.1, contextWindow: 1e6 } },
+    });
+    expect(s.meta.contextPercent).toBe(7);
+    s = applyEvent(s, {
+      type: "assistant",
+      message: {
+        content: [{ type: "text", text: "more" }],
+        usage: { input_tokens: 10, cache_read_input_tokens: 899990 },
+      },
+    });
+    expect(s.meta.contextPercent).toBe(90);
+  });
+
+  it("ignores subagent and zero-usage calls when sizing context", () => {
+    let s = applyEvent(freshSession(), {
+      type: "assistant",
+      message: {
+        content: [{ type: "text", text: "main" }],
+        usage: { input_tokens: 5, cache_read_input_tokens: 40000 },
+      },
+    });
+    s = applyEvent(s, {
+      type: "assistant",
+      parent_tool_use_id: "toolu_1",
+      message: {
+        content: [{ type: "text", text: "sub" }],
+        usage: { input_tokens: 5, cache_read_input_tokens: 900000 },
+      },
+    });
+    s = applyEvent(s, {
+      type: "assistant",
+      message: { content: [{ type: "text", text: "x" }], usage: {} },
+    });
+    expect(s.meta.contextTokens).toBe(40005);
+  });
+
+  it("describes list-priced cost without a warning", () => {
+    const d = describeSessionCost([
+      { model: "claude-opus-5-5", costUsd: 20.7367, costBasis: "list" },
+    ]);
+    expect(d.isGuess).toBe(false);
+    expect(d.title).toBe(
+      "Session cost (list price)\nclaude-opus-5-5: $20.7367 · list price",
+    );
+  });
+
+  it("flags cost as a guess when Claude Code had no rate for a model", () => {
+    const d = describeSessionCost([
+      { model: "claude-next", costUsd: 2, costBasis: "unknown" },
+      { model: "claude-haiku-5-5", costUsd: 0.1, costBasis: "list" },
+    ]);
+    expect(d.isGuess).toBe(true);
+    expect(d.title.split("\n")[0]).toBe("Session cost (estimate)");
+    expect(d.title).toContain(
+      "claude-next: $2.0000 · guessed: no rate for this model",
+    );
+  });
+
+  it("labels org-managed pricing", () => {
+    expect(
+      describeSessionCost([
+        { model: "claude-opus-5-5", costUsd: 1, costBasis: "managed" },
+      ]).title.split("\n")[0],
+    ).toBe("Session cost (org pricing)");
+    // Older Claude Code versions omit costBasis; they priced at list.
+    expect(describeSessionCost(undefined).title).toBe(
+      "Session cost (list price)",
+    );
   });
 
   it("flips inFlight off on result", () => {
