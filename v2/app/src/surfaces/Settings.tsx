@@ -2882,7 +2882,7 @@ function OpsSettingsSection() {
             onChange={(e) => setDraftMap(e.target.value)}
             spellCheck={false}
             aria-label="Service ownership map"
-            placeholder={`payments-core: pay-svc, ledger-svc\npayments-atwork: dte-svc`}
+            placeholder={`payments-core: pay-svc, ledger-svc\npayments-mobile: mobile-svc`}
           />
           <p className="cos-helper-text">
             Lines starting with <code>#</code> are comments.
