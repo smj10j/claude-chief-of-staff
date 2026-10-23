@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This is a personal work management system, not a software project. There are no build commands or tests. Claude's role here is chief-of-staff: managing tasks, drafting comms, preparing for meetings, and maintaining context across sessions.
+This is primarily a personal work management system. Claude's role here is chief-of-staff: managing tasks, drafting comms, preparing for meetings, and maintaining context across sessions. Supporting tooling lives in `bin/` (tests in `bin/db/tests/`, run with `node --test`), and the desktop app in `v2/app/` has its own build (see "Chief of Staff app (v2)" below).
 
 ---
 
@@ -52,6 +52,14 @@ Examples:
 - **Calendar** - meeting awareness
 - **Jira/Linear** - engineering work items
 - **Rollbar/Datadog** - incident and observability context
+
+If the same capability is registered under two server names (e.g. a hosted
+connector plus a local server, or a plugin-provided duplicate of one you
+added yourself), one is usually live while the other permanently reports
+"needs authentication". Note which one you actually use so Claude falls
+through to it instead of declaring the capability down:
+- **Slack** - use `mcp__<your-slack-server>__*`; ignore `<duplicate-server>` (always "needs authentication")
+- **Glean** - use `mcp__<your-glean-server>__*`; if those tools are missing, check the sibling before concluding "no Glean"
 -->
 
 ---
@@ -95,6 +103,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 - `/review-launch-tracker` — Review a launch tracker spreadsheet: flag unapproved items, missing artifacts, stale dates, and missing launches.
 
 **Comms / docs**
+- `/exec-weekly-update` — Example command: draft your program's section of a recurring leadership status doc. Adapt the placeholders to your doc's structure before use.
 - `/publish-to-gdoc` — Render a markdown file into a formatted Google Doc. Optionally pass a doc URL to update in-place.
 - `/process-ui-annotations [file]` — Process annotations from `<file>.annotations.json` sidecar. Triggered by the v2 desktop app's "Process with Claude" button or run manually.
 
@@ -129,6 +138,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
   bash bin/db/task-cli.sh recurring               # List recurring tasks
   bash bin/db/task-cli.sh --help                  # Full reference
   ```
+  `bash bin/cos` wraps the same task CLI (`bash bin/cos task <subcommand>`, plus `cos add` / `cos done` shortcuts) and exposes non-task verbs (`brief`, `prep`, `triage`, `events today`, `check`, `connectors`, `status`, `search`, `digest`, `export`, `schedule install/status/uninstall`, `open`). Run `bash bin/cos --help` for the full surface. `bash bin/cos connectors` is the ground-truth MCP health probe — run it before ever claiming a connector is unavailable.
   - Use `--format json` for full task data (includes notes, links)
   - Use `--format table` for human-readable terminal output
   - Default `compact` format is tab-separated, optimized for token efficiency
@@ -149,10 +159,14 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 The repo separates **template code** (syncs with upstream) from **user data** (unique to your instance):
 
 - `bin/` - tooling scripts (template code)
+  - `bin/cos` - headless CLI entrypoint (`task`, `brief`, `prep`, `events`, `connectors`, `schedule`, …). Delegates to the scripts below. `bash bin/cos --help` for the full surface.
   - `bin/db/` - task CLI, data access module, migrations, tests
   - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run. Supports `list`, `complete`, `add`, and `update` commands.
     - `bin/reminders/overdue-notifier.sh` - checks the task DB for overdue tasks and creates Apple Reminders with alarms (read-only — never modifies tasks). Tracks notified tasks in `data/.overdue-notified` to avoid duplicates.
     - `bin/reminders/overdue-notifier-setup.sh` - installs/uninstalls a macOS launchd agent that runs the notifier daily at 8:00 AM. Run `bash bin/reminders/overdue-notifier-setup.sh install` to enable.
+  - `bin/calendar/` - EventKit calendar adapter (Swift; `eventkit.sh` auto-compiles `eventkit.swift` on first run). Backs `cos events`.
+  - `bin/schedule/` - morning briefing automation. `morning-briefing.sh` runs `/morning-briefing` non-interactively; `morning-briefing-setup.sh` installs/uninstalls the daily launchd agent (`cos schedule install`).
+  - `bin/weekly-review/` - weekly review automation. `weekly-review-runner.sh` runs `/weekly-review` non-interactively; `weekly-review-setup.sh` installs/uninstalls the Friday launchd agent.
   - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
 - `data/` - all user-specific data (ignored by upstream review)
   - `data/cos.db` - SQLite task database (auto-created on first run)
@@ -163,13 +177,14 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
     - `data/files/areas/` - ongoing responsibilities with no finish line (never archived)
       - `data/files/areas/one-on-ones/` - 1:1 system with per-person folders
         - Each person has `README.md` (persistent context) + `sessions/` folder (dated check-in notes)
-        - Organized by relationship type: `self/` (your own "You" page), `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`
+        - Organized by relationship type: `self/` (your own "You" page), `direct-reports/`, `manager/`, `peers/`, `skip-level/`, `skip-level-reports/`, `xfn/`, `alumni/` (people who've left; folders retained for history)
         - Direct reports + skip-level reports (and `self/`) also have a `career/` folder (career-development docs, shaped like a project folder — a README overview + optional extra docs). Surfaced in the app's per-person **Career** section. Scaffolded on folder creation; see one-on-ones README → Career Folder. Shared leveling references stay in `data/files/areas/career/`.
         - **Full people listing and folder tree in** `data/files/areas/one-on-ones/README.md` — that file is the source of truth for who has folders and which category they're in
         - **Session workflow also defined in** `data/files/areas/one-on-ones/README.md` — follow this for all prep and digest steps
         - Before a 1:1: read README + last session, generate session doc with empty `## Raw Notes` section. After: digest raw notes, read shared doc if available via integration, update README, update tasks, propose new AIs
         - Every session file MUST start with a `## Shared Agenda` section at the top — a compressed, copy/paste-ready list that can be dropped directly into a shared doc. Each item should be a question or a topic to check in on. Keep it tight — no background context unless absolutely necessary. The full prep (context, coaching notes, research) goes in the sections below. This shared agenda serves three purposes: (1) gives the other person context before the meeting, (2) structures the live conversation, (3) makes it easy for Claude to read the doc afterward and capture outcomes.
       - `data/files/areas/meetings/` - recurring meetings and forums (not 1:1s). Same pattern: `README.md` (persistent context, attendees, standing agenda) + `sessions/` (dated prep/notes)
+        - **Full meeting listing (names, cadence, attendees) in** `data/files/areas/meetings/README.md` — that file is the source of truth for which meetings have folders
         - Before a meeting: read README + last session. After: create session file. Periodically: update README
       - `data/files/areas/career/` - promotion tracking, growth plans, strategic relationships
       - `data/files/areas/comms/` - drafted messages and comms
@@ -177,6 +192,10 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/weekly-reviews/` - Friday weekly review artifacts. Same `sessions/YYYY-MM-DD.md` pattern. Auto-written by `/weekly-review`.
       - `data/files/areas/task-triage/` - working directory for `/task-triage` output (triage.md)
       - `data/files/areas/console-sessions/` - per-tab Console transcripts from the v2 desktop app's multi-tab Console. Naming pattern `YYYY-MM-DD-HHMM-c#.{md,jsonl}` where `c#` is the tab number. Auto-written by the app, not edited by hand.
+      - `data/files/areas/ops/` - JSON snapshots for the v2 app's Ops Health tab (`incidents.json`, `datadog-monitors.json`, `rollbar-top.json`). Written by the `/ops-*` commands. Optional `team.txt` (team scope) is read by `/ops-team-jira` and `/planning-team-epics`.
+      - `data/files/areas/work/` - JSON snapshots of Jira work (`my-jira.json`, `team-jira.json`) plus `/velocity-diagnose` reports (`velocity-diagnose-<date>.md`). Written by `/ops-my-jira`, `/ops-team-jira`, `/velocity-diagnose`.
+      - `data/files/areas/planning/` - JSON snapshots for the Roadmap tab (`epics.json`, `jpd.json`) plus `updates/<epic-key>-<date>.md` drafts from `/planning-epic-update`. Written by the `/planning-*` commands.
+      - `data/files/areas/org/` - canonical `org.json` for the People → org views. Written by `/org-generate`.
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
 - `cos-dev/` - Chief of Staff app development documentation
   - `cos-dev/TDD.md` - Technical design document
@@ -191,6 +210,24 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
 1. **Start**: create `data/files/projects/<id>/` folder, add row to `data/files/projects/INDEX.md`
 2. **Complete**: mark done in INDEX.md with completion date, move folder to `data/files/archive/`
 3. **Areas** never complete — they persist in `data/files/areas/` indefinitely
+
+### Connector availability — ground truth only
+
+**Never report a connector as down without a live probe.** Before you write that a connector is "not connected," "unavailable," or "carried-forward" in ANY output — briefing, session note, chat — a live probe must say so. There are exactly two valid probes: (1) `ToolSearch("select:<tool>")` for the specific tool — it *waits* for connecting servers and returns the schema when ready; or (2) `bash bin/cos connectors` — runs `claude mcp list` (a real connection test) and prints `✓ connected` / `✗ NOT connected` / `· not configured` per critical connector, alias-tolerant, exiting non-zero only when a configured critical connector is down (set `COS_CRITICAL_CONNECTORS` to choose which connectors count as critical). **A session's startup "still connecting" list is a transient snapshot and is never evidence that a connector is unavailable.** A briefing that claims Slack/Glean/Calendar is down when `bash bin/cos connectors` would exit 0 is a false-negative bug — the exact failure this rule exists to prevent. When in doubt, run `bash bin/cos connectors` and report from its output verbatim.
+
+**If you've configured MCP servers, treat "still connecting" as transient.** Local stdio servers and slow-connecting HTTP servers often show as "still connecting" for the first few seconds after launch. Resolve the specific tool you need with `ToolSearch` (`select:<tool>`) first — it waits for connecting servers. Only treat a source as genuinely unavailable if ToolSearch still returns nothing, and if you do skip a source, **say so explicitly in the output** ("Slack signals skipped — server did not connect") rather than silently presenting partial data as complete. Distinguish two very different states: **"still connecting"** = transient, wait for it; **"needs authentication"** = a real gap, but first check for a *working sibling server* registered under another name (see the Integrations section) before concluding the capability is gone.
+
+**MCP scope trap — "works in plain Claude Code but not here" / "connected but no tools."** When a connector works when you run `claude` from another directory but is missing or tool-less here, the cause is almost always **MCP scope**, not the server. Claude Code stores MCP servers in `~/.claude.json` in two places: **user scope** (top-level `mcpServers`) loads in *every* project; **local scope** (`projects["<dir>"].mcpServers`) loads *only* when `claude` launches from that exact directory. A server added with the default `claude mcp add` (local scope) from another directory is bound to that directory — so it's invisible when Claude Code launches from `<your-repo>/data`. Diagnose:
+  ```bash
+  python3 -c "import json,os;d=json.load(open(os.path.expanduser('~/.claude.json')));\
+  print('user-scope:', list(d.get('mcpServers',{}).keys()));\
+  print({p:list(c.get('mcpServers',{}).keys()) for p,c in d.get('projects',{}).items() if c.get('mcpServers')})"
+  ```
+  If the server appears only under a `projects[...]` entry (not top-level), that's the bug. Fix = promote it to user scope, run interactively (HTTP connectors need an OAuth prompt Claude can't complete in-session):
+  ```bash
+  claude mcp add --transport http --scope user <server-name> <server-url>
+  ```
+  Adding a server is a consequential action — surface the command for the user to run, don't add it yourself. A server added mid-session won't load into the running session; a **Claude Code restart** is required before its tools appear.
 
 ### Chief of Staff app (v2)
 
@@ -301,3 +338,5 @@ Each integration requires a one-time setup. The system works without any of them
 - **Google Workspace** — Calendar, Sheets, Slides, Docs
 - **Jira/Linear** — engineering work items
 - **Observability** (Datadog, etc.) — incident context
+
+Verify with `bash bin/cos connectors` (a real connection probe). Set `COS_CRITICAL_CONNECTORS` to the connectors you rely on so it only fails on the ones that matter to you.

@@ -262,7 +262,7 @@ describe("TabStrip", () => {
     renderStrip({ tabs: [a, b, c], activeTabId: a.id });
     fireEvent.click(screen.getByLabelText("Show all tabs"));
     const filter = screen.getByLabelText("Filter tabs") as HTMLInputElement;
-    fireEvent.change(filter, { target: { value: "aas" } });
+    fireEvent.change(filter, { target: { value: "ali" } });
     const items = screen.getAllByRole("menuitem");
     expect(items).toHaveLength(1);
     expect(items[0]!.textContent).toContain("Alice");

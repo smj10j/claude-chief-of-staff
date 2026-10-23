@@ -23,10 +23,10 @@ const PEOPLE: PersonRef[] = [
     last_session: "2026-04-22",
   },
   {
-    slug: "aaron-salls",
+    slug: "eve-jones",
     label: "Eve Jones",
     relationship: "peers",
-    rel_path: "areas/one-on-ones/peers/aaron-salls",
+    rel_path: "areas/one-on-ones/peers/eve-jones",
     has_readme: true,
     session_count: 8,
     last_session: "2026-03-10",
@@ -44,8 +44,8 @@ const PEOPLE: PersonRef[] = [
 
 describe("filterPeople", () => {
   it("matches on label substring (case-insensitive)", () => {
-    const hits = filterPeople(PEOPLE, "AaR");
-    expect(hits.map((p) => p.slug)).toEqual(["aaron-salls"]);
+    const hits = filterPeople(PEOPLE, "JoN");
+    expect(hits.map((p) => p.slug)).toEqual(["eve-jones"]);
   });
 
   it("matches on slug substring", () => {
@@ -68,24 +68,24 @@ describe("sortPeople", () => {
     expect(order("last")).toEqual([
       "alice", // 2026-04-25
       "bob", // 2026-04-22
-      "aaron-salls", // 2026-03-10
+      "eve-jones", // 2026-03-10
       "newcomer", // null
     ]);
   });
 
   it("'name' is alphabetical regardless of session date", () => {
     expect(order("name")).toEqual([
-      "aaron-salls",
       "alice",
-      "newcomer",
       "bob",
+      "eve-jones",
+      "newcomer",
     ]);
   });
 
   it("'staleness' floats null sessions to the top, then oldest dates", () => {
     expect(order("staleness")).toEqual([
       "newcomer", // null — most stale
-      "aaron-salls", // 2026-03-10
+      "eve-jones", // 2026-03-10
       "bob", // 2026-04-22
       "alice", // 2026-04-25
     ]);

@@ -6,16 +6,16 @@ describe("resolveRelativePath", () => {
   it("resolves a simple ./sibling", () => {
     expect(
       resolveRelativePath(
-        "areas/one-on-ones/peers/aaron/README.md",
+        "areas/one-on-ones/peers/alice/README.md",
         "./sessions/2026-04-22.md",
       ),
-    ).toBe("areas/one-on-ones/peers/aaron/sessions/2026-04-22.md");
+    ).toBe("areas/one-on-ones/peers/alice/sessions/2026-04-22.md");
   });
 
   it("resolves ../parent paths", () => {
     expect(
       resolveRelativePath(
-        "areas/one-on-ones/peers/aaron/README.md",
+        "areas/one-on-ones/peers/alice/README.md",
         "../alex/README.md",
       ),
     ).toBe("areas/one-on-ones/peers/alex/README.md");
@@ -24,7 +24,7 @@ describe("resolveRelativePath", () => {
   it("resolves multiple ../ chains", () => {
     expect(
       resolveRelativePath(
-        "areas/one-on-ones/peers/aaron/sessions/2026-04-22.md",
+        "areas/one-on-ones/peers/alice/sessions/2026-04-22.md",
         "../../alex/sessions/2026-04-23.md",
       ),
     ).toBe("areas/one-on-ones/peers/alex/sessions/2026-04-23.md");

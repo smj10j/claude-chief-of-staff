@@ -21,6 +21,10 @@ import {
   type RecentDoc,
 } from "../state/recentDocs";
 import { SURFACES, type SurfaceId } from "../state/surfaces";
+import {
+  deriveConnectorHealth,
+  type McpServer,
+} from "../state/connectorHealth";
 
 type SidebarBadges = {
   overdueTasks: number;
@@ -97,6 +101,15 @@ export function Sidebar({
     activeIncidents: 0,
     consoleUnseen: 0,
   });
+  // Connector health → red attention dot on the Settings entry. A
+  // genuine failure (a critical MCP configured but not connected) is
+  // the ONLY thing that lights this. An inconclusive probe (list
+  // errored / empty) never sets it — we don't cry wolf, mirroring the
+  // "ground truth only" rule in CLAUDE.md.
+  const [connectorAttention, setConnectorAttention] = useState<{
+    attention: boolean;
+    degraded: string[];
+  }>({ attention: false, degraded: [] });
   // Live-track the Console unseen-completions count so the sidebar
   // pip ticks up the moment a backgrounded tab finishes a turn. The
   // chat-session store emits on every mutation; we re-read the
@@ -217,6 +230,46 @@ export function Sidebar({
     };
   }, []);
 
+  // Connector-health probe (separate, slow cadence). `claude mcp list`
+  // is a ~10-30s subprocess that actually connects to each server, so
+  // we poll every 5 min, not on the 60s badge timer, and guard against
+  // overlapping runs. This is the real connection test — NOT the
+  // transient SessionStart "still connecting" snapshot — so it's safe
+  // to drive a user-visible warning from it.
+  useEffect(() => {
+    let cancelled = false;
+    let inFlight = false;
+    const probe = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const servers = await invoke<McpServer[]>("claude_mcp_list");
+        if (cancelled) return;
+        // Only a definitive, non-empty result flips the dot. An empty
+        // list means the binary couldn't enumerate — inconclusive, so
+        // we leave the previous state alone rather than warn falsely.
+        if (Array.isArray(servers) && servers.length > 0) {
+          const health = deriveConnectorHealth(servers);
+          setConnectorAttention({
+            attention: !health.healthy,
+            degraded: health.degraded,
+          });
+        }
+      } catch {
+        // Probe failed (binary missing, spawn error). Inconclusive —
+        // never light the dot on a failed probe.
+      } finally {
+        inFlight = false;
+      }
+    };
+    probe();
+    const handle = window.setInterval(probe, 300_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(handle);
+    };
+  }, []);
+
   return (
     <nav
       className={`cos-sidebar ${collapsed ? "is-collapsed" : ""}`}
@@ -232,6 +285,12 @@ export function Sidebar({
           const Icon = s.icon;
           const isActive = s.id === active;
           const badge = badgeForSurface(s.id, badges);
+          // Red attention dot on Settings when a critical connector is
+          // genuinely down (see the connector-health probe above).
+          const attention = s.id === "settings" && connectorAttention.attention;
+          const attentionTitle = attention
+            ? `Connectors need attention: ${connectorAttention.degraded.join(", ")} — open Settings → Claude`
+            : undefined;
           return (
             <li key={s.id}>
               <button
@@ -244,11 +303,13 @@ export function Sidebar({
                   if (e.button === 1) onSelect(s.id, e);
                 }}
                 title={
-                  collapsed
-                    ? badge > 0
-                      ? `${s.label} · ⌘⌥${s.index} · ${badge}`
-                      : `${s.label} · ⌘⌥${s.index}`
-                    : undefined
+                  attention
+                    ? `${s.label} · ⌘⌥${s.index} · ${attentionTitle}`
+                    : collapsed
+                      ? badge > 0
+                        ? `${s.label} · ⌘⌥${s.index} · ${badge}`
+                        : `${s.label} · ⌘⌥${s.index}`
+                      : undefined
                 }
               >
                 <Icon size={18} strokeWidth={1.75} aria-hidden />
@@ -256,6 +317,14 @@ export function Sidebar({
                   <>
                     <span className="cos-sidebar-label">{s.label}</span>
                     <span className="cos-sidebar-trailing">
+                      {attention && (
+                        <span
+                          className="cos-sidebar-attention-dot"
+                          role="img"
+                          aria-label={attentionTitle}
+                          title={attentionTitle}
+                        />
+                      )}
                       {badge > 0 && (
                         <span
                           className="cos-sidebar-badge"
@@ -267,6 +336,11 @@ export function Sidebar({
                       <span className="cos-sidebar-shortcut">⌘⌥{s.index}</span>
                     </span>
                   </>
+                ) : attention ? (
+                  <span
+                    className="cos-sidebar-attention-dot cos-sidebar-attention-dot-collapsed"
+                    aria-label={attentionTitle}
+                  />
                 ) : (
                   badge > 0 && (
                     <span

@@ -161,14 +161,17 @@ for (let i = 0; i < lines.length; i++) {
     hText = hText.replace(/\*\*([^*]+)\*\*/g, '$1');
     // Strip link syntax, keep display text
     hText = hText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-    addBlock({ type: 'h' + hm[1].length, text: hText });
+    // GitHub-style slug so intra-doc anchor links ([text](#slug)) can resolve to this heading
+    const slug = hText.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+    addBlock({ type: 'h' + hm[1].length, text: hText, slug: slug });
     continue;
   }
 
   // Table row
   if (trimmed.match(/^\|/)) {
     if (trimmed.match(/^\|[\s\-:|]+\|$/)) continue; // separator row
-    const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+    // Strip the outer pipes, then split — keep inner empty cells so every row keeps its column count
+    const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
     // Parse inline runs for each cell so bold/italic/links render properly
     const parsedCells = cells.map(c => parseInlineRuns(c));
     if (tableRows === null) tableRows = [];
@@ -176,12 +179,13 @@ for (let i = 0; i < lines.length; i++) {
     continue;
   }
 
-  // Blockquote
+  // Blockquote (render as italic; a `> - ` line becomes an italic bullet so nested caveats read cleanly)
   if (trimmed.match(/^>\s/)) {
     const qt = trimmed.replace(/^>\s+/, '');
-    const runs = parseInlineRuns(qt);
+    const bq = qt.match(/^[-*]\s+(.*)$/);
+    const runs = parseInlineRuns(bq ? bq[1] : qt);
     runs.forEach(r => { r.i = true; });
-    addBlock({ type: 'p', runs });
+    addBlock({ type: bq ? 'bullet' : 'p', runs });
     continue;
   }
 
@@ -213,6 +217,9 @@ const blocksJson = JSON.stringify(blocks);
 const script = `var blocks = ${blocksJson};
 
 var body = doc.getBody();
+// slug -> bookmark id (for intra-doc heading links); deferred #anchor links resolved after render
+var bookmarks = {};
+var pendingLinks = [];
 // Clear all content: append a blank paragraph first, then remove everything before it
 body.appendParagraph('');
 while (body.getNumChildren() > 1) {
@@ -229,7 +236,14 @@ for (var i = 0; i < blocks.length; i++) {
       'h3': DocumentApp.ParagraphHeading.HEADING3,
       'h4': DocumentApp.ParagraphHeading.HEADING4
     };
-    body.appendParagraph(b.text).setHeading(headingMap[b.type]);
+    var hp = body.appendParagraph(b.text);
+    hp.setHeading(headingMap[b.type]);
+    if (b.slug) {
+      try {
+        var hchild = hp.getNumChildren() > 0 ? hp.getChild(0) : hp;
+        bookmarks[b.slug] = doc.addBookmark(doc.newPosition(hchild, 0)).getId();
+      } catch (e) {}
+    }
 
   } else if (b.type === 'spacer') {
     body.appendParagraph('');
@@ -278,7 +292,7 @@ for (var i = 0; i < blocks.length; i++) {
             if (run.t.length > 0) {
               if (run.b) cellElem.setBold(offset, runEnd, true);
               if (run.i) cellElem.setItalic(offset, runEnd, true);
-              if (run.link) cellElem.setLinkUrl(offset, runEnd, run.link);
+              if (run.link && run.link.charAt(0) !== '#') cellElem.setLinkUrl(offset, runEnd, run.link);
             }
             offset += run.t.length;
           }
@@ -290,6 +304,14 @@ for (var i = 0; i < blocks.length; i++) {
     for (var c = 0; c < headerRow.getNumCells(); c++) {
       headerRow.getCell(c).editAsText().setBold(true);
     }
+  }
+}
+
+// Resolve deferred intra-doc anchor links now that every heading bookmark exists
+for (var pl = 0; pl < pendingLinks.length; pl++) {
+  var bid = bookmarks[pendingLinks[pl].slug];
+  if (bid) {
+    try { pendingLinks[pl].textEl.setLinkUrl('#bookmark=' + bid); } catch (e) {}
   }
 }
 
@@ -307,7 +329,14 @@ function applyRuns(element, runs) {
     // Explicitly set bold/italic to override inherited formatting
     text.setBold(!!run.b);
     text.setItalic(!!run.i);
-    if (run.link) text.setLinkUrl(run.link);
+    if (run.link) {
+      // Defer intra-doc anchor links (#slug) until all heading bookmarks exist; set external links now
+      if (run.link.charAt(0) === '#') {
+        pendingLinks.push({ textEl: text, slug: run.link.substring(1) });
+      } else {
+        text.setLinkUrl(run.link);
+      }
+    }
   }
 }
 

@@ -3,6 +3,10 @@ node_modules/
 *.log
 data/cos.db
 data/cos.db-*
+# Stray SQLite files next to the DB tooling (the real DB lives at data/cos.db)
+bin/db/*.db
+bin/db/*.db-wal
+bin/db/*.db-shm
 data/.overdue-notified
 data/files/exports/
 data/logs/
@@ -15,3 +19,5 @@ data/logs/
 cos-dev/TODO-prd-*.md
 bin/reminders/.apple-reminders-bin
 bin/calendar/.eventkit-bin
+# Console session transcripts: keep readable .md, don't track the bulky raw .jsonl
+data/files/areas/console-sessions/sessions/*.jsonl

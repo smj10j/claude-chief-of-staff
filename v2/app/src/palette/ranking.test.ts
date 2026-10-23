@@ -180,10 +180,10 @@ describe("palette ranking", () => {
     expect(empty).not.toContain(projectEntry.id);
 
     // Active query matches by label substring.
-    expect(rank(all, "aash", []).map((r) => r.entry.id)).toContain(
+    expect(rank(all, "ali", []).map((r) => r.entry.id)).toContain(
       personEntry.id,
     );
-    expect(rank(all, "payments", []).map((r) => r.entry.id)).toContain(
+    expect(rank(all, "eng leads", []).map((r) => r.entry.id)).toContain(
       meetingEntry.id,
     );
     expect(rank(all, "alpha", []).map((r) => r.entry.id)).toContain(

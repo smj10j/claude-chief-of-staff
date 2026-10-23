@@ -11,11 +11,11 @@ import {
 describe("parseTeamServices", () => {
   it("parses one line per team with comma-separated services", () => {
     const out = parseTeamServices(
-      `payments-core: pay-svc, ledger-svc\npayments-atwork: dte-svc`,
+      `payments-core: pay-svc, ledger-svc\npayments-mobile: mobile-svc`,
     );
     expect(out).toEqual({
       "payments-core": ["pay-svc", "ledger-svc"],
-      "payments-atwork": ["dte-svc"],
+      "payments-mobile": ["mobile-svc"],
     });
   });
 
@@ -38,9 +38,9 @@ describe("resolveMyPolicyKeywords (B9-CP41)", () => {
       resolveMyPolicyKeywords({
         ...DEFAULT_OPS_PREFS,
         myTeam: "Payments Eng",
-        myPolicyKeywords: ["dder", "dte"],
+        myPolicyKeywords: ["payments", "core"],
       }),
-    ).toEqual(["dder", "dte"]);
+    ).toEqual(["payments", "core"]);
   });
 
   it("falls back to splitting myTeam on whitespace when keywords are empty", () => {

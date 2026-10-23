@@ -22,9 +22,9 @@ describe("inferDocContext", () => {
 
   it("infers People context from peers / skip-level subfolders too", () => {
     const peers = inferDocContext(
-      "areas/one-on-ones/peers/aaron/sessions/2026-05-06.md",
+      "areas/one-on-ones/peers/dana/sessions/2026-05-06.md",
     );
-    expect(peers!.peopleProfile?.slug).toBe("aaron");
+    expect(peers!.peopleProfile?.slug).toBe("dana");
 
     const skip = inferDocContext(
       "areas/one-on-ones/skip-level-reports/henry/README.md",

@@ -311,7 +311,7 @@ mod tests {
         seed_doc(tmp.path(), "areas/x/y.md");
         let anns = vec![Annotation {
             id: "ca547bdz".into(),
-            text: "Tom's return".into(),
+            text: "Alice's return".into(),
             comment: "Confirmed".into(),
             text_before: "yesterday — ".into(),
             text_after: "\nbody text".into(),
@@ -322,7 +322,7 @@ mod tests {
         let got = list(tmp.path(), "areas/x/y.md").unwrap();
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].id, "ca547bdz");
-        assert_eq!(got[0].text, "Tom's return");
+        assert_eq!(got[0].text, "Alice's return");
         assert_eq!(got[0].comment, "Confirmed");
         assert_eq!(got[0].text_before, "yesterday — ");
 

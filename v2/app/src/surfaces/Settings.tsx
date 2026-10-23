@@ -29,6 +29,11 @@ import {
   writeShowDeveloperSurfaces,
 } from "../state/developerSurfaces";
 import {
+  deriveConnectorHealth,
+  isCapabilityServer,
+  type McpServer,
+} from "../state/connectorHealth";
+import {
   readSidebarRecentsMax,
   SIDEBAR_RECENTS_MAX_OPTIONS,
   writeSidebarRecentsMax,
@@ -64,24 +69,11 @@ type ClaudeCliStatus = {
   available: boolean;
   config_file: string;
 };
-type McpServer = { name: string; info: string; connected: boolean };
-
-// MCPs the v2 skills will lean on the most. Used as the recommended list
-// when nothing is connected; shown dimmed if configured but disconnected.
-const RECOMMENDED_MCPS: { name: string; purpose: string }[] = [
-  {
-    name: "glean",
-    purpose: "Cross-source search (Slack + Confluence + Drive) for org lookups.",
-  },
-  {
-    name: "google-workspace",
-    purpose: "Calendar + Docs + Sheets for prep and scheduling.",
-  },
-  {
-    name: "slack-local-mcp",
-    purpose: "Search + read Slack to infer who works with whom.",
-  },
-];
+// McpServer, the recommended-connector list (CONNECTOR_CAPABILITIES),
+// and the alias-tolerant health derivation now live in
+// ../state/connectorHealth so the Settings detail view and the Sidebar
+// red-dot warning share one source of truth. See that module for why
+// matching is capability/alias-based rather than by literal name.
 type AuditRow = {
   id: number;
   at: string;
@@ -1978,12 +1970,12 @@ function McpBlock({
   available: boolean;
   onRefresh: () => void;
 }) {
-  // Merge live status with the recommended list so the user sees at-a-glance
-  // which of the high-value connectors are wired up, and which are missing.
-  const byName = new Map<string, McpServer>();
-  if (servers?.kind === "ok") {
-    for (const s of servers.value) byName.set(s.name, s);
-  }
+  // Capability-level (alias-tolerant) health for the recommended list,
+  // so a live server counts for its capability even when a stale
+  // duplicate under a sibling name reports "needs authentication".
+  // Same derivation the Sidebar red dot uses.
+  const health =
+    servers?.kind === "ok" ? deriveConnectorHealth(servers.value) : null;
 
   return (
     <div className="cos-mcp-block">
@@ -2025,19 +2017,31 @@ function McpBlock({
         </div>
       )}
 
-      {available && servers?.kind === "ok" && (
+      {available && servers?.kind === "ok" && health && (
         <>
+          <div
+            className={`cos-mcp-summary ${
+              health.healthy ? "cos-mcp-summary-ok" : "cos-mcp-summary-bad"
+            }`}
+          >
+            {!health.healthy
+              ? `Needs attention: ${health.degraded.join(", ")} not connected. Re-auth in your Claude Code setup, then refresh.`
+              : health.notConfigured.length === health.capabilities.length
+                ? "None of the recommended connectors are configured yet — see below."
+                : "All configured connectors are live (real connection probe)."}
+          </div>
+
           <h4 className="cos-mcp-subhead">Recommended for v2 skills</h4>
           <ul className="cos-mcp-list">
-            {RECOMMENDED_MCPS.map((r) => {
-              const live = byName.get(r.name);
-              const state: "connected" | "configured" | "missing" = !live
-                ? "missing"
-                : live.connected
-                  ? "connected"
-                  : "configured";
+            {health.capabilities.map((c) => {
+              const state: "connected" | "configured" | "missing" =
+                c.connected ? "connected" : c.present ? "configured" : "missing";
+              // Capability aliases (`claude.ai Glean` etc.) are matched
+              // by substring, so surface the actual server that
+              // satisfied it — otherwise "Glean: connected" with no
+              // `glean` row visible looks like a bug.
               return (
-                <li key={r.name} className={`cos-mcp-row cos-mcp-${state}`}>
+                <li key={c.key} className={`cos-mcp-row cos-mcp-${state}`}>
                   <span className="cos-mcp-dot" aria-hidden>
                     {state === "connected"
                       ? "●"
@@ -2045,8 +2049,11 @@ function McpBlock({
                         ? "○"
                         : "·"}
                   </span>
-                  <span className="cos-mcp-name">{r.name}</span>
-                  <span className="cos-mcp-purpose">{r.purpose}</span>
+                  <span className="cos-mcp-name">
+                    {c.label}
+                    {c.via && c.via !== c.label ? ` (${c.via})` : ""}
+                  </span>
+                  <span className="cos-mcp-purpose">{c.purpose}</span>
                   <span className="cos-mcp-state">
                     {state === "connected"
                       ? "connected"
@@ -2059,16 +2066,13 @@ function McpBlock({
             })}
           </ul>
 
-          {servers.value.filter(
-            (s) => !RECOMMENDED_MCPS.some((r) => r.name === s.name),
-          ).length > 0 && (
+          {servers.value.filter((s) => !isCapabilityServer(s.name)).length >
+            0 && (
             <>
               <h4 className="cos-mcp-subhead">Other MCPs</h4>
               <ul className="cos-mcp-list">
                 {servers.value
-                  .filter(
-                    (s) => !RECOMMENDED_MCPS.some((r) => r.name === s.name),
-                  )
+                  .filter((s) => !isCapabilityServer(s.name))
                   .map((s) => (
                     <li
                       key={s.name}
@@ -2878,7 +2882,7 @@ function OpsSettingsSection() {
             onChange={(e) => setDraftMap(e.target.value)}
             spellCheck={false}
             aria-label="Service ownership map"
-            placeholder={`payments-core: pay-svc, ledger-svc\npayments-atwork: dte-svc`}
+            placeholder={`payments-core: pay-svc, ledger-svc\npayments-mobile: mobile-svc`}
           />
           <p className="cos-helper-text">
             Lines starting with <code>#</code> are comments.

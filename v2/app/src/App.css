@@ -3820,6 +3820,25 @@ button {
   letter-spacing: 0.06em;
 }
 
+/* One-line connector-health summary at the top of the MCP block. Green
+ * when every critical capability is live, red (matching the Sidebar
+ * attention dot) when one is genuinely down. */
+.cos-mcp-summary {
+  margin: var(--cos-space-sm) 0;
+  padding: var(--cos-space-xs) var(--cos-space-sm);
+  border-radius: var(--cos-radius-sm);
+  font-size: var(--cos-font-caption);
+  border: 1px solid transparent;
+}
+.cos-mcp-summary-ok {
+  color: var(--cos-content-secondary);
+  background: var(--cos-surface-raised);
+}
+.cos-mcp-summary-bad {
+  color: var(--cos-critical, #b8321c);
+  border-color: var(--cos-critical, #b8321c);
+}
+
 .cos-mcp-list {
   list-style: none;
   margin: 0;
@@ -6315,6 +6334,24 @@ button {
   padding: 0;
   border-radius: 50%;
   background: var(--cos-accent);
+}
+
+/* Red "needs attention" dot — currently driven by connector health on
+ * the Settings entry. Distinct from the accent-coloured count badge so
+ * a genuine problem reads as a warning, not a notification count. */
+.cos-sidebar-attention-dot {
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cos-critical, #b8321c);
+  flex-shrink: 0;
+}
+
+.cos-sidebar.is-collapsed .cos-sidebar-attention-dot-collapsed {
+  position: absolute;
+  top: 4px;
+  right: 4px;
 }
 
 .cos-accent-control {

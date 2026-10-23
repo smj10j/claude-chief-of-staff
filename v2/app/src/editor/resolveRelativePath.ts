@@ -1,5 +1,5 @@
 /**
- * Resolve a relative href like `../peers/aaron/sessions/2026-04-22.md`
+ * Resolve a relative href like `../peers/alice/sessions/2026-04-22.md`
  * against the current doc's content-root-relative path. Returns null
  * if the result escapes the content root (`..` past the root) so the
  * caller can ignore the click instead of opening an unrelated file.

@@ -146,7 +146,7 @@ async function matchPerson(
 
 /** Substring containment that respects slug-segment boundaries: only
  *  matches when `needle` lines up with whole hyphen-delimited segments
- *  inside `haystack`. Prevents "lend" from matching "lending". */
+ *  inside `haystack`. Prevents "plan" from matching "planning". */
 function slugContains(haystack: string, needle: string): boolean {
   if (!haystack || !needle) return false;
   if (haystack === needle) return true;

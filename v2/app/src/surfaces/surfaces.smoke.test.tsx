@@ -40,9 +40,9 @@ const MEETING: MeetingTarget = {
 };
 
 const PERSON: ProfileTarget = {
-  slug: "aaron",
-  label: "Aaron Demo",
-  rel_path: "areas/one-on-ones/peers/aaron",
+  slug: "dana",
+  label: "Dana Demo",
+  rel_path: "areas/one-on-ones/peers/dana",
 };
 
 const NOOP = () => undefined;
@@ -366,7 +366,7 @@ describe("People surface", () => {
       org_load: () => ({ views: [] }),
       content_person_profile: () => ({
         rel_path: PERSON.rel_path,
-        readme: "# Aaron README",
+        readme: "# Dana README",
         sessions: [
           {
             date: "2026-04-25",
@@ -793,7 +793,7 @@ describe("Ops surface (B8-CP14/15/17, B9-CP5)", () => {
     expect(screen.getByText(/^opened/)).toBeInTheDocument();
     expect(screen.getByText(/^updated/)).toBeInTheDocument();
     // Resolved commander name renders, raw Slack ID does not.
-    expect(screen.getByText(/commander alice patel/i)).toBeInTheDocument();
+    expect(screen.getByText(/commander alice smith/i)).toBeInTheDocument();
     // Tags render as chips.
     expect(screen.getByText("payments")).toBeInTheDocument();
     expect(screen.getByText("@alice")).toBeInTheDocument();
@@ -814,7 +814,7 @@ describe("Ops surface (B8-CP14/15/17, B9-CP5)", () => {
             state: "active",
             created_at: "2026-04-25T16:00:00Z",
             url: "https://example.slack.com/archives/C/p2",
-            commander: "<@U047V57D0SH>",
+            commander: "<@UEXAMPLE1>",
           },
         ],
       }),
@@ -826,7 +826,7 @@ describe("Ops surface (B8-CP14/15/17, B9-CP5)", () => {
       await screen.findByText(/old-shape snapshot/i),
     ).toBeInTheDocument();
     expect(screen.queryByText(/commander/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/U047V57D0SH/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/UEXAMPLE1/)).not.toBeInTheDocument();
   });
 });
 
