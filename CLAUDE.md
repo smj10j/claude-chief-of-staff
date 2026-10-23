@@ -138,7 +138,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
   bash bin/db/task-cli.sh recurring               # List recurring tasks
   bash bin/db/task-cli.sh --help                  # Full reference
   ```
-  `bash bin/cos` wraps the same task CLI (`bash bin/cos task <subcommand>`, plus `cos add` / `cos done` shortcuts) and exposes non-task verbs (`brief`, `prep`, `triage`, `events today`, `check`, `connectors`, `status`, `search`, `digest`, `export`, `schedule install/status/uninstall`, `open`). Run `bash bin/cos --help` for the full surface. `bash bin/cos connectors` is the ground-truth MCP health probe — run it before ever claiming a connector is unavailable.
+  `bash bin/cos` wraps the same task CLI (`bash bin/cos task <subcommand>`, plus `cos add` / `cos done` shortcuts) and exposes non-task verbs (`brief`, `prep`, `triage`, `events today`, `check`, `connectors`, `snow`, `status`, `search`, `digest`, `export`, `schedule install/status/uninstall`, `open`). Run `bash bin/cos --help` for the full surface. `bash bin/cos connectors` is the ground-truth MCP health probe — run it before ever claiming a connector is unavailable.
   - Use `--format json` for full task data (includes notes, links)
   - Use `--format table` for human-readable terminal output
   - Default `compact` format is tab-separated, optimized for token efficiency
@@ -159,7 +159,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 The repo separates **template code** (syncs with upstream) from **user data** (unique to your instance):
 
 - `bin/` - tooling scripts (template code)
-  - `bin/cos` - headless CLI entrypoint (`task`, `brief`, `prep`, `events`, `connectors`, `schedule`, …). Delegates to the scripts below. `bash bin/cos --help` for the full surface.
+  - `bin/cos` - headless CLI entrypoint (`task`, `brief`, `prep`, `events`, `connectors`, `snow`, `schedule`, …). Delegates to the scripts below. `bash bin/cos --help` for the full surface.
   - `bin/db/` - task CLI, data access module, migrations, tests
   - `bin/reminders/` - Apple Reminders adapter (Swift/EventKit). `apple-reminders.sh` wrapper auto-compiles `apple-reminders.swift` on first run. Supports `list`, `complete`, `add`, and `update` commands.
     - `bin/reminders/overdue-notifier.sh` - checks the task DB for overdue tasks and creates Apple Reminders with alarms (read-only — never modifies tasks). Tracks notified tasks in `data/.overdue-notified` to avoid duplicates.
@@ -167,6 +167,7 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
   - `bin/calendar/` - EventKit calendar adapter (Swift; `eventkit.sh` auto-compiles `eventkit.swift` on first run). Backs `cos events`.
   - `bin/schedule/` - morning briefing automation. `morning-briefing.sh` runs `/morning-briefing` non-interactively; `morning-briefing-setup.sh` installs/uninstalls the daily launchd agent (`cos schedule install`).
   - `bin/weekly-review/` - weekly review automation. `weekly-review-runner.sh` runs `/weekly-review` non-interactively; `weekly-review-setup.sh` installs/uninstalls the Friday launchd agent.
+  - `bin/snow/` - optional read-only Snowflake wrapper (`snow.js` = `runSnowQuery`/`snowAvailability` module; `query.js` + `snow.sh` = the `cos snow` runner; `dictionary.js` = the self-maintaining data dictionary engine). Out-of-band SSO auth via the `snow` CLI. See `bin/snow/README.md`.
   - `bin/md-to-gdoc-payload.js` - Google Docs publishing helper
 - `data/` - all user-specific data (ignored by upstream review)
   - `data/cos.db` - SQLite task database (auto-created on first run)
@@ -197,6 +198,7 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
       - `data/files/areas/planning/` - JSON snapshots for the Roadmap tab (`epics.json`, `jpd.json`) plus `updates/<epic-key>-<date>.md` drafts from `/planning-epic-update`. Written by the `/planning-*` commands.
       - `data/files/areas/org/` - canonical `org.json` for the People → org views. Written by `/org-generate`.
     - `data/files/archive/` - completed projects moved from `data/files/projects/`. Not deleted — kept for reference.
+    - `data/files/snowflake/` - optional `cos snow` content: `dictionary.json` (your data dictionary, created on first `--dict-add`), `usage-log.jsonl` (auto-written runtime log, gitignored), and an optional `config.json` (connection settings). Schema metadata only — never query results.
 - `cos-dev/` - Chief of Staff app development documentation
   - `cos-dev/TDD.md` - Technical design document
   - `cos-dev/DESIGN.md` - Design principles guiding UI decisions
@@ -228,6 +230,27 @@ The repo separates **template code** (syncs with upstream) from **user data** (u
   claude mcp add --transport http --scope user <server-name> <server-url>
   ```
   Adding a server is a consequential action — surface the command for the user to run, don't add it yourself. A server added mid-session won't load into the running session; a **Claude Code restart** is required before its tools appear.
+
+### Snowflake (`cos snow`) — read-only, when available
+
+Optional. If you've set up the Snowflake wrapper in `bin/snow/`, Claude can query Snowflake read-only through it. Auth is **out of band**: you configure a connection (`COS_SNOW_CONNECTION` or `data/files/snowflake/config.json`), run `snow sql -c <connection> -q "SELECT CURRENT_USER()"` once yourself, approve the SSO browser prompt, and the CLI caches the token on disk — after that Claude can run `SELECT`s non-interactively (no MCP, no per-query browser). Full setup + guardrails: `bin/snow/README.md`.
+
+```bash
+bash bin/cos snow --check                 # is Snowflake usable right now? (no query, no browser)
+bash bin/cos snow "SELECT CURRENT_USER() AS ME"
+bash bin/cos snow --file path/to/query.sql
+bash bin/cos snow --json "SELECT ..."     # raw JSON rows instead of a table
+```
+
+- **"When available" rule — always `--check` first.** `bash bin/cos snow --check` verifies the `snow` CLI is installed, a connection is configured, and that connection exists in `~/.snowflake/connections.toml` **without running a query** (so it never risks a browser popup). It's also folded into `bash bin/cos check`. Treat Snowflake as an *optional* capability: if `--check` says unavailable, say so and follow its guidance — don't fabricate results.
+- **Never run a live query to test availability.** A real query on an expired token pops an SSO browser, which you can't complete in an agent session. If a query fails with an SSO/session error, STOP and ask the user to re-run the one-time auth line themselves, then retry.
+- **Read-only, enforced two ways.** The runner only accepts `SELECT` / `WITH` / `SHOW` / `DESCRIBE` / `EXPLAIN`, and the connection should use a read-only role so the database enforces it too. Never attempt a write/delete/DDL.
+- **No customer data in committed files or logs.** Queries can hit production data. Print counts and aggregates — never write raw customer/PII rows to a file that could be committed, and never paste them into a shared surface.
+- **As a module:** other tooling can `require('../snow/snow.js')` for `runSnowQuery(sql)` and `snowAvailability()`.
+- **Data dictionary — consult it FIRST, then feed it.** `cos snow` keeps a self-maintaining semantic map of your business terms ↔ Snowflake tables/columns/gotchas at `data/files/snowflake/dictionary.json` (engine: `bin/snow/dictionary.js`; docs: `bin/snow/README.md` → "Data dictionary"). It starts empty and grows as you work, so you stop re-learning the schema every session:
+  - **Before** exploring `INFORMATION_SCHEMA` for any business concept, run `bash bin/cos snow --dict <keywords>`. If it's known, you get the exact table, the column the concept lives in, and the gotchas — skip the spelunking.
+  - **After** confirming a new mapping (a table's grain/columns, a term → filter, a gotcha), record it: `bash bin/cos snow --dict-add '{"kind":"term","term":"…","maps_to":"…","source":"…"}'` (or `"kind":"object"`); for bulk/complex entries with embedded quotes use `bash bin/cos snow --dict-add-file <json>` (a single entry or an array). It merges by name/term (enriches, never duplicates) and stamps a `verified` date. Do this whenever you learn something durable — it's how the dictionary compounds.
+  - Every successful query auto-logs the tables it touched to `usage-log.jsonl` (names + timestamp only) — no action needed. Entries are advisory (each has a `verified` date + `source`); if a query returns zero/odd rows, re-check the live schema and update the entry rather than trusting it.
 
 ### Chief of Staff app (v2)
 

@@ -161,9 +161,12 @@ bash bin/cos prep <slug>                       # run /prep-1on1 for one person
 bash bin/cos events today                      # today's calendar via EventKit
 bash bin/cos connectors                        # live MCP connector health check
 bash bin/cos search "<query>"                  # grep the content tree
+bash bin/cos snow "SELECT ..."                 # read-only Snowflake query (optional)
 ```
 
 `cos connectors` runs `claude mcp list` (a real connection probe) and reports each critical connector as connected / NOT connected / not configured. Set `COS_CRITICAL_CONNECTORS` (comma-separated; `|` between aliases) to the connectors you rely on.
+
+`cos snow` is optional. It runs read-only `SELECT`s through the `snow` CLI against a Snowflake connection you configure (`COS_SNOW_CONNECTION` or `data/files/snowflake/config.json`), using a cached SSO token — you authenticate once, out of band. It also keeps a self-maintaining dictionary of business terms ↔ tables/columns at `data/files/snowflake/dictionary.json` (it starts empty and grows as you work) so Claude doesn't re-learn the schema every session. Run `bash bin/cos snow --check` to see if it's usable. Setup and guardrails are in `bin/snow/README.md`.
 
 ## Desktop app (v2)
 
@@ -210,6 +213,7 @@ The system works standalone with just Claude Code, but it's designed to plug in 
 | **Atlassian** (Jira/Confluence) | Ticket operations, Confluence search | First `/jira` or ticket command |
 | **Datadog** | Log/trace/dashboard queries | First Datadog query |
 | **Rollbar** | Top error items, item details, occurrences, deployments | First `/ops-rollbar-top` |
+| **Snowflake** (via `snow` CLI, not MCP) | Read-only warehouse queries through `cos snow` | One-time `snow` login you run yourself (see `bin/snow/README.md`) |
 
 The 1:1 prep process gracefully degrades without integrations — it just works from your local notes instead of also pulling recent Slack threads.
 
@@ -247,6 +251,7 @@ claude-chief-of-staff/
       morning-briefing.sh        # Runs /morning-briefing non-interactively
       morning-briefing-setup.sh  # Install/uninstall the daily launchd agent
     calendar/              #   EventKit calendar adapter (`cos events`; Swift, auto-compiles)
+    snow/                  #   Optional read-only Snowflake wrapper + data dictionary engine (`cos snow`)
   data/                    # All user-specific data
     cos.db                 #   SQLite task database (auto-created on first run)
     logs/                  #   Automation logs (morning-briefing, overdue-notifier, weekly-review)
@@ -257,6 +262,7 @@ claude-chief-of-staff/
       reading-list.md      #     Articles, videos, resources to consume
       style-guide.md       #     Your writing style (built over time)
       google-docs-style-guide.md  # Formatting conventions for Google Docs edits
+      snowflake/           #     `cos snow` data dictionary + optional config (created on first use)
       projects/
         INDEX.md           #     Project registry (active, on hold, archived)
         <project-id>/      #     One folder per active project
