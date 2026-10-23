@@ -21,3 +21,5 @@ bin/reminders/.apple-reminders-bin
 bin/calendar/.eventkit-bin
 # Console session transcripts: keep readable .md, don't track the bulky raw .jsonl
 data/files/areas/console-sessions/sessions/*.jsonl
+# cos snow runtime log (table names + timestamps, auto-appended per query)
+data/files/snowflake/usage-log.jsonl

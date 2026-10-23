@@ -14,7 +14,8 @@
 #   triage              — run /task-triage
 #   events today        — pull today's calendar via EventKit
 #   events week         — today + 6 days
-#   check               — install readiness (binary, EventKit, ICS URL)
+#   check               — install readiness (binary, EventKit, ICS URL;
+#                          optional Snowflake, informational only)
 #   connectors          — ground-truth MCP connector health via
 #                          `claude mcp list` (a real connection probe;
 #                          never trust a session's transient "still
@@ -53,6 +54,14 @@
 #   digest <rel-path>   — run /digest-meeting on a specific session
 #                          file (path relative to data/files/ or a
 #                          full path; data/files/ prefix is stripped).
+#   snow "<sql>"        — optional: run a read-only Snowflake SELECT via
+#                          the `snow` CLI (cached SSO token, no browser).
+#                          Also: snow --file q.sql | snow --json "…" |
+#                          snow --check (probe availability, no query) |
+#                          snow --dict <kw> (look up a business term ↔
+#                          table/column in the semantic dictionary) |
+#                          snow --dict-add '<json>' (record a mapping).
+#                          Setup + guardrails: bin/snow/README.md.
 #   help                — this list
 #
 # All subcommands are read-only by default; mutation (task add, task
@@ -63,6 +72,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TASK_CLI="$REPO_ROOT/bin/db/task-cli.sh"
 EVENTKIT="$REPO_ROOT/bin/calendar/eventkit.sh"
+SNOW_CLI="$REPO_ROOT/bin/snow/snow.sh"
 
 usage() {
   sed -n '/^# `cos`/,/^# All subcommands/p' "$0" | sed 's/^# \{0,1\}//'
@@ -174,6 +184,21 @@ case "${1:-help}" in
     fi
     run_skill "/digest-meeting $rel"
     ;;
+  snow)
+    # cos snow "<sql>" — run a read-only Snowflake SELECT via the snow
+    # CLI wrapper (bin/snow/). Auth is out-of-band (cached SSO token),
+    # so this runs non-interactively. All flags pass straight through:
+    #   cos snow "SELECT ..."   cos snow --file q.sql
+    #   cos snow --json "..."    cos snow --check
+    #   cos snow --dict <kw>     cos snow --dict-add '<json>'
+    # Setup + guardrails: bin/snow/README.md.
+    shift
+    if [ ! -x "$SNOW_CLI" ]; then
+      echo "cos snow: snow wrapper not found at $SNOW_CLI" >&2
+      exit 1
+    fi
+    exec bash "$SNOW_CLI" "$@"
+    ;;
   events)
     sub="${2:-today}"
     today="$(date +%Y-%m-%d)"
@@ -221,6 +246,19 @@ case "${1:-help}" in
     else
       echo "✗ not found at $TASK_CLI"
       fail=1
+    fi
+    # Snowflake is an OPTIONAL capability ("when available") — informational,
+    # never gating. Probe runs `snow --check` (no query, no browser popup).
+    printf "Snowflake: "
+    if [ -x "$SNOW_CLI" ]; then
+      snow_status="$(bash "$SNOW_CLI" --check 2>/dev/null || true)"
+      if [ -n "$snow_status" ]; then
+        echo "$snow_status"
+      else
+        echo "· probe produced no output"
+      fi
+    else
+      echo "· wrapper not found at $SNOW_CLI (optional)"
     fi
     exit "$fail"
     ;;

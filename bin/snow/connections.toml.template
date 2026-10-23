@@ -1,0 +1,25 @@
+# Copy this to ~/.snowflake/connections.toml and replace every <placeholder>.
+#   mkdir -p ~/.snowflake
+#   cp bin/snow/connections.toml.template ~/.snowflake/connections.toml
+#   chmod 600 ~/.snowflake/connections.toml
+#
+# The section header is the connection NAME you'll point cos snow at (COS_SNOW_CONNECTION, or
+# "connection" in data/files/snowflake/config.json). Write it as [<connection>] — NOT
+# [connections.<connection>]. In connections.toml, connections are top-level tables.
+#
+# This example uses browser-based SSO (authenticator = "externalbrowser"): no password and no host
+# line — the browser handles auth and host derives from account. If your org uses key-pair or
+# OAuth auth instead, swap in the matching settings from the Snowflake CLI docs. Never store a
+# password here.
+#
+# The file is machine-wide: any other tool using the same connection shares it (and its cached token).
+# You can keep several connections side by side, one [section] each.
+
+[<connection>]
+account = "<account-locator>"        # e.g. the <org>-<account> identifier from your Snowflake URL
+user = "<you>@<company>.com"
+authenticator = "externalbrowser"
+role = "<read-only-role>"            # use a role that can only read
+warehouse = "<warehouse>"
+database = "<database>"
+schema = "<schema>"                  # optional
