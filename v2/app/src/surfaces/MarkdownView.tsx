@@ -30,7 +30,9 @@ export function MarkdownView({
 }) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      // link:false — StarterKit (Tiptap 3) bundles Link; disable it so
+      // our openOnClick:false Link below isn't a duplicate extension.
+      StarterKit.configure({ link: false }),
       // openOnClick:false so we can intercept and route through cos.
       Link.configure({ openOnClick: false }),
       TaskList,

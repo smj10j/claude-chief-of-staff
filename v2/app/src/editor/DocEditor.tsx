@@ -733,8 +733,11 @@ function LoadedEditor({
     extensions: [
       // StarterKit's plain code block is replaced by CodeBlockLowlight so
       // fenced ```ts blocks get syntax-highlighted instead of rendered as
-      // bare monospace text. Same swap v1 used.
-      StarterKit.configure({ codeBlock: false }),
+      // bare monospace text. Same swap v1 used. `link: false` disables
+      // StarterKit's bundled Link (Tiptap 3 ships one) so our explicitly
+      // configured Link below isn't registered twice — the duplicate was
+      // logging a Tiptap warning and doing redundant schema/parse work.
+      StarterKit.configure({ codeBlock: false, link: false }),
       Link.configure({ openOnClick: false, autolink: true }),
       TaskList,
       TaskItem.configure({ nested: true }),

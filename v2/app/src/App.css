@@ -3083,6 +3083,76 @@ button {
   line-height: 1.55;
 }
 
+/* Read-only markdown code blocks (Console chat + MarkdownView surface).
+   Neither renderer sits under `.cos-tiptap`, so the doc-editor's pre/code
+   rules never applied here — fenced code fell back to the UA default
+   `white-space: pre` and overflowed the window. Wrap to the container
+   width like the rest of the console output; overflow-x is the safety net
+   for genuinely un-wrappable content (ASCII tables, long single tokens). */
+.cos-markdown-view pre {
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: var(--cos-space-md);
+  border-radius: var(--cos-radius-md);
+  font-family: var(--cos-font-family-mono);
+  font-size: var(--cos-font-body);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.cos-markdown-view pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  white-space: inherit;
+  word-break: inherit;
+}
+
+.cos-markdown-view code {
+  background: var(--cos-surface-raised);
+  border: 1px solid var(--cos-outline-subtle);
+  padding: 1px 5px;
+  border-radius: var(--cos-radius-sm);
+  font-family: var(--cos-font-family-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+/* GFM tables (markdown-it renders them by default). Like pre/code above,
+   the doc-editor's table rules are scoped under `.cos-tiptap`, so a chat/
+   Console table had NO width constraint and rendered at its natural
+   content width. In a flex column that inflates the feed's content width,
+   which then makes every *paragraph* lay out (and wrap) at that off-screen
+   width — so a single wide table in a restored session reads as "nothing
+   wraps." `display: block` + `max-width: 100%` + `overflow-x: auto` caps
+   the table at the feed width and lets it scroll inside its own bubble
+   instead of pushing the surface wide; `word-break` wraps cell text. */
+.cos-markdown-view table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: var(--cos-space-sm) 0;
+  font-size: 0.92em;
+}
+
+.cos-markdown-view th,
+.cos-markdown-view td {
+  border: 1px solid var(--cos-outline-subtle);
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.cos-markdown-view th {
+  background: var(--cos-surface-raised);
+  font-weight: 600;
+}
+
 /* Org view (People surface) */
 
 .cos-org-view {
@@ -7360,7 +7430,19 @@ button {
 .cos-chat-feed {
   flex: 1 1 auto;
   min-height: 0;
+  /* min-width:0 lets wide children (code blocks, tool cards) shrink to
+     the feed width instead of forcing the whole feed past the viewport
+     and triggering a window-level horizontal scroll. */
+  min-width: 0;
   overflow-y: auto;
+  /* Backstop: clip the cross-axis so no single wide child (table, code
+     block, tool output) can inflate the feed's content width. When the
+     feed grows wider than the viewport, block-level children — including
+     plain paragraphs — lay out at that inflated width and stop wrapping
+     on screen. Wide children that need scrolling carry their own
+     overflow-x:auto, so this only ever bites content that escaped its
+     container. */
+  overflow-x: hidden;
   padding: var(--cos-space-md) var(--cos-space-lg);
   display: flex;
   flex-direction: column;
@@ -7400,6 +7482,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .cos-chat-turn-meta {
@@ -7449,6 +7532,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: var(--cos-space-sm);
+  min-width: 0;
 }
 
 .cos-chat-turn.is-find-hit > .cos-chat-turn-body {
@@ -7497,6 +7581,7 @@ button {
 .cos-chat-thinking > div {
   margin-top: 4px;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .cos-chat-text-fallback {
@@ -7712,6 +7797,10 @@ button {
   font-family: var(--cos-font-family-mono);
   color: var(--cos-content-muted);
   flex: 1 1 auto;
+  /* min-width:0 lets the flex item shrink below its content width so the
+     ellipsis actually kicks in — without it a long summary (file path,
+     command) forces the card head, and the whole feed, past the viewport. */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -27,6 +27,8 @@ const SECTIONS: Section[] = [
       { keys: "⌘9", action: "Switch to rightmost tab" },
       { keys: "⌘⇧]", action: "Next tab" },
       { keys: "⌘⇧[", action: "Previous tab" },
+      { keys: "⌃Tab", action: "Next tab" },
+      { keys: "⌃⇧Tab", action: "Previous tab" },
       { keys: "F2", action: "Rename current tab (Esc cancels, empty resets to auto)" },
       { keys: "⌘⇧L", action: "Pin / unpin current tab" },
       { keys: "Right-click", action: "Open tab actions menu" },
