@@ -1198,6 +1198,15 @@ function LoadedEditor({
       // on other layouts where "." needs Shift this still resolves
       // to the period char so the chord is consistent.
       if (e.key === "." || e.key === ">") {
+        // Only the visible/focused editor should react. With keep-alive
+        // (Shell), other doc editors stay mounted but hidden; without
+        // this guard their window listeners would flip focus mode on
+        // docs the user isn't looking at. Mirrors the Cmd+F guard below.
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        const target = e.target as HTMLElement | null;
+        const inside = target instanceof Node && container.contains(target);
+        if (!inside && !(editor?.isFocused ?? false)) return;
         e.preventDefault();
         setFocusMode((v) => {
           const next = !v;
@@ -1212,7 +1221,7 @@ function LoadedEditor({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [FOCUS_KEY]);
+  }, [FOCUS_KEY, editor]);
 
   // Cmd+F opens the floating find bar. Mounted on the wrapper div so
   // the listener doesn't steal Cmd+F when other surfaces are showing.

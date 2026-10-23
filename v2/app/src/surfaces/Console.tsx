@@ -14,7 +14,13 @@
  * preserved conversation) is deferred — the Rust transport already
  * accepts a resume id, so it's purely a frontend wiring follow-up.
  */
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { MessageSquare, Plus, Terminal as TerminalIcon, X } from "lucide-react";
 
@@ -57,7 +63,7 @@ function writeMode(m: Mode): void {
   }
 }
 
-export function Console({ active = true }: { active?: boolean }) {
+export function Console({ visible = true }: { visible?: boolean } = {}) {
   const [mode, setMode] = useState<Mode>(() => readMode());
 
   useEffect(() => {
@@ -105,7 +111,7 @@ export function Console({ active = true }: { active?: boolean }) {
         </div>
       </div>
       <div className="cos-console-mode-body">
-        {mode === "chat" ? <ChatHost active={active} /> : <RawConsole />}
+        {mode === "chat" ? <ChatHost visible={visible} /> : <RawConsole />}
       </div>
     </div>
   );
@@ -118,11 +124,17 @@ export function Console({ active = true }: { active?: boolean }) {
  * bar open/closed, history index, etc.). Per-tab draft and
  * attachments survive because they're stored on the tab record.
  */
-function ChatHost({ active }: { active: boolean }) {
+function ChatHost({ visible }: { visible: boolean }) {
   // Bump the host on any store mutation so children re-read fresh
   // tab data (label, in-flight, unseen pip). `getVersion` is a
   // primitive so it's stable under Object.is comparison.
   useSyncExternalStore(subscribeChat, getVersion, getVersion);
+  // Read live inside the window keydown handler so it can no-op while
+  // the Console surface is kept mounted but hidden behind another
+  // workspace tab (keep-alive) — otherwise its Cmd+T / Cmd+W / cycle
+  // chords would fire even when the user is looking at a doc.
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   const tabIds = getTabIds();
   const activeTabId = getActiveTabId();
 
@@ -141,45 +153,54 @@ function ChatHost({ active }: { active: boolean }) {
     rehydrateTabs();
     if (getTabIds().length === 0) createTab();
     // intentionally only on mount + when tabs go to zero
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabIds.length]);
 
-  // Keyboard: Cmd+T new, Cmd+W close, Cmd+Opt+Arrow cycle. Only while
-  // the Console surface is actually visible — it stays mounted (hidden)
-  // when you switch away, so an ungated window listener would hijack
-  // ⌘T/⌘W on every other surface.
+  // Keyboard: Cmd+T new, Cmd+W close, Cmd+Opt+Arrow cycle — all scoped
+  // to the *console's own* tab strip.
+  //
+  // Registered in the CAPTURE phase and paired with
+  // stopImmediatePropagation for the chords we own. There is a second,
+  // app-global keydown listener (state/keys.ts → Shell.handleNewTab)
+  // bound to `window` in the bubble phase, where Cmd+T creates a new
+  // *workspace* tab parked on Home and Cmd+W closes the workspace tab.
+  // Without preemption both listeners fire for the same event: on
+  // Cmd+T the new Home workspace tab wins the visible surface, so a
+  // console Cmd+T looked like "opened a Home tab" instead of a new
+  // session. A window capture-phase listener always runs before a
+  // window bubble-phase one, so stopping propagation here keeps the
+  // global handler from double-firing. Chords we don't own (Cmd+1..9
+  // tab switch, palette, Cmd+Shift+T reopen, …) fall through untouched.
   useEffect(() => {
-    if (!active) return;
     const onKey = (e: KeyboardEvent) => {
+      if (!visibleRef.current) return; // hidden behind another tab
       const meta = e.metaKey || e.ctrlKey;
       if (!meta) return;
-      // ⌘T / ⌘W (no Shift) manage console tabs. The global handler
-      // (Shell) yields these to us while the Console surface is active,
-      // so exactly one action fires. Shifted variants stay reserved for
-      // the workspace (⌘⇧T reopen, ⌘⇧[ / ⌘⇧] cycle).
       if ((e.key === "t" || e.key === "T") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
+        e.stopImmediatePropagation();
         const id = createTab();
         setActiveTabId(id);
         return;
       }
-      if ((e.key === "w" || e.key === "W") && !e.shiftKey) {
+      if ((e.key === "w" || e.key === "W") && !e.shiftKey && !e.altKey) {
         if (activeTabId) {
           e.preventDefault();
+          e.stopImmediatePropagation();
           handleClose(activeTabId);
         }
         return;
       }
       if (e.altKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
         e.preventDefault();
+        e.stopImmediatePropagation();
         cycleTab(e.key === "ArrowRight" ? 1 : -1);
         return;
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTabId, active]);
+  }, [activeTabId]);
 
   const handleClose = useCallback(async (id: TabId) => {
     const tab = getTab(id);
@@ -218,6 +239,7 @@ function ChatHost({ active }: { active: boolean }) {
           tabId={activeTabId}
           model=""
           permissionMode="auto"
+          visible={visible}
         />
       ) : null}
     </div>

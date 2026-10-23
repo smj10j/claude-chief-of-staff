@@ -4,7 +4,6 @@ import { Clock, PanelLeftClose, PanelLeft, Pin, PinOff } from "lucide-react";
 
 import {
   getUnseenCount,
-  getVersion,
   subscribeChat,
 } from "../state/chatSession";
 import {
@@ -112,10 +111,15 @@ export function Sidebar({
   }>({ attention: false, degraded: [] });
   // Live-track the Console unseen-completions count so the sidebar
   // pip ticks up the moment a backgrounded tab finishes a turn. The
-  // chat-session store emits on every mutation; we re-read the
-  // count on each tick.
-  useSyncExternalStore(subscribeChat, getVersion, getVersion);
-  const consoleUnseen = getUnseenCount();
+  // chat-session store emits on every mutation (once per streamed
+  // token during a turn), but the sidebar only cares about the unseen
+  // count — subscribing with that as the snapshot means we re-render
+  // only when it actually changes, not on every chunk.
+  const consoleUnseen = useSyncExternalStore(
+    subscribeChat,
+    getUnseenCount,
+    getUnseenCount,
+  );
   useEffect(() => {
     setBadges((b) =>
       b.consoleUnseen === consoleUnseen ? b : { ...b, consoleUnseen },

@@ -72,8 +72,8 @@ import {
   CONSOLE_RUN_HERE_EVENT,
   type ConsoleRunHerePayload,
 } from "../../state/consoleRunHere";
-import { ChatMarkdown } from "./ChatMarkdown";
 import { ToolCallCard } from "./ToolCallCard";
+import { ChatMarkdown } from "./ChatMarkdown";
 
 type OpenResult = {
   handle: string;
@@ -98,6 +98,7 @@ export function ChatView({
   tabId,
   permissionMode,
   model,
+  visible = true,
 }: {
   /** Stable tab identifier. The component is keyed on this in the
    *  parent so a switch creates a fresh ChatView with its own local
@@ -114,7 +115,16 @@ export function ChatView({
   permissionMode: string;
   /** Optional model override. Empty → claude's default. */
   model: string;
+  /** False when the Console surface is kept mounted but hidden behind
+   *  another workspace tab (keep-alive). The window-level keydown
+   *  handlers below (Cmd+F, auto-submit cancel) must no-op while
+   *  hidden or they'd hijack keystrokes from the visible surface. */
+  visible?: boolean;
 }) {
+  // Read live inside window handlers so we don't re-subscribe on every
+  // visibility flip.
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   // Re-render on any chat-store mutation; the slice we actually care
   // about (this tab's runtime + UX state) we read fresh from the
   // store after each notification. `getVersion` is a primitive so
@@ -209,6 +219,35 @@ export function ChatView({
 
   const feedRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Stable per-item callbacks for ChatItemView. Kept referentially
+  // stable (empty deps) so the memoized rows don't re-render on every
+  // streamed chunk just because the parent handed them a fresh closure.
+  // The regenerate path needs the *latest* session, so it reads a ref
+  // rather than closing over `session` (which changes each render).
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const handleEditUserTurn = useCallback((text: string) => {
+    setDraft(text);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, []);
+  const handleRegenerate = useCallback((itemId: string) => {
+    const s = sessionRef.current;
+    if (!s || s.inFlight || s.exited) return;
+    // Find the most recent user turn before this assistant item and
+    // re-seed it into the input (we don't truncate the conversation;
+    // that's a fork-from-turn follow-up).
+    const items = s.items;
+    const idx = items.findIndex((i) => i.id === itemId);
+    for (let i = idx - 1; i >= 0; i--) {
+      const candidate = items[i];
+      if (candidate.kind === "user") {
+        setDraft(candidate.text);
+        setTimeout(() => inputRef.current?.focus(), 0);
+        return;
+      }
+    }
+  }, []);
   const lastItemCountRef = useRef(0);
 
   // Auto-grow the composer to fit its content. The old `rows`
@@ -226,35 +265,6 @@ export function ChatView({
     const maxHeight = Math.round(window.innerHeight * 0.5);
     el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
   }, [draft]);
-
-  // Stable per-tab handlers for the transcript rows. ChatItemView is
-  // memoized (see below); passing fresh inline closures per item on
-  // every render would defeat the memo and re-render the whole feed on
-  // each streaming chunk. Reading the session fresh from the store keeps
-  // these identity-stable across renders (deps: tabId only).
-  const editUserTurn = useCallback((text: string) => {
-    setDraft(text);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }, []);
-  const regenerateFromAssistant = useCallback(
-    (itemId: string) => {
-      const s = getTab(tabId)?.session;
-      if (!s || s.inFlight || s.exited) return;
-      // Find the most recent user turn before this assistant item and
-      // copy it back into the input so claude can re-attempt with
-      // current context (no truncation — that's a separate fork action).
-      const idx = s.items.findIndex((i) => i.id === itemId);
-      for (let i = idx - 1; i >= 0; i--) {
-        const candidate = s.items[i];
-        if (candidate && candidate.kind === "user") {
-          setDraft(candidate.text);
-          setTimeout(() => inputRef.current?.focus(), 0);
-          return;
-        }
-      }
-    },
-    [tabId],
-  );
 
   // Auto-scroll: pin to bottom while a turn streams; if the user
   // scrolls up, pause until they hit the jump pill or scroll back
@@ -300,6 +310,7 @@ export function ChatView({
   // Cmd+F → toggle find bar. Esc → close.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!visibleRef.current) return; // hidden behind another tab
       const meta = e.metaKey || e.ctrlKey;
       if (meta && (e.key === "f" || e.key === "F") && session) {
         e.preventDefault();
@@ -382,6 +393,7 @@ export function ChatView({
     if (autoSubmitDeadline === null) return;
     const cancel = () => setAutoSubmitDeadline(null);
     const onKey = (e: KeyboardEvent) => {
+      if (!visibleRef.current) return; // hidden behind another tab
       if (e.key === "Escape") {
         cancel();
         return;
@@ -902,11 +914,8 @@ export function ChatView({
                 key={item.id}
                 item={item}
                 findQuery={findQuery}
-                onEditUserTurn={(text) => {
-                  setDraft(text);
-                  setTimeout(() => inputRef.current?.focus(), 0);
-                }}
-                onRegenerateAssistant={() => undefined}
+                onEditUserTurn={handleEditUserTurn}
+                onRegenerate={handleRegenerate}
               />
             ))}
           </>
@@ -935,8 +944,8 @@ export function ChatView({
             key={item.id}
             item={item}
             findQuery={findQuery}
-            onEditUserTurn={editUserTurn}
-            onRegenerateAssistant={regenerateFromAssistant}
+            onEditUserTurn={handleEditUserTurn}
+            onRegenerate={handleRegenerate}
           />
         ))}
         {isStopped && (
@@ -1356,12 +1365,12 @@ const ChatItemView = memo(function ChatItemView({
   item,
   findQuery,
   onEditUserTurn,
-  onRegenerateAssistant,
+  onRegenerate,
 }: {
   item: ChatItem;
   findQuery: string;
   onEditUserTurn: (text: string) => void;
-  onRegenerateAssistant: (itemId: string) => void;
+  onRegenerate: (itemId: string) => void;
 }) {
   if (item.kind === "user") {
     return (
@@ -1417,7 +1426,7 @@ const ChatItemView = memo(function ChatItemView({
         <button
           type="button"
           className="cos-chat-turn-action"
-          onClick={() => onRegenerateAssistant(item.id)}
+          onClick={() => onRegenerate(item.id)}
           title="Re-run the previous user turn to regenerate this response"
         >
           regenerate ↻

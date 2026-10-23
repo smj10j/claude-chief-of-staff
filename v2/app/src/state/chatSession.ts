@@ -213,6 +213,13 @@ let version = 0;
 const listeners = new Set<() => void>();
 
 let persistEnabled = true;
+// The bytes we last wrote to localStorage. Streaming a turn bumps the
+// store on every token chunk, but the *persisted* payload (labels, cwd,
+// resume hints, active id) almost never changes on those bumps — only
+// `session.items` does, and items aren't persisted. Comparing against
+// this lets persistTabs() skip the synchronous localStorage write (and
+// the storage-event wakeups it triggers) when nothing persistable moved.
+let lastPersistedJson: string | null = null;
 
 function emit(): void {
   // Snapshot the tab-id list once per emit so React's
@@ -453,7 +460,12 @@ function persistTabs(): void {
       persisted.push(entry);
     }
     const payload: PersistedTabs = { tabs: persisted, activeTabId };
-    window.localStorage.setItem(TAB_PERSIST_KEY, JSON.stringify(payload));
+    const json = JSON.stringify(payload);
+    // Nothing persistable changed since the last write (the common case
+    // during a streaming turn) — skip the disk hit entirely.
+    if (json === lastPersistedJson) return;
+    lastPersistedJson = json;
+    window.localStorage.setItem(TAB_PERSIST_KEY, json);
   } catch {
     // private mode / quota exceeded — drop silently
   }
@@ -522,6 +534,7 @@ export function _resetTabs(): void {
   tabOrder = [];
   cachedTabIds = [];
   activeTabId = null;
+  lastPersistedJson = null;
   if (typeof window !== "undefined") {
     try {
       window.localStorage.removeItem(TAB_PERSIST_KEY);

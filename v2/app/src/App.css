@@ -7104,16 +7104,6 @@ button {
 }
 
 /* ============ PRD-116 Phase 2.5 — Chat mode + mode toggle ============ */
-/* Persistent Console wrapper (Shell keeps it mounted across surface
-   switches). Fills the main zone like a routed surface; `hidden` fully
-   removes it from layout when another surface or a doc is showing. */
-.cos-console-host {
-  height: 100%;
-}
-.cos-console-host[hidden] {
-  display: none;
-}
-
 .cos-console-shell {
   display: flex;
   flex-direction: column;
