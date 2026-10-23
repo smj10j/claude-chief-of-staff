@@ -12,3 +12,5 @@ Promotion tracking, growth plans, leveling notes, strategic relationships. Anyth
 (These are suggestions. Add or rename freely.)
 
 If you manage other people and need to level them, `/level-candidate` reads from your repo's leveling framework + heuristics. The framework files (`eng-leveling-framework.md`, `leveling-guidelines.md`) live here once you populate them.
+
+For readiness reviews of people you manage, `/career-review` follows [`career-review-playbook.md`](career-review-playbook.md) (ships here) and writes into each person's `career/` folder under `one-on-ones/`.

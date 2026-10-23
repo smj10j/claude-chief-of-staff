@@ -28,6 +28,11 @@ Drop shared, org-level references here — for example:
 |------|---------|
 | `eng-leveling-framework.md` | Your company's IC competency framework (source of truth for level definitions) |
 | `leveling-guidelines.md` | Your personal leveling philosophy (used by `/level-candidate`) |
+| `career-review-playbook.md` | Method for current-level + next-level readiness reviews (run by `/career-review`). Ships with the template; append to its run log as you go |
+
+If your framework lives in a live Sheet or Doc rather than a local file, record its link here so every `/career-review` run uses the same source:
+
+<!-- Leveling framework (live): https://docs.google.com/... -->
 
 ## Per-person career template
 

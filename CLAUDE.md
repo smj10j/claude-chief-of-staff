@@ -87,6 +87,7 @@ Custom slash commands live in `.claude/commands/`. Invoke with `/command-name`. 
 - `/org-generate` — Rebuild the canonical `data/files/areas/org/org.json` plus every `person.json`. Same outcome as the v2 UI's "Regenerate" button.
 - `/person-refresh [name]` — Refresh one person's `person.json` (Slack/email/title metadata).
 - `/level-candidate [name|pdf]` — IC leveling assessment against your engineering leveling framework.
+- `/career-review [name] [level]` — Current-level + next-level readiness review for a direct or skip-level report (verdict tables + sourced competency analysis vs. both bars). Runs `data/files/areas/career/career-review-playbook.md`.
 
 **Ops / Service Health**
 - `/ops-incidents` — Snapshot active incidents from your incidents Slack channel.
@@ -284,6 +285,10 @@ When asked to prep for a 1:1, run `/prep-1on1 [name]`. The full prep workflow, r
 ## Leveling Candidates
 
 When asked to level a candidate, run `/level-candidate [name or PDF path]`. Uses the IC competency framework and personal leveling guidelines if available. See `data/files/areas/career/` for leveling docs.
+
+## Career Reviews
+
+When asked for a readiness or promotion review of someone you manage, run `/career-review [name] [level]`. It follows `data/files/areas/career/career-review-playbook.md` (method, verdict-table format, sourcing rules) and writes into the person's `career/` folder.
 
 ## Session Compaction
 
