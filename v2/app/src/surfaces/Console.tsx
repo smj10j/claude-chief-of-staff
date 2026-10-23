@@ -64,13 +64,6 @@ export function Console({ active = true }: { active?: boolean }) {
     writeMode(mode);
   }, [mode]);
 
-  // One-shot rehydration from persistence on first mount. If no tabs
-  // have been opened yet (fresh app), this is a no-op and the chat
-  // surface starts in its own empty state.
-  useEffect(() => {
-    rehydrateTabs();
-  }, []);
-
   return (
     <div className="cos-console-shell">
       <div className="cos-console-mode-bar">
@@ -133,11 +126,20 @@ function ChatHost({ active }: { active: boolean }) {
   const tabIds = getTabIds();
   const activeTabId = getActiveTabId();
 
-  // Make sure we always have at least one tab so the input box and
-  // empty state have somewhere to live. If rehydration brought tabs
-  // back, we're fine; otherwise create a starter tab on first render.
+  // Ensure there's always at least one tab so the input box and empty
+  // state have somewhere to live — but restore persisted tabs FIRST.
+  //
+  // Rehydration and the fallback createTab must happen in the *same*
+  // effect. When they were split (rehydrate in the parent Console,
+  // createTab here in the child), React's child-effects-before-parent
+  // ordering ran this createTab first, which tripped rehydrateTabs's
+  // `tabs.size > 0` guard and silently discarded every restored
+  // session. Doing both here, rehydrate-then-fallback, closes that
+  // race. We read getTabIds() live so we see the post-rehydrate count.
   useEffect(() => {
-    if (tabIds.length === 0) createTab();
+    if (getTabIds().length > 0) return;
+    rehydrateTabs();
+    if (getTabIds().length === 0) createTab();
     // intentionally only on mount + when tabs go to zero
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabIds.length]);
