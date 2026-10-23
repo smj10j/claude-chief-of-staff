@@ -35,3 +35,6 @@ Populated during `/init` or built over time as you edit drafts and give feedback
 
 ## Document Style
 <!-- Preferences for longer-form docs — titles, openers, closers. -->
+
+### Decision Logs & Shared-Reference Docs
+<!-- Voice rules for consolidated "what did we decide?" references (built with /decision-log). Example: "State each item as a flat fact and let the status glyph carry decided vs. open — no hedging prose." -->
