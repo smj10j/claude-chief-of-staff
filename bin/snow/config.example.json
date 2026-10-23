@@ -1,0 +1,8 @@
+{
+  "_comment": "Optional. Copy to data/files/snowflake/config.json and fill in. Only `connection` is required (the [section] name in ~/.snowflake/connections.toml). role/warehouse/database/schema override that connection's own values; leave them out to use the connection's defaults. COS_SNOW_* env vars win over this file. Values still shaped like <placeholders> are ignored.",
+  "connection": "<connection>",
+  "role": "<read-only-role>",
+  "warehouse": "<warehouse>",
+  "database": "<database>",
+  "schema": "<schema>"
+}
