@@ -343,6 +343,15 @@ fn parse_mcp_list(raw: &str) -> Vec<McpServer> {
 /// run_prompt directly.
 pub const PING_TIMEOUT_SECS: u64 = 30;
 
+/// Hard ceiling for UI-driven skill runs (annotations, digest, prep,
+/// briefing, ops/planning snapshots — everything routed through
+/// `run_skill`). Generous enough for the heaviest skills
+/// (morning-briefing, weekly-review) yet bounded so a wedged MCP call or
+/// stuck network read surfaces as an error instead of an infinite
+/// spinner. Without this, `run_skill` blocked forever on a hung child.
+/// Tune here if a legitimate skill run needs more headroom.
+pub const SKILL_TIMEOUT_SECS: u64 = 900;
+
 /// Tiny round-trip to prove the CLI is wired up. Uses a throw-away prompt
 /// so we confirm spawn + stdin + stdout plumbing end-to-end. Bounded by
 /// PING_TIMEOUT_SECS so a hung binary doesn't strand the UI.
@@ -423,7 +432,7 @@ pub fn run_prompt_with_timeout(
                     let _ = child.kill();
                     let _ = child.wait();
                     return Err(AppError::InvalidState(format!(
-                        "claude CLI ping timed out after {}s — binary may be wedged",
+                        "claude CLI timed out after {}s — the binary or an MCP call may be wedged",
                         timeout.as_secs()
                     )));
                 }
@@ -460,7 +469,15 @@ pub fn run_skill(
     } else {
         format!("/{command} {args}", command = command, args = args.trim())
     };
-    run_prompt(cfg, &invocation, cwd)
+    // Bounded, not blocking-forever: a wedged MCP call or stuck network
+    // read is killed at SKILL_TIMEOUT_SECS and returned as an error the
+    // UI can surface, instead of stranding the caller on a spinner.
+    run_prompt_with_timeout(
+        cfg,
+        &invocation,
+        cwd,
+        std::time::Duration::from_secs(SKILL_TIMEOUT_SECS),
+    )
 }
 
 /// Parse a free-form task description into structured fields. Caller
