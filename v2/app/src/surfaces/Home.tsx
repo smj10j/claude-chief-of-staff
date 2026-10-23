@@ -25,8 +25,8 @@ import { InlineMarkdown } from "../state/inlineMarkdown";
 import { type OpenDoc } from "../state/openDoc";
 import {
   RECENT_CHANGED_EVENT,
-  decorateRecentLabel,
   readRecent,
+  recentDisplayLabel,
   type RecentDoc,
 } from "../state/recentDocs";
 import { dismissRun, runSkill, useRun } from "../state/skillRuns";
@@ -626,7 +626,7 @@ export function Home({ onOpenDoc, onGoToTask, onGoToMeeting, onGoToProfile }: Pr
                   title={d.relPath}
                 >
                   <Clock size={12} strokeWidth={1.75} aria-hidden />
-                  <span>{decorateRecentLabel(d.relPath, d.label)}</span>
+                  <span>{recentDisplayLabel(d.relPath, d.label)}</span>
                 </button>
               </li>
             ))}

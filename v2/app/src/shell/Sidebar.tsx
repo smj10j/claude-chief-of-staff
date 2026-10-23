@@ -14,9 +14,9 @@ import {
 import { type OpenDoc } from "../state/openDoc";
 import {
   RECENT_CHANGED_EVENT,
-  decorateRecentLabel,
   readRecent,
   readSidebarRecentsMax,
+  recentDisplayLabel,
   togglePinned,
   type RecentDoc,
 } from "../state/recentDocs";
@@ -384,7 +384,7 @@ export function Sidebar({
                     <Clock size={12} strokeWidth={1.75} aria-hidden />
                   )}
                   <span className="cos-sidebar-recent-label">
-                    {decorateRecentLabel(r.relPath, r.label)}
+                    {recentDisplayLabel(r.relPath, r.label)}
                   </span>
                 </button>
                 <button
@@ -418,7 +418,7 @@ export function Sidebar({
           aria-hidden
           title={`${recents.length} recent — top: ${
             recents[0]
-              ? decorateRecentLabel(recents[0].relPath, recents[0].label)
+              ? recentDisplayLabel(recents[0].relPath, recents[0].label)
               : ""
           }`}
         >

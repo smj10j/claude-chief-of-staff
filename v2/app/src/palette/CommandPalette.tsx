@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   decorateRecentLabel,
   readRecent,
+  recentDisplayLabel,
   type RecentDoc,
 } from "../state/recentDocs";
 import { deriveTitle, type TabState } from "../state/tabs";
@@ -177,7 +178,7 @@ export function CommandPalette({
       recents.map((r): PaletteEntry => ({
         id: `doc:${r.relPath}`,
         kind: "doc",
-        label: decorateRecentLabel(r.relPath, r.label),
+        label: recentDisplayLabel(r.relPath, r.label),
         hint: "recent",
         // Pass the original label through to handleOpenDoc so the
         // editor breadcrumb stays the original "README" / date — only
@@ -332,7 +333,7 @@ export function CommandPalette({
             kind: "doc",
             // Decorate with the owner segment so generic labels
             // ("README", "2026-04-22") read as "Alice · 2026-04-22"
-            // — matches the tab title and Recent section treatment.
+            // — matches the tab title treatment.
             label: decorateRecentLabel(h.rel_path, h.label),
             hint: h.context
               ? `${h.context} · ${h.snippet}`

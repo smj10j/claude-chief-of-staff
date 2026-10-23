@@ -235,6 +235,85 @@ export function decorateRecentLabel(
   return trimmed.length > 0 ? `${humanized} · ${trimmed}` : humanized;
 }
 
+/** Title-case a hyphen-slug: "team-eng-leads" → "Team Eng Leads". */
+function humanizeSlug(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => (w.length === 0 ? w : w[0]!.toUpperCase() + w.slice(1)))
+    .join(" ");
+}
+
+// Relationship folders that sit between `one-on-ones/` and the person
+// slug, e.g. one-on-ones/direct-reports/alice/…
+const RECENT_OWNER_RELATIONSHIPS = new Set([
+  "direct-reports",
+  "manager",
+  "peers",
+  "skip-level",
+  "skip-level-reports",
+  "xfn",
+  "self",
+  "alumni",
+]);
+// A trailing standalone year on a project slug ("offsite-2026") — the
+// project's own docs keep their year, but the owner prefix reads cleaner
+// without it ("Offsite/…").
+const TRAILING_YEAR_RE = /-(?:19|20)\d{2}$/;
+
+/**
+ * The human-meaningful "owner" of a recent doc, derived from its
+ * rel-path:
+ *   - one-on-ones/<relationship>/<person>/…  → the person slug
+ *   - projects/<project>/…                   → the project slug
+ *   - areas/meetings/<meeting>/…             → the meeting slug
+ * Returns null for ad-hoc docs (loose Areas files, etc) with no owner.
+ */
+function recentOwnerSlug(relPath: string): string | null {
+  const parts = relPath.split("/").filter(Boolean);
+
+  const projIdx = parts.indexOf("projects");
+  if (projIdx !== -1 && parts[projIdx + 1]) return parts[projIdx + 1]!;
+
+  const oooIdx = parts.indexOf("one-on-ones");
+  if (oooIdx !== -1) {
+    const relationship = parts[oooIdx + 1];
+    const person = parts[oooIdx + 2];
+    if (
+      relationship &&
+      RECENT_OWNER_RELATIONSHIPS.has(relationship) &&
+      person
+    ) {
+      return person;
+    }
+  }
+
+  const meetIdx = parts.indexOf("meetings");
+  if (meetIdx !== -1 && parts[meetIdx + 1]) return parts[meetIdx + 1]!;
+
+  return null;
+}
+
+/**
+ * Display label for the Recent lists (Home strip, Sidebar, command
+ * palette). Always surfaces the owner as "Owner/Doc" so items read as
+ * "Alice/Mid Year Checkin 2026" or
+ * "Offsite/example-spec" and are scannable at a glance.
+ *
+ * Unlike `decorateRecentLabel` (used for tab titles, which only prefixes
+ * generic labels to stay short), this prefixes the owner whenever one can
+ * be derived — the doc's own label (title, date, or filename stem) is left
+ * as-is after the slash. Falls back to the bare label for docs with no
+ * owner (loose Areas files).
+ */
+export function recentDisplayLabel(relPath: string, label: string): string {
+  const trimmed = (label ?? "").trim();
+  const owner = recentOwnerSlug(relPath);
+  if (!owner) return trimmed.length > 0 ? trimmed : "doc";
+  const stripped = owner.replace(TRAILING_YEAR_RE, "");
+  const ownerLabel = humanizeSlug(stripped.length > 0 ? stripped : owner);
+  return trimmed.length > 0 ? `${ownerLabel}/${trimmed}` : ownerLabel;
+}
+
 export function clearRecent(): void {
   if (typeof window === "undefined") return;
   try {

@@ -9,7 +9,7 @@
  */
 
 import { type OpenDoc } from "./openDoc";
-import { decorateRecentLabel } from "./recentDocs";
+import { recentDisplayLabel } from "./recentDocs";
 import { findSurface, type SurfaceId } from "./surfaces";
 import { type MeetingTarget } from "../surfaces/MeetingDetail";
 import { type ProfileTarget } from "../surfaces/PersonProfile";
@@ -714,10 +714,11 @@ export function prevTab(s: TabsState): TabsState {
  * Auto-derive a tab's display title per PRD §4.3 precedence:
  *
  *   1. user-set title
- *   2. open document label (decorated with the owner segment when
- *      generic — "2026-04-22" alone is meaningless in a tab; the
- *      sidebar's Recent section solves the same problem with
- *      `decorateRecentLabel`, so the same helper runs here)
+ *   2. open document label (prefixed with the owner as "Owner/Doc" —
+ *      "2026-04-22" alone is meaningless in a tab, and with several docs
+ *      open "README" tabs are indistinguishable; the sidebar's Recent
+ *      section solves the same problem with `recentDisplayLabel`, so the
+ *      same helper runs here)
  *   3. selected entity label (person / project / meeting)
  *   4. surface label (Home / Tasks / …)
  *
@@ -732,11 +733,12 @@ export function deriveTitle(tab: TabState): string {
   if (u && u.length > 0) return u;
   if (tab.openDoc) {
     const label = tab.openDoc.label?.trim() ?? "";
-    // `decorateRecentLabel` is a no-op for distinctive labels and
-    // prefixes the owner ("Alice · 2026-04-22", "Example Project
-    // · README") for generic ones. The same logic the sidebar uses
-    // for its Recent section.
-    return decorateRecentLabel(tab.openDoc.relPath, label);
+    // `recentDisplayLabel` prefixes the owner as "Owner/Doc"
+    // ("Alice/2026-04-22", "Example Project/README") whenever one
+    // can be derived, so tabs stay distinguishable when several docs are
+    // open. Falls back to the bare label for ad-hoc docs. The same logic
+    // the sidebar uses for its Recent section.
+    return recentDisplayLabel(tab.openDoc.relPath, label);
   }
   if (tab.peopleProfile) return tab.peopleProfile.label;
   if (tab.projectProfile) return tab.projectProfile.label;
