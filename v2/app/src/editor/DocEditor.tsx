@@ -36,6 +36,7 @@ import { ensureDocPath } from "./linkOpen";
 import { resolveRelativePath } from "./resolveRelativePath";
 import { time } from "../state/perf";
 import { dismissRun, runSkill, useRun } from "../state/skillRuns";
+import { intentFromEvent } from "../state/tabs";
 import { showToast } from "../state/toasts";
 import { sanitizeMarkdown } from "./sanitize-markdown";
 
@@ -1040,9 +1041,12 @@ function LoadedEditor({
         const final = ensureDocPath(resolved);
         const label =
           final.split("/").pop()?.replace(/\.md$/, "") ?? final;
+        // Cmd-click → new background tab, Cmd+Shift-click → new
+        // foreground tab (intentFromEvent). Plain click never reaches
+        // here — it opens the link-edit dialog below.
         window.dispatchEvent(
           new CustomEvent("cos:open-doc", {
-            detail: { relPath: final, label },
+            detail: { relPath: final, label, intent: intentFromEvent(e) },
           }),
         );
         return;
