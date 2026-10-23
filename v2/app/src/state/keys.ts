@@ -82,6 +82,18 @@ export function matchGlobalKey(e: {
     return { handler: "renameActiveTab", preventDefault: true };
   }
 
+  // Ctrl+Tab / Ctrl+Shift+Tab → cycle workspace tabs right / left. The
+  // browser/editor-universal tab-cycle chord. Bound to Ctrl
+  // specifically (not the usual Cmd-or-Ctrl `mod`): Cmd+Tab is the
+  // macOS app switcher and never reaches the webview, and Ctrl+Tab is
+  // the conventional in-app cycle even on macOS. This is an alias for
+  // the existing Cmd+Shift+] / Cmd+Shift+[ cycle.
+  if (e.key === "Tab" && e.ctrlKey && !e.metaKey && !alt) {
+    return e.shiftKey
+      ? { handler: "prevTab", preventDefault: true }
+      : { handler: "nextTab", preventDefault: true };
+  }
+
   if (!mod) return null;
 
   // Surface chord (PRD-v2-117 §4.4.2) — moved from Cmd+1..6 to

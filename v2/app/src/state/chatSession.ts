@@ -38,14 +38,16 @@
  *     permission_mode, cwd, mcp servers, tool list. Drives chip
  *     row and the resume flow.
  *   - `assistant.message` — claude's response, possibly streamed.
- *     Content can be text, tool_use, or thinking.
+ *     Content can be text, tool_use, or thinking. Its `usage` is the
+ *     prompt size of that one API call, which drives the context chip.
  *   - `user.message` — echo of what we sent (claude includes
  *     processed user input in its event stream).
  *   - `tool_result` — the tool's response, paired with a tool_use
  *     by `tool_use_id`. We attach to the originating tool-call
  *     item rather than rendering as a sibling.
- *   - `result` — terminal event for a turn: total_cost_usd, usage
- *     (token counts), duration. Updates the chip row.
+ *   - `result` — terminal event for a turn: total_cost_usd (session
+ *     total, carried across `--resume`), modelUsage (per-model cost,
+ *     price basis, context window), duration. Updates the chip row.
  *   - `stderr` — any line claude writes to stderr; surfaced as a
  *     red-edged banner in the renderer.
  *   - `raw` — non-JSON line (rare; happens during launch failures).
@@ -117,13 +119,33 @@ export type ChatSessionMeta = {
   model?: string;
   permissionMode?: string;
   mcpServers?: { name: string; status?: string }[];
-  /** Updated by every `result` event. */
+  /** Session total from the latest `result` event. Claude Code prices
+   *  it from its own per-model rate table, so we never keep one here. */
   totalCostUsd?: number;
-  inputTokens?: number;
-  outputTokens?: number;
-  /** Approximate context window % consumed (input + output / model max).
-   *  Computed from usage; null until we have a turn. */
+  /** Per-model breakdown of `totalCostUsd` (`result.modelUsage`),
+   *  costliest first. */
+  modelCosts?: ModelCost[];
+  /** Prompt size of the latest main-thread API call: uncached input +
+   *  cache reads + cache writes. */
+  contextTokens?: number;
+  /** Context window of the session's model, as Claude Code reports it
+   *  in `modelUsage`. Unknown until the first `result` event. */
+  contextWindow?: number;
+  /** contextTokens / contextWindow, rounded. */
   contextPercent?: number;
+};
+
+export type ModelCost = {
+  model: string;
+  /** Claude Code's resolved model id, when it differs from the key. */
+  canonicalModel?: string;
+  costUsd: number;
+  /** Which rates priced this model: "list" (Anthropic list price),
+   *  "managed" (org managed-settings `modelPricing`), or "unknown" (no
+   *  rate matched; Claude Code guessed at its default model's rate).
+   *  Absent on older Claude Code versions. */
+  costBasis?: string;
+  contextWindow?: number;
 };
 
 export type ChatSession = {
@@ -580,34 +602,42 @@ export function applyEvent(s: ChatSession, event: unknown): ChatSession {
     const content = message?.content;
     const blocks = parseAssistantContent(content);
     const ts = Date.now();
-    return appendOrUpdateAssistant(s, blocks, ts);
+    const next = appendOrUpdateAssistant(s, blocks, ts);
+    // Subagent messages carry parent_tool_use_id and run in their own
+    // context window, so only main-thread calls size the context chip.
+    if (ev.parent_tool_use_id) return next;
+    const contextTokens = promptTokens(message?.usage);
+    if (contextTokens == null) return next;
+    return {
+      ...next,
+      meta: {
+        ...next.meta,
+        contextTokens,
+        contextPercent: computeContextPercent(
+          contextTokens,
+          next.meta.contextWindow,
+        ),
+      },
+    };
   }
 
   if (type === "result") {
     const cost = numberField(ev, "total_cost_usd");
-    const usage = ev.usage as Record<string, unknown> | undefined;
-    const inputTokens =
-      usage && typeof usage.input_tokens === "number"
-        ? (usage.input_tokens as number)
-        : s.meta.inputTokens;
-    const outputTokens =
-      usage && typeof usage.output_tokens === "number"
-        ? (usage.output_tokens as number)
-        : s.meta.outputTokens;
-    const contextPercent = computeContextPercent(
-      s.meta.model,
-      inputTokens,
-      outputTokens,
-    );
+    const modelCosts = parseModelUsage(ev.modelUsage) ?? s.meta.modelCosts;
+    const contextWindow =
+      contextWindowFor(modelCosts, s.meta.model) ?? s.meta.contextWindow;
     return {
       ...s,
       inFlight: false,
       meta: {
         ...s.meta,
         totalCostUsd: cost ?? s.meta.totalCostUsd,
-        inputTokens,
-        outputTokens,
-        contextPercent,
+        modelCosts,
+        contextWindow,
+        contextPercent: computeContextPercent(
+          s.meta.contextTokens,
+          contextWindow,
+        ),
       },
     };
   }
@@ -690,6 +720,60 @@ export function dequeueTurn(s: ChatSession): {
   if (s.queue.length === 0) return { next: s, text: null };
   const [head, ...rest] = s.queue;
   return { next: { ...s, queue: rest }, text: head };
+}
+
+/**
+ * Rebuild a conversation feed from a transcript's raw event log — the
+ * `.jsonl` read back via the `chat_replay` IPC. This is the visible
+ * half of resume: `--resume <sessionId>` restores claude's server-side
+ * context, `replayItems` restores what the user *sees* so a reopened
+ * ("ghost") tab shows its prior conversation instead of an empty pane.
+ * PRD-116 §4.5.
+ *
+ * We fold each event through the exact reducers used live, so the
+ * reconstruction is faithful:
+ *   - The `inFlight` lifecycle is reproduced (a user turn flips it on,
+ *     the turn's `result` event flips it off), which is what makes the
+ *     stream of per-block `assistant` events merge back into a single
+ *     bubble per turn — and tool results re-attach to their calls.
+ *   - Local user turns are re-materialized as user items. The live
+ *     reducer treats a `user` event with string content as a no-op
+ *     echo (the live path adds user turns optimistically in `submit`),
+ *     but on replay there is no optimistic path, so we add them here.
+ *
+ * Unparseable / metadata-only events (`system.init`, hook events,
+ * `rate_limit_event`) pass through `applyEvent` and are handled or
+ * ignored exactly as they are live.
+ */
+export function replayItems(events: unknown[]): ChatItem[] {
+  let s: ChatSession = {
+    meta: { handle: "", binary_path: "", cwd: "", argv: [] },
+    items: [],
+    inFlight: false,
+    queue: [],
+    exited: false,
+    dataUnlisten: () => undefined,
+    exitUnlisten: () => undefined,
+    stderrUnlisten: () => undefined,
+  };
+  for (const event of events) {
+    if (!event || typeof event !== "object") continue;
+    const ev = event as Record<string, unknown>;
+    if (ev.type === "user") {
+      const message = ev.message as Record<string, unknown> | undefined;
+      const content = message?.content;
+      // Our own user turns are logged with a string `content` (plus an
+      // `_origin: "local"` marker). Claude's `user` events instead
+      // carry a tool_result array — those fall through to applyEvent so
+      // the result attaches to the originating tool call.
+      if (typeof content === "string") {
+        s = addUserTurn(s, content);
+        continue;
+      }
+    }
+    s = applyEvent(s, event);
+  }
+  return s.items;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -905,32 +989,90 @@ function attachToolResult(
   return s;
 }
 
-/**
- * Best-effort context window estimate. Hardcoded model capacities;
- * if we don't know the model, returns null and the chip just shows
- * the raw token count.
- */
+/** Rounded share of the context window in use. Undefined until both
+ *  the prompt size and the window are known. */
 function computeContextPercent(
-  model: string | undefined,
-  inputTokens: number | undefined,
-  outputTokens: number | undefined,
+  tokens: number | undefined,
+  window: number | undefined,
 ): number | undefined {
-  if (!model) return undefined;
-  if (inputTokens == null && outputTokens == null) return undefined;
-  const total = (inputTokens ?? 0) + (outputTokens ?? 0);
-  const cap = MODEL_CONTEXT_CAPS[model];
-  if (!cap) return undefined;
-  return Math.min(100, Math.round((total / cap) * 100));
+  if (tokens == null || !window) return undefined;
+  return Math.min(100, Math.round((tokens / window) * 100));
 }
 
-const MODEL_CONTEXT_CAPS: Record<string, number> = {
-  "claude-opus-4-7": 200_000,
-  "claude-opus-4-6": 200_000,
-  "claude-sonnet-4-6": 200_000,
-  "claude-sonnet-4-5": 200_000,
-  "claude-haiku-4-5-20251001": 200_000,
-  // Aliases claude reports.
-  "opus": 200_000,
-  "sonnet": 200_000,
-  "haiku": 200_000,
+/** Prompt size of one API call. `input_tokens` alone is only the
+ *  uncached tail (often single digits); the cached prefix is in the
+ *  cache read/write counts. */
+function promptTokens(raw: unknown): number | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const u = raw as Record<string, unknown>;
+  const total =
+    (numberField(u, "input_tokens") ?? 0) +
+    (numberField(u, "cache_read_input_tokens") ?? 0) +
+    (numberField(u, "cache_creation_input_tokens") ?? 0);
+  return total > 0 ? total : undefined;
+}
+
+function parseModelUsage(raw: unknown): ModelCost[] | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const rows: ModelCost[] = [];
+  for (const [model, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== "object") continue;
+    const u = v as Record<string, unknown>;
+    rows.push({
+      model,
+      canonicalModel: stringField(u, "canonicalModel"),
+      costUsd: numberField(u, "costUSD") ?? 0,
+      costBasis: stringField(u, "costBasis"),
+      contextWindow: numberField(u, "contextWindow"),
+    });
+  }
+  if (rows.length === 0) return undefined;
+  return rows.sort((a, b) => b.costUsd - a.costUsd);
+}
+
+/** The session model's context window. Matches on the modelUsage key or
+ *  Claude Code's canonical id; a single-model session needs no match. */
+function contextWindowFor(
+  rows: ModelCost[] | undefined,
+  model: string | undefined,
+): number | undefined {
+  if (!rows || rows.length === 0) return undefined;
+  const hit = model
+    ? rows.find((r) => r.model === model || r.canonicalModel === model)
+    : undefined;
+  return (hit ?? (rows.length === 1 ? rows[0] : undefined))?.contextWindow;
+}
+
+const COST_BASIS_LABELS: Record<string, string> = {
+  list: "list price",
+  managed: "org pricing",
+  unknown: "guessed: no rate for this model",
 };
+
+/**
+ * Tooltip + warning flag for the cost chip. Claude Code tags each
+ * model with the rates it priced it at; "unknown" means it had no rate
+ * for that model, so the total is partly a guess.
+ */
+export function describeSessionCost(modelCosts: ModelCost[] | undefined): {
+  title: string;
+  isGuess: boolean;
+} {
+  const rows = modelCosts ?? [];
+  const bases = new Set(rows.map((r) => r.costBasis));
+  const isGuess = bases.has("unknown");
+  const basis = isGuess
+    ? "estimate"
+    : bases.has("managed")
+      ? bases.has("list")
+        ? "list + org pricing"
+        : "org pricing"
+      : "list price";
+  const lines = rows.map((r) => {
+    const label = r.costBasis
+      ? ` · ${COST_BASIS_LABELS[r.costBasis] ?? r.costBasis}`
+      : "";
+    return `${r.model}: $${r.costUsd.toFixed(4)}${label}`;
+  });
+  return { title: [`Session cost (${basis})`, ...lines].join("\n"), isGuess };
+}

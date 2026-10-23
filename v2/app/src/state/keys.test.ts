@@ -165,6 +165,28 @@ describe("matchGlobalKey", () => {
     });
   });
 
+  it("Ctrl+Tab / Ctrl+Shift+Tab cycle tabs right / left", () => {
+    expect(matchGlobalKey(ev("Tab", { ctrl: true }))).toEqual({
+      handler: "nextTab",
+      preventDefault: true,
+    });
+    expect(matchGlobalKey(ev("Tab", { ctrl: true, shift: true }))).toEqual({
+      handler: "prevTab",
+      preventDefault: true,
+    });
+  });
+
+  it("Cmd+Tab does NOT cycle tabs (it's the macOS app switcher)", () => {
+    // Only Ctrl drives the Tab cycle; Cmd+Tab is OS-reserved and must
+    // not be hijacked even though `mod` conflates Cmd and Ctrl elsewhere.
+    expect(matchGlobalKey(ev("Tab", { meta: true }))).toBeNull();
+    expect(matchGlobalKey(ev("Tab", { meta: true, shift: true }))).toBeNull();
+    // Ctrl+Opt+Tab is not our chord either.
+    expect(matchGlobalKey(ev("Tab", { ctrl: true, alt: true }))).toBeNull();
+    // Naked Tab stays free for focus traversal.
+    expect(matchGlobalKey(ev("Tab"))).toBeNull();
+  });
+
   it("Cmd+Opt+1..7 → setSurface (PRD-117 §4.4.2 surface chord migration)", () => {
     for (let i = 1; i <= 7; i++) {
       expect(matchGlobalKey(ev(String(i), { meta: true, alt: true }))).toEqual(

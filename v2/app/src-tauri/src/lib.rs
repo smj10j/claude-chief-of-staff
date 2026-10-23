@@ -2554,6 +2554,24 @@ fn chat_slash_commands(
     Ok(chat::discover_slash_commands(&cwd_path))
 }
 
+/// PRD-116 §4.5 — read a console session transcript's event log so the
+/// frontend can replay a restored ("ghost") tab's conversation into the
+/// feed on reopen. `transcript_md_rel` is the workspace-relative `.md`
+/// path carried on the tab's resume hint; the content service reads its
+/// `.jsonl` sibling. Returns the events in order — an empty vec if the
+/// transcript is missing or has no turns yet.
+///
+/// `--resume` restores claude's server-side context; this restores what
+/// the user *sees*. The two are complementary: without this, a resumed
+/// tab remembers the conversation but shows an empty pane.
+#[tauri::command]
+fn chat_replay(
+    state: State<'_, AppState>,
+    transcript_md_rel: String,
+) -> AppResult<Vec<serde_json::Value>> {
+    state.content.read_transcript_events(&transcript_md_rel)
+}
+
 /// Graceful close.
 #[tauri::command]
 async fn chat_close(
@@ -2790,6 +2808,7 @@ pub fn run() {
             chat_cancel,
             chat_close,
             chat_slash_commands,
+            chat_replay,
             content_write_attachment,
             content_recent_sessions,
             content_list_projects,

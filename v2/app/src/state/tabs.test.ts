@@ -701,17 +701,27 @@ describe("deriveTitle (PRD §4.3 precedence)", () => {
     expect(deriveTitle(t)).toBe("Alice");
   });
 
-  it("open document label is used when no user title — distinctive labels pass through", () => {
+  it("open document label is prefixed with the owner as Owner/Doc (matches Recent)", () => {
+    const t = createTab("projects", {
+      openDoc: {
+        relPath: "projects/example-project/strategy.md",
+        label: "Strategy",
+      },
+    });
+    expect(deriveTitle(t)).toBe("Example Project/Strategy");
+  });
+
+  it("open document label passes through when the doc has no owner", () => {
     const t = createTab("home", {
       openDoc: {
-        relPath: "areas/projects/foo/strategy.md",
+        relPath: "data/files/loose.md",
         label: "Strategy",
       },
     });
     expect(deriveTitle(t)).toBe("Strategy");
   });
 
-  it("generic session-date labels are decorated with the owner segment (matches Recent)", () => {
+  it("generic session-date labels are prefixed with the owner segment (matches Recent)", () => {
     // Mirrors the Sidebar's Recent decoration: "2026-04-22" alone is
     // useless in the tab strip, so prefix the person slug.
     const t = createTab("people", {
@@ -721,21 +731,21 @@ describe("deriveTitle (PRD §4.3 precedence)", () => {
         label: "2026-04-22",
       },
     });
-    expect(deriveTitle(t)).toBe("Alice · 2026-04-22");
+    expect(deriveTitle(t)).toBe("Alice/2026-04-22");
   });
 
-  it("generic README label is decorated with the project slug", () => {
+  it("generic README label is prefixed with the project slug", () => {
     const t = createTab("projects", {
       openDoc: {
         relPath: "projects/example-project/README.md",
         label: "README",
       },
     });
-    expect(deriveTitle(t)).toBe("Example Project · README");
+    expect(deriveTitle(t)).toBe("Example Project/README");
   });
 
   it("falls back to a humanized owner segment when openDoc has no label", () => {
-    // `decorateRecentLabel` returns just the owner when the label is
+    // `recentDisplayLabel` returns just the owner when the label is
     // empty and a meaningful parent segment is found in the relPath.
     const t = createTab("home", {
       openDoc: {

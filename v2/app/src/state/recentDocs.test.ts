@@ -6,10 +6,12 @@ import {
   DEFAULT_SIDEBAR_RECENTS_MAX,
   decorateRecentLabel,
   isPinned,
+  isRecentEligible,
   RECENT_CHANGED_EVENT,
   RECENT_MAX,
   readRecent,
   readSidebarRecentsMax,
+  recentDisplayLabel,
   recordRecent,
   SIDEBAR_RECENTS_MAX_OPTIONS,
   togglePinned,
@@ -41,6 +43,38 @@ beforeEach(() => {
 describe("recentDocs", () => {
   it("returns empty when storage is unset", () => {
     expect(readRecent()).toEqual([]);
+  });
+
+  it("excludes console transcripts from the MRU", () => {
+    expect(
+      isRecentEligible("areas/console-sessions/sessions/2026-07-30-0937-c1.md"),
+    ).toBe(false);
+    expect(isRecentEligible("areas/one-on-ones/alice/README.md")).toBe(true);
+    // recordRecent refuses a console transcript outright.
+    recordRecent("areas/console-sessions/sessions/2026-07-30-0937-c1.md", "Console — c1");
+    recordRecent("areas/one-on-ones/alice/README.md", "Alice");
+    expect(readRecent().map((d) => d.relPath)).toEqual([
+      "areas/one-on-ones/alice/README.md",
+    ]);
+  });
+
+  it("self-heals console transcripts a prior build persisted", () => {
+    // Simulate litter written by an older build that recorded them.
+    window.localStorage.setItem(
+      "cos.recent-docs.v1",
+      JSON.stringify([
+        { relPath: "areas/console-sessions/sessions/2026-07-30-0945-c2.md", label: "Console — c2", openedAt: 3 },
+        { relPath: "projects/example-project/INDEX.md", label: "Example Project", openedAt: 2 },
+      ]),
+    );
+    // readRecent drops the console entry immediately...
+    expect(readRecent().map((d) => d.relPath)).toEqual(["projects/example-project/INDEX.md"]);
+    // ...and the next write physically purges it from storage.
+    recordRecent("areas/one-on-ones/alice/README.md", "Alice");
+    const persisted = JSON.parse(
+      window.localStorage.getItem("cos.recent-docs.v1") as string,
+    ) as { relPath: string }[];
+    expect(persisted.some((d) => d.relPath.includes("console-sessions"))).toBe(false);
   });
 
   it("recordRecent prepends, dedupes by relPath", () => {
@@ -242,5 +276,87 @@ describe("decorateRecentLabel", () => {
     expect(
       decorateRecentLabel("projects/alpha/README.md", "Readme"),
     ).toBe("Alpha · Readme");
+  });
+});
+
+describe("recentDisplayLabel", () => {
+  it("prefixes the person for a people doc (Alice/Mid Year Checkin 2026)", () => {
+    expect(
+      recentDisplayLabel(
+        "areas/one-on-ones/direct-reports/alice/career/mid-year-checkin-2026.md",
+        "Mid Year Checkin 2026",
+      ),
+    ).toBe("Alice/Mid Year Checkin 2026");
+  });
+
+  it("prefixes the project, stripping a trailing year (Offsite/…)", () => {
+    expect(
+      recentDisplayLabel(
+        "projects/offsite-2026/example-spec.md",
+        "example-spec",
+      ),
+    ).toBe("Offsite/example-spec");
+  });
+
+  it("prefixes even a distinctive label (unlike decorateRecentLabel)", () => {
+    expect(
+      recentDisplayLabel(
+        "areas/one-on-ones/peers/carol/README.md",
+        "Carol's Notes",
+      ),
+    ).toBe("Carol/Carol's Notes");
+  });
+
+  it("finds the person regardless of the sessions/career subfolder", () => {
+    expect(
+      recentDisplayLabel(
+        "areas/one-on-ones/direct-reports/bob/sessions/2026-04-25.md",
+        "2026-04-25",
+      ),
+    ).toBe("Bob/2026-04-25");
+  });
+
+  it("does not strip a trailing year from the doc label, only the owner", () => {
+    // owner "offsite-2026" → "Offsite"; doc label keeps its year.
+    expect(
+      recentDisplayLabel("projects/offsite-2026/retro-2026.md", "Retro 2026"),
+    ).toBe("Offsite/Retro 2026");
+  });
+
+  it("keeps a non-year trailing token on the owner slug", () => {
+    expect(
+      recentDisplayLabel(
+        "projects/town-hall-session-2/README.md",
+        "README",
+      ),
+    ).toBe("Town Hall Session 2/README");
+  });
+
+  it("humanizes a meeting slug owner", () => {
+    expect(
+      recentDisplayLabel(
+        "areas/meetings/team-eng-leads/sessions/2026-03-10.md",
+        "2026-03-10",
+      ),
+    ).toBe("Team Eng Leads/2026-03-10");
+  });
+
+  it("returns just the owner when the label is empty", () => {
+    expect(
+      recentDisplayLabel("projects/example-hire/README.md", ""),
+    ).toBe("Example Hire");
+  });
+
+  it("falls back to the bare label for ad-hoc docs with no owner", () => {
+    expect(recentDisplayLabel("data/files/loose.md", "loose")).toBe("loose");
+  });
+
+  it("tolerates a leading data/files prefix on the rel-path", () => {
+    expect(
+      recentDisplayLabel(
+        "data/files/projects/example-project/README.md",
+        "README",
+      ),
+    ).toBe("Example Project/README");
   });
 });

@@ -25,8 +25,8 @@ import { InlineMarkdown } from "../state/inlineMarkdown";
 import { type OpenDoc } from "../state/openDoc";
 import {
   RECENT_CHANGED_EVENT,
-  decorateRecentLabel,
   readRecent,
+  recentDisplayLabel,
   type RecentDoc,
 } from "../state/recentDocs";
 import { dismissRun, runSkill, useRun } from "../state/skillRuns";
@@ -187,15 +187,22 @@ export function Home({ onOpenDoc, onGoToTask, onGoToMeeting, onGoToProfile }: Pr
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    // Fire every mount fetch concurrently. These used to await one
+    // another in series, so Home filled in over the *sum* of all IPCs —
+    // and reminders (EventKit) + calendar are the slow ones, dragging
+    // the whole surface behind them. They're independent, so run them in
+    // parallel: the surface now populates in ~the slowest single call.
+    void (async () => {
       try {
         const status = await invoke<ContentStatus>("content_status");
         if (!cancelled) setContentStatus(status);
       } catch {
         // Non-fatal — Home still renders.
       }
-      if (!cancelled) loadBriefings();
-      if (!cancelled) loadPriorities();
+    })();
+    loadBriefings();
+    loadPriorities();
+    void (async () => {
       try {
         const sessions = await invoke<SessionRef[]>(
           "content_recent_sessions",
@@ -205,6 +212,8 @@ export function Home({ onOpenDoc, onGoToTask, onGoToMeeting, onGoToProfile }: Pr
       } catch {
         if (!cancelled) setRecentSessions([]);
       }
+    })();
+    void (async () => {
       try {
         const list = await invoke<RemindersResult>("reminders_list");
         if (!cancelled) setReminders(list);
@@ -213,6 +222,8 @@ export function Home({ onOpenDoc, onGoToTask, onGoToMeeting, onGoToProfile }: Pr
           setReminders({ available: false, items: [], error: null });
         }
       }
+    })();
+    void (async () => {
       try {
         const list = await invoke<CalendarEvent[]>("calendar_events", {
           from: todayDate,
@@ -222,6 +233,8 @@ export function Home({ onOpenDoc, onGoToTask, onGoToMeeting, onGoToProfile }: Pr
       } catch {
         if (!cancelled) setEvents([]);
       }
+    })();
+    void (async () => {
       try {
         const docs = await invoke<PendingDoc[]>("annotations_list_pending");
         if (!cancelled) setPending(docs);
@@ -613,7 +626,7 @@ export function Home({ onOpenDoc, onGoToTask, onGoToMeeting, onGoToProfile }: Pr
                   title={d.relPath}
                 >
                   <Clock size={12} strokeWidth={1.75} aria-hidden />
-                  <span>{decorateRecentLabel(d.relPath, d.label)}</span>
+                  <span>{recentDisplayLabel(d.relPath, d.label)}</span>
                 </button>
               </li>
             ))}
