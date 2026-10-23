@@ -6,6 +6,7 @@ import {
   DEFAULT_SIDEBAR_RECENTS_MAX,
   decorateRecentLabel,
   isPinned,
+  isRecentEligible,
   RECENT_CHANGED_EVENT,
   RECENT_MAX,
   readRecent,
@@ -41,6 +42,38 @@ beforeEach(() => {
 describe("recentDocs", () => {
   it("returns empty when storage is unset", () => {
     expect(readRecent()).toEqual([]);
+  });
+
+  it("excludes console transcripts from the MRU", () => {
+    expect(
+      isRecentEligible("areas/console-sessions/sessions/2026-07-30-0937-c1.md"),
+    ).toBe(false);
+    expect(isRecentEligible("areas/one-on-ones/alice/README.md")).toBe(true);
+    // recordRecent refuses a console transcript outright.
+    recordRecent("areas/console-sessions/sessions/2026-07-30-0937-c1.md", "Console — c1");
+    recordRecent("areas/one-on-ones/alice/README.md", "Alice");
+    expect(readRecent().map((d) => d.relPath)).toEqual([
+      "areas/one-on-ones/alice/README.md",
+    ]);
+  });
+
+  it("self-heals console transcripts a prior build persisted", () => {
+    // Simulate litter written by an older build that recorded them.
+    window.localStorage.setItem(
+      "cos.recent-docs.v1",
+      JSON.stringify([
+        { relPath: "areas/console-sessions/sessions/2026-07-30-0945-c2.md", label: "Console — c2", openedAt: 3 },
+        { relPath: "projects/example-project/INDEX.md", label: "Example Project", openedAt: 2 },
+      ]),
+    );
+    // readRecent drops the console entry immediately...
+    expect(readRecent().map((d) => d.relPath)).toEqual(["projects/example-project/INDEX.md"]);
+    // ...and the next write physically purges it from storage.
+    recordRecent("areas/one-on-ones/alice/README.md", "Alice");
+    const persisted = JSON.parse(
+      window.localStorage.getItem("cos.recent-docs.v1") as string,
+    ) as { relPath: string }[];
+    expect(persisted.some((d) => d.relPath.includes("console-sessions"))).toBe(false);
   });
 
   it("recordRecent prepends, dedupes by relPath", () => {

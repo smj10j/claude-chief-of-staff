@@ -71,7 +71,6 @@ import {
   CONSOLE_RUN_HERE_EVENT,
   type ConsoleRunHerePayload,
 } from "../../state/consoleRunHere";
-import { recordRecent } from "../../state/recentDocs";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { ToolCallCard } from "./ToolCallCard";
 
@@ -524,13 +523,10 @@ export function ChatView({
         stderrUnlisten: () => undefined,
       };
       setTabSession(tabId, initial);
-      // Record into Recents so the transcript shows up in the sidebar
-      // and Cmd+Shift+F. Skip if the transcript path didn't get set
-      // (rare — only when transcript creation failed).
-      if (open.transcript_md_rel) {
-        const filename = open.transcript_md_rel.split("/").pop() ?? "session";
-        recordRecent(open.transcript_md_rel, `Console — ${filename.replace(/\.md$/, "")}`);
-      }
+      // NB: we deliberately do NOT record console transcripts into the
+      // doc MRU — they're machine-written session logs that flooded the
+      // recent-files list, and they restore via their own tab
+      // persistence. recentDocs.isRecentEligible enforces this centrally.
       dataUnlisten = await listen<unknown>(
         `chat:${open.handle}:event`,
         (e) => {

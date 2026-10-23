@@ -58,6 +58,19 @@ export type RecentDoc = {
   pinned?: boolean;
 };
 
+/**
+ * Console transcripts are machine-written session logs, not docs the
+ * user curates — every opened session used to auto-record here and
+ * flooded the recent-files list. They restore through their own tab
+ * persistence (`cos.console.tabs.v1`), so they have no business in the
+ * doc MRU. This is the single chokepoint: `recordRecent` refuses them
+ * and `normalize` drops any that a prior build already persisted, so
+ * existing litter self-heals on the next read/write.
+ */
+export function isRecentEligible(relPath: string): boolean {
+  return !relPath.split("/").filter(Boolean).includes("console-sessions");
+}
+
 export function readRecent(): RecentDoc[] {
   if (typeof window === "undefined") return [];
   try {
@@ -125,6 +138,8 @@ export function isPinned(relPath: string): boolean {
 export function recordRecent(relPath: string, label: string): void {
   if (typeof window === "undefined") return;
   if (!relPath) return;
+  // Never let console transcripts into the doc MRU (see isRecentEligible).
+  if (!isRecentEligible(relPath)) return;
   const now = Date.now();
   const existing = readRecent().filter((d) => d.relPath !== relPath);
   const head: RecentDoc = { relPath, label, openedAt: now };
@@ -238,6 +253,10 @@ function normalize(value: unknown): RecentDoc[] {
     const rec = item as Record<string, unknown>;
     if (typeof rec.relPath !== "string" || rec.relPath.length === 0) continue;
     if (typeof rec.label !== "string") continue;
+    // Purge console transcripts a prior build may have persisted — they
+    // drop out of the rendered list here and get physically removed on
+    // the next recordRecent write (which reads through this filter).
+    if (!isRecentEligible(rec.relPath)) continue;
     const openedAt =
       typeof rec.openedAt === "number" && Number.isFinite(rec.openedAt)
         ? rec.openedAt
