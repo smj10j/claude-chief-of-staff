@@ -128,6 +128,7 @@ Custom slash commands live in `.claude/commands/`. These are the built-in ones:
 | `/task-triage` | Surface overdue/stale tasks, recommend actions (re-date, drop, delegate), execute after confirmation |
 | `/review-reminders` | Import pending items from Apple Reminders into the task database. Also runs during `/morning-briefing` |
 | `/level-candidate` | IC leveling assessment against the engineering competency framework |
+| `/career-review [name] [level]` | Current-level + next-level readiness review for a report, sourced against your leveling framework. Follows `data/files/areas/career/career-review-playbook.md` and writes into the person's `career/` folder |
 | `/org-generate` | Rebuild `data/files/areas/org/org.json` and every per-person `person.json` (powers the app's People → org views) |
 | `/person-refresh [name]` | Refresh one person's `person.json` (Slack/email/title metadata) |
 | `/ops-incidents` | Snapshot active incidents from your incidents Slack channel for the app's Ops Health tab |
