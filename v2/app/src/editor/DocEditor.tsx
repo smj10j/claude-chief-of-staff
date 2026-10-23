@@ -36,6 +36,7 @@ import { ensureDocPath } from "./linkOpen";
 import { resolveRelativePath } from "./resolveRelativePath";
 import { time } from "../state/perf";
 import { dismissRun, runSkill, useRun } from "../state/skillRuns";
+import { intentFromEvent } from "../state/tabs";
 import { showToast } from "../state/toasts";
 import { sanitizeMarkdown } from "./sanitize-markdown";
 
@@ -1040,9 +1041,12 @@ function LoadedEditor({
         const final = ensureDocPath(resolved);
         const label =
           final.split("/").pop()?.replace(/\.md$/, "") ?? final;
+        // Cmd-click → new background tab, Cmd+Shift-click → new
+        // foreground tab (intentFromEvent). Plain click never reaches
+        // here — it opens the link-edit dialog below.
         window.dispatchEvent(
           new CustomEvent("cos:open-doc", {
-            detail: { relPath: final, label },
+            detail: { relPath: final, label, intent: intentFromEvent(e) },
           }),
         );
         return;
@@ -1198,6 +1202,15 @@ function LoadedEditor({
       // on other layouts where "." needs Shift this still resolves
       // to the period char so the chord is consistent.
       if (e.key === "." || e.key === ">") {
+        // Only the visible/focused editor should react. With keep-alive
+        // (Shell), other doc editors stay mounted but hidden; without
+        // this guard their window listeners would flip focus mode on
+        // docs the user isn't looking at. Mirrors the Cmd+F guard below.
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        const target = e.target as HTMLElement | null;
+        const inside = target instanceof Node && container.contains(target);
+        if (!inside && !(editor?.isFocused ?? false)) return;
         e.preventDefault();
         setFocusMode((v) => {
           const next = !v;
@@ -1212,7 +1225,7 @@ function LoadedEditor({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [FOCUS_KEY]);
+  }, [FOCUS_KEY, editor]);
 
   // Cmd+F opens the floating find bar. Mounted on the wrapper div so
   // the listener doesn't steal Cmd+F when other surfaces are showing.

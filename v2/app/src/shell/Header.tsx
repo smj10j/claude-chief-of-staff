@@ -71,6 +71,23 @@ export function Header({
     else onPopDoc();
   };
 
+  // Cmd/middle-click the surface crumb → open that surface in a new tab
+  // (PRD §4.4.3), same convention as the sidebar, content tiles, and
+  // the doc crumbs below. Plain click keeps the in-place "navigate up"
+  // behavior on the profile-aware clear handlers (onSurfaceCrumb); only
+  // a modifier/middle-click routes through the cos:goto bus, so a bare
+  // click never changes what it does.
+  const onSurfaceCrumbClick = (e: React.MouseEvent) => {
+    const intent = intentFromEvent(e);
+    if (intent === "current") {
+      onSurfaceCrumb();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent("cos:goto", { detail: { surface: active, intent } }),
+    );
+  };
+
   const goToProfile = (target: ProfileTarget, intent: OpenIntent) => {
     window.dispatchEvent(
       new CustomEvent("cos:goto", { detail: { profile: target, intent } }),
@@ -138,7 +155,10 @@ export function Header({
               <button
                 type="button"
                 className="cos-breadcrumb-parent cos-breadcrumb-link"
-                onClick={onSurfaceCrumb}
+                onClick={onSurfaceCrumbClick}
+                onAuxClick={(e) => {
+                  if (e.button === 1) onSurfaceCrumbClick(e);
+                }}
                 title={`Back to ${surface.label}`}
               >
                 {surface.label}
@@ -177,7 +197,10 @@ export function Header({
               <button
                 type="button"
                 className="cos-breadcrumb-parent cos-breadcrumb-link"
-                onClick={onSurfaceCrumb}
+                onClick={onSurfaceCrumbClick}
+                onAuxClick={(e) => {
+                  if (e.button === 1) onSurfaceCrumbClick(e);
+                }}
                 title={`Back to ${surface.label}`}
               >
                 {surface.label}

@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -22,10 +23,10 @@ const DocEditor = lazy(() =>
 const HtmlEditor = lazy(() =>
   import("../editor/HtmlEditor").then((m) => ({ default: m.HtmlEditor })),
 );
-// Console carries xterm (~290 KB) + its chat runtime. Kept off the cold
-// path (Home/People/Tasks never pay it) via lazy, then — once the user
-// visits it the first time — mounted persistently so switching back is
-// instant instead of re-parsing the whole transcript each time.
+// Console is kept alive across tab switches (see the keep-alive block
+// below), so it lives at the Shell level rather than inside the
+// SurfaceRouter switch. Still lazy — xterm + the chat view are heavy
+// and only fetched once a session is opened.
 const Console = lazy(() =>
   import("../surfaces/Console").then((m) => ({ default: m.Console })),
 );
@@ -339,22 +340,13 @@ export function Shell() {
   // ---- Tab strip handlers (PRD §4.4.1 / §4.4.3) ----
   const handleNewTab = useCallback(() => {
     setTabsState((s) => {
-      // On the Console surface, ⌘T is owned by the console's own tab
-      // strip (new chat session). Yield so we don't also spawn a
-      // workspace tab and steal focus away from the console.
-      if (readActiveTab(s).surface === "console") return s;
       const newTab = createTab("home");
       return appendTab(s, newTab, true);
     });
   }, []);
 
   const handleCloseActiveTab = useCallback(() => {
-    setTabsState((s) => {
-      // Symmetric with ⌘T: on the Console surface, ⌘W closes the active
-      // chat tab (handled inside the console), not the workspace tab.
-      if (readActiveTab(s).surface === "console") return s;
-      return closeTabInState(s, s.activeTabId);
-    });
+    setTabsState((s) => closeTabInState(s, s.activeTabId));
   }, []);
 
   const handleCloseTab = useCallback((tabId: string) => {
@@ -845,16 +837,76 @@ export function Shell() {
   }, []);
 
   const showingDoc = openDoc !== null;
+  const showingHtmlDoc = showingDoc && openDoc.relPath.endsWith(".html");
 
-  // Once the Console surface has been visited, keep it mounted for the
-  // rest of the session (hidden when another surface is active). Its
-  // chat/PTY sessions and rendered transcript survive the switch, so
-  // coming back is instant. Deferred until first visit so cold start
-  // never pays the xterm chunk.
-  const [consoleMounted, setConsoleMounted] = useState(false);
+  // ── Keep-alive for the two expensive surfaces (perf) ──
+  //
+  // The markdown editor (full-document Tiptap parse) and the Console
+  // (one Tiptap view per transcript message) cost real time to mount.
+  // SurfaceRouter's switch(active) unmounts them on every tab switch, so
+  // landing back on a heavy tab re-read the file + re-parsed it, or
+  // re-instantiated the whole transcript. Instead we keep an instance
+  // alive per markdown doc that's open in *some* tab, and for the
+  // Console while *some* tab is parked on it, and just toggle CSS
+  // visibility. Switching back becomes a show, not a remount.
+  //
+  // Mount stays lazy: a pane only appears once its tab has actually been
+  // the active one, so a restored-but-unvisited tab or a background
+  // Cmd-click doesn't pre-parse. Panes drop when their doc closes in
+  // every tab (or the last Console tab goes away), releasing the editor.
+  const activeDocPath =
+    showingDoc && !showingHtmlDoc ? openDoc.relPath : null;
+  const consoleActive = active === "console" && !showingDoc;
+
+  const [aliveDocPaths, setAliveDocPaths] = useState<string[]>([]);
+  const [consoleEverActive, setConsoleEverActive] = useState(false);
+
+  // De-duped map of every markdown doc currently open across all tabs.
+  const openMarkdownDocs = useMemo(() => {
+    const m = new Map<string, OpenDoc>();
+    for (const t of tabsState.tabs) {
+      const d = t.openDoc;
+      if (d && !d.relPath.endsWith(".html")) m.set(d.relPath, d);
+    }
+    return m;
+  }, [tabsState.tabs]);
+
+  // Promote the active doc into the alive set the first time it's shown.
   useEffect(() => {
-    if (active === "console") setConsoleMounted(true);
-  }, [active]);
+    if (!activeDocPath) return;
+    setAliveDocPaths((prev) =>
+      prev.includes(activeDocPath) ? prev : [...prev, activeDocPath],
+    );
+  }, [activeDocPath]);
+
+  // Drop any alive path whose doc is no longer open anywhere — this is
+  // what unmounts (and disposes) an editor once its tab closes.
+  useEffect(() => {
+    setAliveDocPaths((prev) => {
+      const next = prev.filter((p) => openMarkdownDocs.has(p));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [openMarkdownDocs]);
+
+  useEffect(() => {
+    if (consoleActive) setConsoleEverActive(true);
+  }, [consoleActive]);
+
+  const aliveDocs = useMemo(
+    () =>
+      aliveDocPaths
+        .filter((p) => openMarkdownDocs.has(p))
+        .map((p) => openMarkdownDocs.get(p)!),
+    [aliveDocPaths, openMarkdownDocs],
+  );
+
+  const consoleAlive =
+    consoleEverActive && tabsState.tabs.some((t) => t.surface === "console");
+
+  // The plain SurfaceRouter surfaces (Home/People/Work/…) are cheap, so
+  // they keep the mount/unmount behavior. Only render one when we're not
+  // showing a doc and not on the (keep-alive) Console.
+  const surfaceActive = !showingDoc && !consoleActive;
 
   if (catalogMode) {
     return <Catalog />;
@@ -938,66 +990,91 @@ export function Shell() {
         />
         <div className="cos-content">
           <main className="cos-main-zone">
-            {showingDoc ? (
-              <Suspense
-                fallback={<div className="cos-empty">Loading editor…</div>}
+            {/* Keep-alive markdown editors — one per doc open in any
+                tab; only the active one is shown (see KeepAlivePane). */}
+            {aliveDocs.map((doc) => (
+              <KeepAlivePane
+                key={doc.relPath}
+                active={doc.relPath === activeDocPath}
               >
-                {openDoc.relPath.endsWith(".html") ? (
+                <ErrorBoundary
+                  label={`the editor for ${doc.label ?? doc.relPath}`}
+                >
+                  <Suspense
+                    fallback={
+                      <div className="cos-empty">Loading editor…</div>
+                    }
+                  >
+                    <DocEditor
+                      relPath={doc.relPath}
+                      label={doc.label}
+                      onClose={closeDoc}
+                      scrollTo={doc.scrollTo}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
+              </KeepAlivePane>
+            ))}
+
+            {/* Keep-alive Console — mounted while any tab is parked on
+                it; hidden (but streaming) when another tab is active. */}
+            {consoleAlive && (
+              <KeepAlivePane active={consoleActive}>
+                <ErrorBoundary label="the console surface">
+                  <Suspense
+                    fallback={
+                      <div className="cos-empty">Loading console…</div>
+                    }
+                  >
+                    <Console visible={consoleActive} />
+                  </Suspense>
+                </ErrorBoundary>
+              </KeepAlivePane>
+            )}
+
+            {/* .html docs are rare — left on the mount/unmount path
+                (their sandboxed iframe + postMessage wiring isn't
+                keep-alive-safe without more work). */}
+            {showingHtmlDoc && (
+              <ErrorBoundary
+                key={openDoc.relPath}
+                label={`the editor for ${openDoc.label ?? openDoc.relPath}`}
+              >
+                <Suspense
+                  fallback={<div className="cos-empty">Loading editor…</div>}
+                >
                   <HtmlEditor
                     relPath={openDoc.relPath}
                     label={openDoc.label}
                     onClose={closeDoc}
                   />
-                ) : (
-                  <DocEditor
-                    relPath={openDoc.relPath}
-                    label={openDoc.label}
-                    onClose={closeDoc}
-                    scrollTo={openDoc.scrollTo}
-                  />
-                )}
-              </Suspense>
-            ) : active !== "console" ? (
-              <ErrorBoundary
-                key={active}
-                label={`the ${active} surface`}
-              >
-              <SurfaceRouter
-                active={active}
-                selectedTask={selectedTask}
-                onSelectTask={handleSelectTask}
-                onOpenDoc={handleOpenDoc}
-                taskRefreshNonce={taskRefreshNonce}
-                peopleProfile={peopleProfile}
-                onGoToProfile={goToProfile}
-                onClearProfile={clearProfile}
-                onTaskCreated={handleTaskCreated}
-                taskScrollHint={taskScrollHint}
-                onGoToTask={goToTask}
-                projectProfile={projectProfile}
-                onGoToProject={goToProject}
-                onClearProject={clearProject}
-                meetingProfile={meetingProfile}
-                onGoToMeeting={goToMeeting}
-                onClearMeeting={clearMeeting}
-              />
+                </Suspense>
               </ErrorBoundary>
-            ) : null}
-            {/* Console is mounted once (on first visit) and kept alive,
-                hidden when a doc or another surface is showing, so
-                switching back to it is instant. */}
-            {consoleMounted && (
-              <ErrorBoundary label="the console surface">
-                <div
-                  className="cos-console-host"
-                  hidden={showingDoc || active !== "console"}
-                >
-                  <Suspense
-                    fallback={<div className="cos-empty">Loading console…</div>}
-                  >
-                    <Console active={!showingDoc && active === "console"} />
-                  </Suspense>
-                </div>
+            )}
+
+            {/* Cheap surfaces (Home/People/Work/…) keep the plain
+                mount/unmount behavior. */}
+            {surfaceActive && (
+              <ErrorBoundary key={active} label={`the ${active} surface`}>
+                <SurfaceRouter
+                  active={active}
+                  selectedTask={selectedTask}
+                  onSelectTask={handleSelectTask}
+                  onOpenDoc={handleOpenDoc}
+                  taskRefreshNonce={taskRefreshNonce}
+                  peopleProfile={peopleProfile}
+                  onGoToProfile={goToProfile}
+                  onClearProfile={clearProfile}
+                  onTaskCreated={handleTaskCreated}
+                  taskScrollHint={taskScrollHint}
+                  onGoToTask={goToTask}
+                  projectProfile={projectProfile}
+                  onGoToProject={goToProject}
+                  onClearProject={clearProject}
+                  meetingProfile={meetingProfile}
+                  onGoToMeeting={goToMeeting}
+                  onClearMeeting={clearMeeting}
+                />
               </ErrorBoundary>
             )}
           </main>
@@ -1084,6 +1161,33 @@ export function Shell() {
           Tab state not saving — close tabs to resume
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Wrapper that keeps its children mounted but hides them when inactive.
+ * `display: contents` on the active pane means the wrapper generates no
+ * box, so the child (a `.cos-doc` editor or `.cos-console-shell`) lays
+ * out exactly as if it were a direct child of `.cos-main-zone` — the
+ * pre-keep-alive layout. Inactive panes are `display: none` (removed
+ * from layout + the a11y tree) while their React tree, editor instance,
+ * and scrollback stay warm so re-activation is a show, not a remount.
+ */
+function KeepAlivePane({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="cos-keepalive-pane"
+      style={{ display: active ? "contents" : "none" }}
+      aria-hidden={active ? undefined : true}
+    >
+      {children}
     </div>
   );
 }
