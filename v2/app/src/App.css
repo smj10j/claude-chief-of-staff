@@ -3083,6 +3083,57 @@ button {
   line-height: 1.55;
 }
 
+/* Block spacing for the read-only markdown renderers (Console chat +
+   MarkdownView). These surfaces render `.ProseMirror.cos-markdown-view`
+   but are NOT inside a `.cos-tiptap` container, so the doc-editor's
+   `.cos-tiptap .ProseMirror p/h*/ul` margin rules never matched them —
+   paragraphs, headings, and lists fell back to the browser's UA default
+   margins (1em top AND bottom on every <p>), which stacked into excess
+   vertical space. Worse in Console: each assistant text block is a flex
+   item in `.cos-chat-turn-body`, so those top/bottom margins don't
+   collapse with the flex gap. We re-declare tight, top-collapsed spacing
+   here and zero the first/last child margins so blocks pack cleanly. */
+.cos-markdown-view p,
+.cos-markdown-view ul,
+.cos-markdown-view ol {
+  margin: 0 0 var(--cos-space-sm);
+}
+
+.cos-markdown-view ul,
+.cos-markdown-view ol {
+  padding-left: var(--cos-space-xl);
+}
+
+.cos-markdown-view li > p {
+  margin-bottom: var(--cos-space-xs);
+}
+
+.cos-markdown-view h1,
+.cos-markdown-view h2,
+.cos-markdown-view h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: var(--cos-space-md) 0 var(--cos-space-xs);
+}
+
+.cos-markdown-view blockquote {
+  border-left: 3px solid var(--cos-outline-strong);
+  padding-left: var(--cos-space-md);
+  color: var(--cos-content-secondary);
+  margin: 0 0 var(--cos-space-sm);
+}
+
+/* Kill the leading/trailing margin so a block doesn't stack its first
+   paragraph's top margin (or last paragraph's bottom margin) on top of
+   the flex `gap` between chat blocks. */
+.cos-markdown-view > :first-child {
+  margin-top: 0;
+}
+
+.cos-markdown-view > :last-child {
+  margin-bottom: 0;
+}
+
 /* Read-only markdown code blocks (Console chat + MarkdownView surface).
    Neither renderer sits under `.cos-tiptap`, so the doc-editor's pre/code
    rules never applied here — fenced code fell back to the UA default
@@ -7577,101 +7628,6 @@ button {
 .cos-chat-text-fallback {
   white-space: pre-wrap;
   font-family: inherit;
-}
-
-/* Lightweight transcript markdown (react-markdown). Mirrors the editor's
-   read-mode styling (editor.css) without a ProseMirror instance per
-   block. Kept scoped to .cos-chat-markdown so it never leaks into the
-   Tiptap doc viewer. */
-.cos-chat-markdown {
-  color: var(--cos-content-primary);
-  font-size: var(--cos-font-body);
-  line-height: 1.55;
-  word-break: break-word;
-}
-.cos-chat-markdown > :first-child {
-  margin-top: 0;
-}
-.cos-chat-markdown > :last-child {
-  margin-bottom: 0;
-}
-.cos-chat-markdown p {
-  margin: 0 0 var(--cos-space-md);
-}
-.cos-chat-markdown ul,
-.cos-chat-markdown ol {
-  margin: 0 0 var(--cos-space-md);
-  padding-left: var(--cos-space-xl);
-}
-.cos-chat-markdown li {
-  margin-bottom: var(--cos-space-xs);
-}
-.cos-chat-markdown li > p {
-  margin-bottom: var(--cos-space-xs);
-}
-.cos-chat-markdown h1,
-.cos-chat-markdown h2,
-.cos-chat-markdown h3,
-.cos-chat-markdown h4 {
-  margin: var(--cos-space-md) 0 var(--cos-space-sm);
-  line-height: 1.25;
-}
-.cos-chat-markdown code {
-  background: var(--cos-surface-raised);
-  border: 1px solid var(--cos-outline-subtle);
-  padding: 1px 5px;
-  border-radius: var(--cos-radius-sm);
-  font-family: var(--cos-font-family-mono);
-  font-size: 0.92em;
-}
-.cos-chat-markdown pre {
-  background: var(--cos-surface-raised);
-  border: 1px solid var(--cos-outline-subtle);
-  padding: var(--cos-space-md);
-  border-radius: var(--cos-radius-md);
-  overflow-x: auto;
-  font-family: var(--cos-font-family-mono);
-  font-size: var(--cos-font-body);
-  line-height: 1.5;
-  margin: 0 0 var(--cos-space-md);
-}
-.cos-chat-markdown pre code {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  font-size: inherit;
-}
-.cos-chat-markdown a {
-  color: var(--cos-info);
-  text-decoration: underline;
-  text-decoration-color: rgba(122, 162, 247, 0.3);
-  cursor: pointer;
-}
-.cos-chat-markdown blockquote {
-  border-left: 3px solid var(--cos-outline-strong);
-  padding-left: var(--cos-space-md);
-  color: var(--cos-content-secondary);
-  margin: var(--cos-space-md) 0;
-}
-.cos-chat-markdown hr {
-  border: 0;
-  border-top: 1px solid var(--cos-outline-subtle);
-  margin: var(--cos-space-lg) 0;
-}
-.cos-chat-markdown table {
-  border-collapse: collapse;
-  margin: 0 0 var(--cos-space-md);
-  font-size: 0.95em;
-}
-.cos-chat-markdown th,
-.cos-chat-markdown td {
-  border: 1px solid var(--cos-outline-subtle);
-  padding: 4px 8px;
-  text-align: left;
-}
-.cos-chat-markdown th {
-  background: var(--cos-surface-raised);
-  font-weight: 600;
 }
 
 .cos-chat-jump-pill {
